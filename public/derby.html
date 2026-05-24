@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고닉무스메 (서버 연동판)</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #2c3e50; padding: 20px; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; }
+        h1 { text-align: center; margin-bottom: 5px; }
+        .desc { font-size: 13px; color: #aaa; margin-bottom: 15px; text-align: center; }
+        
+        /* 룸 생성 로비 UI */
+        #lobby-panel { width: 100%; max-width: 600px; background-color: #fff; color: #000; border-radius: 10px; padding: 30px; box-sizing: border-box; text-align: center; margin-top: 50px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        #lobby-panel input { width: 80%; padding: 12px; font-size: 16px; margin: 10px 0; border: 2px solid #ccc; border-radius: 5px; }
+        #lobby-panel select { width: 80%; padding: 12px; font-size: 16px; margin: 10px 0; border: 2px solid #ccc; border-radius: 5px; }
+        
+        /* 카운트다운 오버레이 */
+        #countdown-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; }
+        #countdown-text { font-size: 80px; font-weight: bold; color: #ffeb3b; text-shadow: 0 0 20px #ff9800; margin-bottom: 20px; font-variant-numeric: tabular-nums; }
+        #countdown-info { font-size: 20px; color: #ccc; }
+
+        /* 게임 UI 요소들 */
+        #game-container { display: none; flex-direction: column; align-items: center; width: 100%; }
+        
+        #minimap-container { width: 100%; max-width: 900px; height: 60px; background-color: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 10px; margin-bottom: 10px; position: relative; overflow: hidden; }
+        #minimap-viewport { position: absolute; top: 0; height: 100%; width: 20%; border: 2px solid rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.2); box-sizing: border-box; z-index: 3; transition: left 0.1s linear; pointer-events: none; }
+        .minimap-dot { position: absolute; width: 14px; height: 14px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; transition: left 0.1s linear; font-size: 9px; color: black; font-weight: bold; text-align: center; line-height: 12px; box-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        
+        .skill-active { background-color: #00e5ff !important; box-shadow: 0 0 10px 4px #00e5ff !important; z-index: 6; }
+        .ult-active { background-color: #ffeb3b !important; box-shadow: 0 0 15px 5px #ff5722 !important; z-index: 7; transform: scale(1.3); }
+
+        #game-window { position: relative; width: 100%; max-width: 900px; height: 360px; background-color: #55a630; border: 4px solid #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        #track { position: absolute; left: 0; top: 0; width: 10000px; height: 100%; transition: left 0.1s linear; background-image: repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(255,255,255,0.1) 100px, rgba(255,255,255,0.1) 102px); }
+        .start-line { position: absolute; left: 280px; top: 0; bottom: 0; width: 8px; background: repeating-linear-gradient(to bottom, white, white 10px, transparent 10px, transparent 20px); z-index: 1; }
+        
+        .obstacle-zone { position: absolute; left: 3500px; width: 1500px; height: 100%; background-color: rgba(255, 0, 0, 0.2); z-index: 0; border-left: 2px dashed red; border-right: 2px dashed red; }
+        .obstacle-label { position: absolute; left: 3510px; top: 10px; color: #ff5555; font-weight: bold; font-size: 20px; z-index: 1; text-shadow: 1px 1px 2px black; }
+
+        .finish-line { position: absolute; left: 9800px; top: 0; bottom: 0; width: 20px; background: repeating-linear-gradient(to bottom, white, white 20px, black 20px, black 40px); z-index: 1; }
+        
+        .runner { position: absolute; width: auto; height: 28px; background-color: white; color: black; border: 2px solid #333; border-radius: 14px; padding: 0 12px; line-height: 24px; font-weight: bold; font-size: 13px; white-space: nowrap; z-index: 2; box-shadow: 2px 2px 5px rgba(0,0,0,0.4); transition: background-color 0.3s; }
+        .stamina-bar-bg { position: absolute; bottom: -6px; left: 10%; width: 80%; height: 5px; background-color: #333; border-radius: 3px; overflow: hidden; border: 1px solid #fff; }
+        .stamina-bar-fill { width: 100%; height: 100%; background-color: #00ff00; transition: width 0.1s linear, background-color 0.3s; }
+        .stunned { background-color: #555 !important; color: white !important; transform: rotate(-15deg); }
+        .immune { opacity: 0.5; animation: blinker 0.3s linear infinite; }
+
+        .cutin { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        #ult-cutin { background: rgba(50,0,0,0.8); }
+        #ult-cutin-bg { width: 100%; background: linear-gradient(90deg, transparent, #e53935, transparent); padding: 40px 0; animation: popInShake 0.4s forwards; border-top: 2px solid #ffeb3b; border-bottom: 2px solid #ffeb3b; }
+        .cutin-title { font-size: 30px; font-weight: bold; color: white; text-shadow: 2px 2px 4px #000; margin-bottom: 10px; }
+        .cutin-name { font-size: 45px; font-weight: 900; color: #ffe082; text-shadow: 3px 3px 5px #000; }
+
+        #commentary-board { width: 100%; max-width: 900px; height: 120px; background-color: #fff; color: #000; border: 3px solid #333; border-radius: 8px; margin-top: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .msg-line { font-size: 14px; color: #888; margin-top: 4px; transition: all 0.3s ease; }
+        .msg-line.latest { font-size: 18px; font-weight: bold; color: #000; }
+        .msg-line .icon { color: #e53935; }
+
+        button { padding: 12px 25px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: #ff9800; color: white; border: none; border-radius: 8px; transition: 0.2s; }
+        button:hover { background-color: #e68a00; transform: scale(1.05); }
+        
+        #debug-panel { width: 100%; max-width: 900px; background-color: #fff; color: #000; border-radius: 8px; padding: 15px; box-sizing: border-box; font-size: 13px; margin-top: 15px; margin-bottom: 30px; }
+        #debug-panel h3 { margin-top: 0; color: #d32f2f; text-align: center; }
+        table { width: 100%; border-collapse: collapse; text-align: center; }
+        th, td { border: 1px solid #ccc; padding: 6px; }
+        th { background-color: #eee; font-weight: bold; }
+        
+        @keyframes popInShake { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.1) rotate(-2deg); opacity: 1; } 75% { transform: scale(0.95) rotate(2deg); } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+        @keyframes blinker { 50% { opacity: 0.8; } }
+    </style>
+</head>
+<body>
+
+    <h1>🐎 고닉 무스메 Gonik Musume</h1>
+    
+    <!-- 1. 주최자용 방 생성 로비 (URL에 room 파라미터가 없을 때 표시) -->
+    <div id="lobby-panel">
+        <h2>🏆 새로운 대회 개최하기</h2>
+        <p>디시인사이드 게시글 주소를 입력하여 참가자를 추출합니다.</p>
+        <input type="text" id="dcUrl" placeholder="https://gall.dcinside.com/board/view/?id=...">
+        
+        <p>언제 시작할까요?</p>
+        <select id="delaySelect">
+            <option value="15">테스트용 (15초 뒤 시작)</option>
+            <option value="60">1분 뒤 시작</option>
+            <option value="300">5분 뒤 시작</option>
+        </select>
+        <br><br>
+        <button onclick="createRoom()" id="createBtn">대회 방 생성하기</button>
+        <div id="lobby-status" style="margin-top: 15px; color: #e53935; font-weight: bold;"></div>
+    </div>
+
+    <!-- 2. 카운트다운 오버레이 (관람객 대기 화면) -->
+    <div id="countdown-overlay">
+        <div id="countdown-info">참가자 데이터 스탯 분배 및 로딩 완료...</div>
+        <div id="countdown-text">00:00</div>
+        <div style="font-size: 16px;">시간이 되면 레이스가 자동으로 시작됩니다.</div>
+    </div>
+
+    <!-- 3. 실제 게임 화면 (서버에서 정보를 받아오면 표시됨) -->
+    <div id="game-container">
+        <div id="minimap-container">
+            <div id="minimap-viewport"></div>
+        </div>
+
+        <div id="game-window">
+            <div id="track">
+                <div class="start-line"></div>
+                <div class="obstacle-zone"></div>
+                <div class="obstacle-label">🚧 위험 지대 🚧</div>
+                <div class="finish-line"></div>
+            </div>
+            
+            <div id="ult-cutin" class="cutin">
+                <div id="ult-cutin-bg">
+                    <div class="cutin-title" style="color:#ffeb3b;">🔥 [각성! 궁극기 발동!] 🔥</div>
+                    <div id="ult-user" class="cutin-name" style="color:#fff;">닉네임</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="commentary-board">
+            <div class="msg-line latest"><span class="icon">▶</span> 선수들 게이트 진입 대기 중...</div>
+        </div>
+
+        <div id="debug-panel">
+            <h3>📊 출전 선수 스탯 분석</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>닉네임</th>
+                        <th>컨디션</th>
+                        <th>스피드</th>
+                        <th>스태미나</th>
+                        <th>파워</th>
+                        <th>근성</th>
+                        <th>지능</th>
+                        <th>각질</th>
+                    </tr>
+                </thead>
+                <tbody id="debug-tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+		// 백엔드 API 주소 (Render 라이브 서버)
+		const API_BASE = "https://gonik-musume.onrender.com/api";
+        
+        // 시드 난수 엔진
+        let seededRandom = Math.random; 
+        function xmur3(str) {
+            for(var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
+                h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+                h = h << 13 | h >>> 19;
+            }
+            return function() {
+                h = Math.imul(h ^ h >>> 16, 2246822507);
+                h = Math.imul(h ^ h >>> 13, 3266489909);
+                return (h ^= h >>> 16) >>> 0;
+            }
+        }
+        function mulberry32(a) {
+            return function() {
+              var t = a += 0x6D2B79F5;
+              t = Math.imul(t ^ t >>> 15, t | 1);
+              t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+              return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        // 게임 핵심 변수
+        let roomData = null;
+        let countdownTimer = null;
+        let runners = [];
+        let isRacing = false;
+        let isPaused = false;
+        
+        let lastSkillTime = -10;
+        let ultimateUsed = false;
+        let focusRunner = null;
+        let focusEndTime = 0;
+        let obstacleZoneActivatedAt = -1; 
+        let obstacleZoneClearedTime = -1;
+
+        const TRACK_LENGTH = 10000;
+        const FINISH_LINE = 9800;
+        const OBSTACLE_START = 3500;
+        const OBSTACLE_END = 5000;
+        const MAX_LANES = 8; 
+        const strategies = ["도주", "선행", "선입", "추입"];
+
+        // ==========================================
+        // 🌐 [1] 방 생성 API 통신 (주최자)
+        // ==========================================
+        async function createRoom() {
+            const urlInput = document.getElementById('dcUrl').value;
+            const delaySec = parseInt(document.getElementById('delaySelect').value);
+            const statusDiv = document.getElementById('lobby-status');
+            const btn = document.getElementById('createBtn');
+
+            if (!urlInput.trim()) {
+                statusDiv.innerText = "URL을 입력해주세요.";
+                return;
+            }
+
+            statusDiv.innerText = "참가자 데이터를 수집 중입니다... (약 2~5초 소요)";
+            btn.disabled = true;
+
+            const scheduledTime = Math.floor(Date.now() / 1000) + delaySec;
+
+            try {
+                const response = await fetch(`${API_BASE}/create_room`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: urlInput, scheduled_time: scheduledTime })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.style.color = 'green';
+                    statusDiv.innerText = data.message + " 방으로 이동합니다.";
+                    // 방 번호 파라미터를 달아서 새로고침
+                    setTimeout(() => {
+                        window.location.href = `?room=${data.room_id}`;
+                    }, 1000);
+                } else {
+                    statusDiv.innerText = "오류: " + data.message;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                statusDiv.innerText = "서버 통신 실패. Flask 서버가 켜져 있는지 확인하세요.";
+                btn.disabled = false;
+            }
+        }
+
+        // ==========================================
+        // 🌐 [2] 방 정보 가져오기 & 카운트다운 로직
+        // ==========================================
+        window.onload = async function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomId = urlParams.get('room');
+
+            if (!roomId) {
+                // 방 번호가 없으면 로비 표시
+                return;
+            }
+
+            // 방 번호가 있으면 로비 숨기고 게임 영역 준비
+            document.getElementById('lobby-panel').style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE}/room/${roomId}`);
+                const resData = await response.json();
+
+                if (!resData.success) {
+                    alert(resData.message);
+                    window.location.href = "?"; // 메인으로 돌려보냄
+                    return;
+                }
+
+                roomData = resData.data;
+                document.getElementById('game-container').style.display = 'flex';
+                
+                // 시드와 스탯 미리 계산하여 화면에 그리기
+                initRunners();
+                
+                // 카운트다운 시작
+                document.getElementById('countdown-overlay').style.display = 'flex';
+                startCountdown();
+
+            } catch (err) {
+                alert("방 정보를 불러올 수 없습니다. 서버 상태를 확인하세요.");
+            }
+        };
+
+        function startCountdown() {
+            countdownTimer = setInterval(() => {
+                const now = Math.floor(Date.now() / 1000);
+                let diff = roomData.scheduled_time - now;
+
+                if (diff <= 0) {
+                    // 카운트다운 종료! 자동 시작
+                    clearInterval(countdownTimer);
+                    document.getElementById('countdown-overlay').style.display = 'none';
+                    startRace();
+                } else {
+                    // 남은 시간 텍스트 업데이트
+                    let m = Math.floor(diff / 60).toString().padStart(2, '0');
+                    let s = (diff % 60).toString().padStart(2, '0');
+                    document.getElementById('countdown-text').innerText = `${m}:${s}`;
+                }
+            }, 1000);
+        }
+
+        // ==========================================
+        // 🎮 [3] 게임 내부 로직 (시드 동기화 렌더링)
+        // ==========================================
+        function showCommentary(text) {
+            const board = document.getElementById('commentary-board');
+            const existing = board.querySelectorAll('.msg-line');
+            existing.forEach(el => el.classList.remove('latest'));
+            const newLine = document.createElement('div');
+            newLine.className = 'msg-line latest';
+            newLine.innerHTML = `<span class="icon">▶</span> ${text}`;
+            board.appendChild(newLine);
+            if (board.children.length > 5) board.removeChild(board.firstChild);
+        }
+
+        function triggerSkill(runner) {
+            showCommentary(`💡 [스킬 발동] ${runner.name} 선수가 매끄럽게 치고 나갑니다!`);
+            runner.speedBoost = 2.0; 
+            runner.isNormalSkillActive = true;
+        }
+
+        function triggerUltimate(runner) {
+            isPaused = true;
+            const cutin = document.getElementById('ult-cutin');
+            document.getElementById('ult-user').innerText = runner.name;
+            cutin.style.display = 'flex';
+            showCommentary(`💥 기적의 스퍼트! 중위권의 ${runner.name}가 괴력을 발휘합니다!!`);
+
+            setTimeout(() => {
+                cutin.style.display = 'none';
+                isPaused = false;
+                runner.stats.speed += 35; 
+                runner.element.style.backgroundColor = '#ffd700'; 
+                runner.isUltimateActive = true;
+                focusRunner = runner;
+                focusEndTime = Date.now() + 3000;
+                requestAnimationFrame(raceLoop); 
+            }, 2000); 
+        }
+
+        function initRunners() {
+            // 서버에서 받은 시드로 PRNG 장전!
+            let seedNumber = xmur3(roomData.seed)(); 
+            seededRandom = mulberry32(seedNumber);
+
+            const track = document.getElementById('track');
+            const minimap = document.getElementById('minimap-container');
+            const viewport = document.getElementById('minimap-viewport');
+            const debugTbody = document.getElementById('debug-tbody');
+            
+            // 참가자 수에 맞게 게임창 세로 길이 가변 조절
+            const requiredHeight = Math.max(360, roomData.participants.length * 40 + 40);
+            document.getElementById('game-window').style.height = requiredHeight + 'px';
+
+            document.querySelectorAll('.runner, .minimap-dot').forEach(e => e.remove());
+            debugTbody.innerHTML = '';
+            track.style.left = '0px';
+            viewport.style.left = '0%';
+            
+            runners = [];
+            
+            roomData.participants.forEach((name, index) => {
+                let baseStats = [30, 30, 30, 30, 30]; 
+                let remain = 150; 
+                
+                while(remain > 0) {
+                    let rIdx = Math.floor(seededRandom() * 5);
+                    if (baseStats[rIdx] < 80) {
+                        let add = Math.min(remain, 80 - baseStats[rIdx], Math.floor(seededRandom() * 5) + 1);
+                        baseStats[rIdx] += add;
+                        remain -= add;
+                    }
+                }
+                
+                let conditions = ["최악(x0.9)", "저조(x0.95)", "보통(x1.0)", "양호(x1.05)", "최상(x1.1)"];
+                let condIdx = Math.floor(seededRandom() * conditions.length);
+                let condMod = 0.9 + (condIdx * 0.05);
+
+                let stats = {
+                    speed: baseStats[0] * condMod,
+                    stamina: baseStats[1] * condMod,
+                    power: baseStats[2] * condMod,
+                    guts: baseStats[3] * condMod,
+                    intel: baseStats[4] * condMod
+                };
+
+                const strategy = strategies[Math.floor(seededRandom() * strategies.length)];
+                
+                const laneIndex = index % MAX_LANES; 
+                const rowIndex = Math.floor(index / MAX_LANES); 
+                
+                const runnerEl = document.createElement('div');
+                runnerEl.className = 'runner';
+                runnerEl.innerText = name; 
+                runnerEl.style.top = `${20 + (laneIndex * 40)}px`;
+                
+                let startX = 250 - (rowIndex * 70);
+
+                const staminaBarBg = document.createElement('div');
+                staminaBarBg.className = 'stamina-bar-bg';
+                const staminaFill = document.createElement('div');
+                staminaFill.className = 'stamina-bar-fill';
+                staminaBarBg.appendChild(staminaFill);
+                runnerEl.appendChild(staminaBarBg);
+                track.appendChild(runnerEl);
+
+                const dotEl = document.createElement('div');
+                dotEl.className = 'minimap-dot';
+                dotEl.innerText = name.substring(0, 1);
+                let mapYPos = 10 + (laneIndex / MAX_LANES) * 80; 
+                dotEl.style.top = `${mapYPos}%`;
+                minimap.appendChild(dotEl);
+
+                let maxStam = stats.stamina * 38; 
+
+                runners.push({
+                    name: name,
+                    element: runnerEl,
+                    staminaFillEl: staminaFill,
+                    dotElement: dotEl,
+                    x: startX,
+                    stats: stats,
+                    strategy: strategy,
+                    speedBoost: 1.0,
+                    hasSkill: true,
+                    stunnedUntil: 0, 
+                    immuneUntil: 0, 
+                    maxStamina: maxStam,
+                    currentStamina: maxStam, 
+                    isNormalSkillActive: false,
+                    isUltimateActive: false,
+                    finished: false
+                });
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${name}</strong></td>
+                    <td style="color:${condIdx >= 3 ? 'blue' : (condIdx <= 1 ? 'red' : 'black')}">${conditions[condIdx]}</td>
+                    <td>${stats.speed.toFixed(1)}</td>
+                    <td>${stats.stamina.toFixed(1)}</td>
+                    <td>${stats.power.toFixed(1)}</td>
+                    <td>${stats.guts.toFixed(1)}</td>
+                    <td>${stats.intel.toFixed(1)}</td>
+                    <td style="font-weight:bold;">${strategy}</td>
+                `;
+                debugTbody.appendChild(tr);
+            });
+            
+            runners.forEach(r => {
+                r.element.style.left = r.x + 'px';
+                let minimapPercent = Math.max(0, Math.min((r.x / TRACK_LENGTH) * 100, 100));
+                r.dotElement.style.left = `calc(${minimapPercent}% - 7px)`;
+            });
+        }
+
+        let startTime;
+
+        // 카운트다운이 0이 되면 자동으로 호출됨
+        function startRace() {
+            if (isRacing) return;
+            isRacing = true;
+            isPaused = false;
+            showCommentary("🏁 정각입니다! 일제히 출발합니다. 10000m의 대장정!");
+            startTime = Date.now();
+            raceLoop();
+        }
+
+        function raceLoop() {
+            if (isPaused) return;
+
+            let currentTime = (Date.now() - startTime) / 1000;
+            let leaderX = 0;
+            let currentLeader = null;
+            let raceEnded = false;
+
+            runners.forEach(r => {
+                if (r.x > leaderX) {
+                    leaderX = r.x;
+                    currentLeader = r;
+                }
+            });
+
+            if (leaderX > OBSTACLE_START && obstacleZoneActivatedAt === -1) {
+                obstacleZoneActivatedAt = currentTime;
+                showCommentary("🚧 선두 그룹이 위험 지대에 진입했습니다!");
+            }
+
+            if (leaderX > OBSTACLE_END && obstacleZoneClearedTime === -1) {
+                obstacleZoneClearedTime = currentTime;
+                showCommentary("💨 선두 주자가 장애물 구간을 돌파했습니다!");
+            }
+
+            if (!ultimateUsed && obstacleZoneClearedTime !== -1 && (currentTime - obstacleZoneClearedTime >= 2.0)) {
+                let sortedRunners = [...runners].sort((a, b) => b.x - a.x);
+                let eligibleRunners = sortedRunners.slice(1).filter(r => r.x > 100);
+
+                if (eligibleRunners.length > 0) {
+                    ultimateUsed = true;
+                    let N = eligibleRunners.length;
+                    let weights = eligibleRunners.map((r, i) => Math.sin(Math.PI * (i + 1) / (N + 1)));
+                    let totalWeight = weights.reduce((a, b) => a + b, 0);
+                    
+                    let randomVal = seededRandom() * totalWeight;
+                    let sum = 0;
+                    let luckyRunner = eligibleRunners[0]; 
+                    
+                    for (let i = 0; i < N; i++) {
+                        sum += weights[i];
+                        if (randomVal <= sum) {
+                            luckyRunner = eligibleRunners[i];
+                            break;
+                        }
+                    }
+
+                    triggerUltimate(luckyRunner);
+                    return; 
+                }
+            }
+
+            runners.forEach(runner => {
+                if (raceEnded) return;
+
+                let trackPercent = runner.x / FINISH_LINE;
+
+                if (runner.x > OBSTACLE_START && runner.x < OBSTACLE_END) {
+                    let isInStun = (Date.now() < runner.stunnedUntil);
+                    let isImmune = (Date.now() < runner.immuneUntil);
+
+                    if (isImmune && !isInStun) runner.element.classList.add('immune');
+                    else runner.element.classList.remove('immune');
+
+                    if (!isInStun && !isImmune) {
+                        let timeSinceActive = currentTime - obstacleZoneActivatedAt;
+                        let baseTrapChance = 0.04 * Math.max(0, 1 - (timeSinceActive / 15.0));
+
+                        if (seededRandom() < baseTrapChance) {
+                            let evadeChance = (runner.stats.intel / 100) * 0.5; 
+                            if (runner === currentLeader) evadeChance = -0.3; 
+
+                            if (seededRandom() > evadeChance) {
+                                let stunDuration = 800 - (runner.stats.power * 2);
+                                if(stunDuration < 300) stunDuration = 300;
+                                
+                                runner.stunnedUntil = Date.now() + stunDuration;
+                                runner.immuneUntil = runner.stunnedUntil + 1500; 
+                                
+                                runner.element.classList.add('stunned');
+                                runner.element.classList.remove('immune');
+                                
+                                if(runner === currentLeader) showCommentary(`🚨 선두 ${runner.name}, 덫에 걸렸습니다!! (1.5초 면역)`);
+                            }
+                        }
+                    }
+                } else {
+                    runner.element.classList.remove('immune');
+                }
+                
+                if (Date.now() >= runner.stunnedUntil) {
+                    runner.element.classList.remove('stunned');
+                } else {
+                    return; 
+                }
+
+                let isPastEarlyPhase = (runner.x > FINISH_LINE * 0.20);
+                let skillDisabled = (leaderX > FINISH_LINE * 0.85) || !isPastEarlyPhase;
+                let isGlobalCooldown = (currentTime - lastSkillTime < 5.0);
+                let skillProb = 0.005 + (runner.stats.intel / 1000); 
+
+                if (runner.hasSkill && !skillDisabled && !isGlobalCooldown && seededRandom() < skillProb) {
+                    runner.hasSkill = false;
+                    lastSkillTime = currentTime;
+                    triggerSkill(runner); 
+                }
+
+                let strategyMultiplier = 1.0;
+                if (runner.strategy === "도주" && trackPercent < 0.3) strategyMultiplier = 1.20;
+                if (runner.strategy === "선행" && trackPercent > 0.15 && trackPercent < 0.5) strategyMultiplier = 1.15;
+                if (runner.strategy === "선입" && trackPercent > 0.4 && trackPercent < 0.75) strategyMultiplier = 1.15;
+                if (runner.strategy === "추입" && trackPercent > 0.7) strategyMultiplier = 1.25;
+
+                let staminaDrain = (runner.stats.speed * 0.025) * strategyMultiplier;
+                runner.currentStamina -= staminaDrain; 
+
+                let staminaPercent = Math.max(0, (runner.currentStamina / runner.maxStamina) * 100);
+                runner.staminaFillEl.style.width = staminaPercent + '%';
+
+                let staminaMod = 1.0;
+                if (runner.currentStamina <= 0) {
+                    runner.staminaFillEl.style.backgroundColor = 'red';
+                    if (trackPercent > 0.4) staminaMod = 0.5; 
+                }
+
+                let gutsMod = 1.0;
+                if (trackPercent > 0.7) gutsMod = 1.0 + (runner.stats.guts / 150);
+
+                if (runner.speedBoost > 1.0) runner.speedBoost -= 0.015; 
+                else { runner.speedBoost = 1.0; runner.isNormalSkillActive = false; }
+
+                let moveAmount = (runner.stats.speed * 0.08) * strategyMultiplier * staminaMod * gutsMod * runner.speedBoost * (seededRandom() * 0.2 + 0.9);
+                
+                runner.x += moveAmount;
+                runner.element.style.left = runner.x + 'px';
+                
+                let minimapPercent = Math.max(0, Math.min((runner.x / TRACK_LENGTH) * 100, 100));
+                runner.dotElement.style.left = `calc(${minimapPercent}% - 7px)`;
+                
+                if (runner.isUltimateActive) runner.dotElement.className = 'minimap-dot ult-active';
+                else if (runner.isNormalSkillActive) runner.dotElement.className = 'minimap-dot skill-active';
+                else runner.dotElement.className = 'minimap-dot';
+
+                if (runner.x >= FINISH_LINE) {
+                    raceEnded = true;
+                    isRacing = false;
+                    showCommentary(`🏆 우승! [${runner.name}] 선수가 가장 먼저 결승선을 통과했습니다!`);
+                }
+            });
+
+            let cameraX = leaderX;
+            if (focusRunner && Date.now() < focusEndTime) cameraX = focusRunner.x;
+            else focusRunner = null; 
+
+            let trackLeftOffset = 0;
+            if (cameraX > 200 && cameraX < (TRACK_LENGTH - 600) && !raceEnded) {
+                trackLeftOffset = cameraX - 200;
+                document.getElementById('track').style.left = -trackLeftOffset + 'px';
+            }
+
+            let viewportPercent = (trackLeftOffset / TRACK_LENGTH) * 100;
+            document.getElementById('minimap-viewport').style.left = `${viewportPercent}%`;
+
+            if (!raceEnded && !isPaused) requestAnimationFrame(raceLoop);
+        }
+    </script>
+</body>
+</html>
