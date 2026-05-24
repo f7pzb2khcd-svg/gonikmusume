@@ -9,7 +9,6 @@
         h1 { text-align: center; margin-bottom: 5px; }
         .desc { font-size: 13px; color: #aaa; margin-bottom: 15px; text-align: center; }
         
-        /* 로비 패널 */
         #lobby-panel { width: 90%; max-width: 600px; background-color: #fff; color: #000; border-radius: 10px; padding: 30px; box-sizing: border-box; text-align: center; margin-top: 50px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
         #lobby-panel input, #lobby-panel select { width: 80%; padding: 12px; font-size: 16px; margin: 10px 0; border: 2px solid #ccc; border-radius: 5px; }
         
@@ -17,27 +16,41 @@
         #countdown-text { font-size: 80px; font-weight: bold; color: #ffeb3b; text-shadow: 0 0 20px #ff9800; margin-bottom: 20px; font-variant-numeric: tabular-nums; }
         #countdown-info { font-size: 18px; color: #ccc; margin-bottom: 10px; }
 
-        /* 📱 모바일 반응형 래퍼 (이 부분이 화면 크기에 맞춰 축소됩니다) */
         #game-scale-wrapper { width: 900px; transform-origin: top center; display: none; flex-direction: column; align-items: center; transition: transform 0.2s; }
         
         #minimap-container { width: 100%; height: 60px; background-color: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 10px; margin-bottom: 10px; position: relative; overflow: hidden; }
         #minimap-viewport { position: absolute; top: 0; height: 100%; width: 20%; border: 2px solid rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.2); box-sizing: border-box; z-index: 3; pointer-events: none; }
-        .minimap-dot { position: absolute; width: 14px; height: 14px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; font-size: 9px; color: black; font-weight: bold; text-align: center; line-height: 12px; box-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .minimap-dot { position: absolute; width: 14px; height: 14px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; font-size: 9px; color: black; font-weight: bold; text-align: center; line-height: 12px; box-shadow: 1px 1px 2px rgba(0,0,0,0.5); transition: left 0.1s linear; }
         .skill-active { background-color: #00e5ff !important; box-shadow: 0 0 10px 4px #00e5ff !important; z-index: 6; }
         .ult-active { background-color: #ffeb3b !important; box-shadow: 0 0 15px 5px #ff5722 !important; z-index: 7; transform: scale(1.3); }
 
-        #game-window { position: relative; width: 100%; height: 360px; background-color: #55a630; border: 4px solid #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        #game-window { position: relative; width: 100%; height: 450px; background-color: #55a630; border: 4px solid #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
         #track { position: absolute; left: 0; top: 0; width: 10000px; height: 100%; background-image: repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(255,255,255,0.1) 100px, rgba(255,255,255,0.1) 102px); }
         .start-line { position: absolute; left: 280px; top: 0; bottom: 0; width: 8px; background: repeating-linear-gradient(to bottom, white, white 10px, transparent 10px, transparent 20px); z-index: 1; }
         .obstacle-zone { position: absolute; left: 3500px; width: 1500px; height: 100%; background-color: rgba(255, 0, 0, 0.2); z-index: 0; border-left: 2px dashed red; border-right: 2px dashed red; }
         .obstacle-label { position: absolute; left: 3510px; top: 10px; color: #ff5555; font-weight: bold; font-size: 20px; z-index: 1; text-shadow: 1px 1px 2px black; }
         .finish-line { position: absolute; left: 9800px; top: 0; bottom: 0; width: 20px; background: repeating-linear-gradient(to bottom, white, white 20px, black 20px, black 40px); z-index: 1; }
         
-        .runner { position: absolute; width: auto; height: 28px; background-color: white; color: black; border: 2px solid #333; border-radius: 14px; padding: 0 12px; line-height: 24px; font-weight: bold; font-size: 13px; white-space: nowrap; z-index: 2; box-shadow: 2px 2px 5px rgba(0,0,0,0.4); }
-        .stamina-bar-bg { position: absolute; bottom: -6px; left: 10%; width: 80%; height: 5px; background-color: #333; border-radius: 3px; overflow: hidden; border: 1px solid #fff; }
+        /* 🎨 주자 컨테이너 및 2D 스프라이트 설정 */
+        .runner-container { position: absolute; width: 50px; height: 50px; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+        
+        .runner-name-tag { font-size: 11px; font-weight: bold; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; position: absolute; top: -15px; white-space: nowrap; z-index: 3; box-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        
+        /* 캐릭터 이미지 클래스 */
+        .runner-sprite { width: 100%; height: 100%; background-image: url('runner.png'); background-size: contain; background-repeat: no-repeat; background-position: bottom center; z-index: 2; }
+        
+        /* 🏃‍♂️ 달리기 애니메이션: 좌우로 흔들며 위아래로 뽈뽈뽈 */
+        @keyframes runWiggle {
+            0% { transform: translateY(0px) rotate(-12deg); }
+            100% { transform: translateY(-8px) rotate(12deg); }
+        }
+        
+        .stamina-bar-bg { position: absolute; bottom: -8px; width: 80%; height: 5px; background-color: #333; border-radius: 3px; overflow: hidden; border: 1px solid #fff; z-index: 3; }
         .stamina-bar-fill { width: 100%; height: 100%; background-color: #00ff00; }
-        .stunned { background-color: #555 !important; color: white !important; transform: rotate(-15deg); }
-        .immune { opacity: 0.5; }
+        
+        /* 스턴(기절) 시 애니메이션 멈추고 거무튀튀하게 */
+        .stunned-sprite { filter: grayscale(100%) brightness(50%) !important; animation-play-state: paused !important; transform: rotate(-20deg) translateY(10px) !important; }
+        .immune-sprite { opacity: 0.5; }
 
         .cutin { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #ult-cutin { background: rgba(50,0,0,0.8); }
@@ -107,7 +120,7 @@
         </div>
 
         <div id="debug-panel">
-            <h3>📊 출전 선수 스탯 분석 (고무줄 보정 적용)</h3>
+            <h3>📊 출전 선수 스탯 분석</h3>
             <table>
                 <thead>
                     <tr>
@@ -131,7 +144,6 @@
         // 백엔드 API (Render 서버 주소)
         const API_BASE = "https://gonik-musume.onrender.com/api"; 
         
-        // 시드 난수 발생기
         let seededRandom = Math.random; 
         function xmur3(str) {
             for(var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
@@ -153,7 +165,6 @@
             }
         }
 
-        // 모바일 화면 맞춤형 스케일 조절 함수
         function resizeGame() {
             const wrapper = document.getElementById('game-scale-wrapper');
             if (wrapper.style.display !== 'none') {
@@ -163,13 +174,12 @@
         }
         window.addEventListener('resize', resizeGame);
 
-        // 고정 타임스텝 엔진 변수
         const TICK_RATE = 60; 
         const TICK_DT = 1.0 / TICK_RATE; 
         const TICK_MS = 1000 / TICK_RATE;
         let accumulator = 0;
         let lastRealTime = 0;
-        let gameTime = 0; // 가상 게임 경과 시간(초)
+        let gameTime = 0; 
 
         let roomData = null;
         let runners = [];
@@ -199,10 +209,7 @@
             const statusDiv = document.getElementById('lobby-status');
             const btn = document.getElementById('createBtn');
 
-            if (!urlInput.trim()) {
-                statusDiv.innerText = "URL을 입력해주세요.";
-                return;
-            }
+            if (!urlInput.trim()) { statusDiv.innerText = "URL을 입력해주세요."; return; }
 
             statusDiv.innerText = "참가자 데이터를 수집 중입니다... (약 2~5초 소요)";
             btn.disabled = true;
@@ -295,9 +302,13 @@
                 isPaused = false;
                 runner.stats.speed += 35; 
                 runner.isUltimateActive = true;
+                
+                // 필살기 사용 시 스프라이트 발광 효과 추가
+                runner.spriteEl.style.filter += " drop-shadow(0 0 10px #ffeb3b) brightness(1.2)";
+                
                 focusRunner = runner;
-                focusEndTime = gameTime + 3.0; // 3초간 집중
-                lastRealTime = Date.now(); // 일시정지 보정
+                focusEndTime = gameTime + 3.0; 
+                lastRealTime = Date.now(); 
                 requestAnimationFrame(gameLoop); 
             }, 2000); 
         }
@@ -307,13 +318,13 @@
             seededRandom = mulberry32(seedNumber);
 
             const debugTbody = document.getElementById('debug-tbody');
-            const requiredHeight = Math.max(360, roomData.participants.length * 40 + 40);
+            // 주자 높이(50px)를 고려해 게임창 높이 조정
+            const requiredHeight = Math.max(450, roomData.participants.length * 55 + 50);
             document.getElementById('game-window').style.height = requiredHeight + 'px';
             debugTbody.innerHTML = '';
             
             runners = [];
             roomData.participants.forEach((name, index) => {
-                // 편차 완화: 기본 40 보장 + 110 랜덤 분배
                 let baseStats = [40, 40, 40, 40, 40]; 
                 let remain = 110; 
                 while(remain > 0) {
@@ -342,19 +353,44 @@
                 const rowIndex = Math.floor(index / MAX_LANES); 
                 let startX = 250 - (rowIndex * 70);
 
+                // 🎨 1. 주자 컨테이너 생성
                 const runnerEl = document.createElement('div');
-                runnerEl.className = 'runner';
-                runnerEl.innerText = name; 
-                runnerEl.style.top = `${20 + (laneIndex * 40)}px`;
+                runnerEl.className = 'runner-container';
+                runnerEl.style.top = `${20 + (laneIndex * 55)}px`;
 
+                // 📛 2. 이름 태그
+                const nameTag = document.createElement('div');
+                nameTag.className = 'runner-name-tag';
+                nameTag.innerText = name;
+                runnerEl.appendChild(nameTag);
+
+                // 🐶 3. 캐릭터 스프라이트 적용 (팔레트 스왑)
+                const sprite = document.createElement('div');
+                sprite.className = 'runner-sprite';
+                // 랜덤한 각도로 색상을 비틀어줌 (0 ~ 360도)
+                const randomHue = Math.floor(seededRandom() * 360);
+                // 기본적으로 hue-rotate 필터를 적용해둠
+                sprite.style.filter = `hue-rotate(${randomHue}deg)`;
+                
+                // 각질에 따라 뛰는 애니메이션 속도 조절
+                let animSpeed = 0.5;
+                if (strategy === "도주") animSpeed = 0.35;
+                if (strategy === "추입") animSpeed = 0.6;
+                // 애니메이션 적용
+                sprite.style.animation = `runWiggle ${animSpeed}s infinite alternate ease-in-out`;
+                runnerEl.appendChild(sprite);
+
+                // ⚡ 4. 스태미나 바
                 const staminaBarBg = document.createElement('div');
                 staminaBarBg.className = 'stamina-bar-bg';
                 const staminaFill = document.createElement('div');
                 staminaFill.className = 'stamina-bar-fill';
                 staminaBarBg.appendChild(staminaFill);
                 runnerEl.appendChild(staminaBarBg);
+                
                 document.getElementById('track').appendChild(runnerEl);
 
+                // 🗺️ 미니맵 점
                 const dotEl = document.createElement('div');
                 dotEl.className = 'minimap-dot';
                 dotEl.innerText = name.substring(0, 1);
@@ -362,7 +398,7 @@
                 document.getElementById('minimap-container').appendChild(dotEl);
 
                 runners.push({
-                    name: name, element: runnerEl, staminaFillEl: staminaFill, dotElement: dotEl,
+                    name: name, element: runnerEl, spriteEl: sprite, baseHue: randomHue, staminaFillEl: staminaFill, dotElement: dotEl,
                     x: startX, stats: stats, strategy: strategy,
                     speedBoost: 1.0, hasSkill: true,
                     stunnedUntil: 0, immuneUntil: 0, 
@@ -376,7 +412,7 @@
                     <td>${stats.guts.toFixed(1)}</td><td>${stats.intel.toFixed(1)}</td>
                     <td style="font-weight:bold;">${strategy}</td></tr>`;
             });
-            renderFrame(); // 초기 위치 렌더링
+            renderFrame(); 
         }
 
         function startRace() {
@@ -384,11 +420,10 @@
             isRacing = true;
             isPaused = false;
             lastRealTime = Date.now();
-            showCommentary("🏁 출발했습니다! 대열을 갗추며 레이스가 시작됩니다.");
+            showCommentary("🏁 출발했습니다! 뽈뽈뽈 귀여운 레이스가 시작됩니다.");
             requestAnimationFrame(gameLoop);
         }
 
-        // 🌟 메인 루프: 시간 누적 및 고정 타임스텝 실행
         function gameLoop() {
             if (isPaused) return;
             let now = Date.now();
@@ -396,18 +431,16 @@
             lastRealTime = now;
             accumulator += frameTime;
 
-            // 프레임 오차 방지를 위해 남은 시간이 TICK_MS(16.6ms) 이상일 때마다 물리 연산
             while (accumulator >= TICK_MS && !raceEnded) {
                 updatePhysics(TICK_DT);
                 accumulator -= TICK_MS;
                 gameTime += TICK_DT;
             }
-            renderFrame(); // 계산된 좌표를 화면에 그리기
+            renderFrame(); 
             
             if (!raceEnded && !isPaused) requestAnimationFrame(gameLoop);
         }
 
-        // 🌟 동기화의 핵심: 모든 순수 확률 연산 및 위치 이동
         function updatePhysics(dt) {
             leaderX = 0;
             currentLeader = null;
@@ -415,11 +448,11 @@
 
             if (leaderX > OBSTACLE_START && obstacleZoneActivatedAt === -1) {
                 obstacleZoneActivatedAt = gameTime;
-                showCommentary("🚧 선두 그룹이 위험 지대에 진입했습니다!");
+                showCommentary("🚧 선두 그룹이 덫 지대에 진입했습니다!");
             }
             if (leaderX > OBSTACLE_END && obstacleZoneClearedTime === -1) {
                 obstacleZoneClearedTime = gameTime;
-                showCommentary("💨 선두 주자가 장애물 구간을 돌파했습니다!");
+                showCommentary("💨 선두 주자가 위험 구간을 무사히 돌파했습니다!");
             }
 
             if (!ultimateUsed && obstacleZoneClearedTime !== -1 && (gameTime - obstacleZoneClearedTime >= 2.0)) {
@@ -460,13 +493,13 @@
                                 if(stunDur < 0.3) stunDur = 0.3;
                                 runner.stunnedUntil = gameTime + stunDur;
                                 runner.immuneUntil = runner.stunnedUntil + 1.5; 
-                                if(runner === currentLeader) showCommentary(`🚨 선두 ${runner.name}, 덫에 걸렸습니다!!`);
+                                if(runner === currentLeader) showCommentary(`🚨 선두 ${runner.name}, 덫에 넘어졌습니다!!`);
                             }
                         }
                     }
                 }
                 
-                if (gameTime < runner.stunnedUntil) return; // 기절 상태면 이동 스킵
+                if (gameTime < runner.stunnedUntil) return; 
 
                 let skillDisabled = (leaderX > FINISH_LINE * 0.85) || !(runner.x > FINISH_LINE * 0.20);
                 let isGlobalCooldown = (gameTime - lastSkillTime < 5.0);
@@ -477,7 +510,7 @@
                     lastSkillTime = gameTime;
                     runner.speedBoost = 2.0;
                     runner.isNormalSkillActive = true;
-                    showCommentary(`💡 [스킬] ${runner.name} 선수가 매끄럽게 치고 나갑니다!`);
+                    showCommentary(`💡 [스킬] ${runner.name} 선수가 가속합니다!`);
                 }
 
                 let strategyMultiplier = 1.0;
@@ -497,25 +530,23 @@
                 if (runner.speedBoost > 1.0) runner.speedBoost -= 0.015 * (dt * 60); 
                 else { runner.speedBoost = 1.0; runner.isNormalSkillActive = false; }
 
-                // 🏁 핵심 개선: 거리 비례 고무줄(추격) 버프 도입
                 let catchUpMod = 1.0;
                 let distanceToLeader = leaderX - runner.x;
                 if (distanceToLeader > 300) {
-                    catchUpMod = 1.0 + Math.min(0.25, distanceToLeader / 4000); // 멀어질수록 최대 25% 가속
+                    catchUpMod = 1.0 + Math.min(0.25, distanceToLeader / 4000); 
                 }
 
-                // 템포 하향 (기존 0.08 -> 0.055)
                 let moveAmount = (runner.stats.speed * 0.055) * strategyMultiplier * staminaMod * gutsMod * runner.speedBoost * catchUpMod * (seededRandom() * 0.2 + 0.9);
                 runner.x += moveAmount * (dt * 60);
 
                 if (runner.x >= FINISH_LINE && !raceEnded) {
                     raceEnded = true;
-                    showCommentary(`🏆 우승! [${runner.name}] 선수가 가장 먼저 결승선을 통과했습니다!`);
+                    showCommentary(`🏆 결승선 통과! [${runner.name}] 우승!`);
                 }
             });
         }
 
-        // 🌟 렌더링 로직 (데이터를 바탕으로 CSS만 그림)
+        // 🌟 화면 렌더링 부 (2D 스프라이트 시각화)
         function renderFrame() {
             runners.forEach(runner => {
                 runner.element.style.left = runner.x + 'px';
@@ -524,13 +555,32 @@
                 runner.staminaFillEl.style.width = staminaPercent + '%';
                 if (runner.currentStamina <= 0) runner.staminaFillEl.style.backgroundColor = 'red';
 
-                if (gameTime < runner.stunnedUntil) runner.element.classList.add('stunned');
-                else runner.element.classList.remove('stunned');
+                // 상태에 따른 스프라이트 애니메이션 제어
+                let isStunned = (gameTime < runner.stunnedUntil);
+                let isFinished = runner.x >= FINISH_LINE;
                 
-                if (gameTime < runner.immuneUntil && gameTime >= runner.stunnedUntil) runner.element.classList.add('immune');
-                else runner.element.classList.remove('immune');
-
-                if (runner.isUltimateActive) runner.element.style.backgroundColor = '#ffd700';
+                if (isStunned) {
+                    // 기절 시 거무튀튀하게 멈춤
+                    runner.spriteEl.className = 'runner-sprite stunned-sprite';
+                    runner.spriteEl.style.filter = `hue-rotate(${runner.baseHue}deg) grayscale(100%) brightness(50%)`;
+                } else if (isFinished) {
+                    // 결승선 통과 시 제자리에 서있음 (애니메이션 정지)
+                    runner.spriteEl.className = 'runner-sprite';
+                    runner.spriteEl.style.animationPlayState = 'paused';
+                    runner.spriteEl.style.transform = 'rotate(0deg) translateY(0px)';
+                } else {
+                    // 정상 달리기
+                    runner.spriteEl.className = 'runner-sprite';
+                    runner.spriteEl.style.animationPlayState = 'running';
+                    // 발광 이펙트는 필살기 지속시간 동안 유지
+                    if (runner.isUltimateActive) {
+                        runner.spriteEl.style.filter = `hue-rotate(${runner.baseHue}deg) drop-shadow(0 0 10px #ffeb3b) brightness(1.2)`;
+                    } else {
+                        runner.spriteEl.style.filter = `hue-rotate(${runner.baseHue}deg)`;
+                    }
+                }
+                
+                if (gameTime < runner.immuneUntil && gameTime >= runner.stunnedUntil) runner.spriteEl.classList.add('immune-sprite');
 
                 let minimapPercent = Math.max(0, Math.min((runner.x / TRACK_LENGTH) * 100, 100));
                 runner.dotElement.style.left = `calc(${minimapPercent}% - 7px)`;
@@ -540,7 +590,7 @@
                 else runner.dotElement.className = 'minimap-dot';
             });
 
-            // 🎥 핵심 개선: 카메라 우측 편향 이동 (선두가 600px 쯤에 위치하도록 당김)
+            // 카메라 위치 설정 (우측 70% 지점에 선두 고정)
             let cameraX = leaderX;
             if (focusRunner && gameTime < focusEndTime) cameraX = focusRunner.x;
             
