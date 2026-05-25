@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>고닉 무스메 Gonik Musume</title>
+    <title>고닉 무스메 (v18.0 파워 스탯 개편)</title>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #2c3e50; padding: 20px 0; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; overflow-x: hidden; }
         h1 { text-align: center; margin-bottom: 5px; }
@@ -27,11 +27,10 @@
         
         #minimap-container { width: 100%; height: 60px; background-color: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 10px; margin-bottom: 10px; position: relative; overflow: hidden; }
         #minimap-viewport { position: absolute; top: 0; height: 100%; width: 20%; border: 2px solid rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.2); box-sizing: border-box; z-index: 3; pointer-events: none; }
-        .minimap-dot { position: absolute; width: 14px; height: 14px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; font-size: 9px; color: black; font-weight: bold; text-align: center; line-height: 12px; box-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .minimap-dot { position: absolute; width: 14px; height: 14px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; font-size: 9px; color: black; font-weight: bold; text-align: center; line-height: 12px; box-shadow: 1px 1px 2px rgba(0,0,0,0.5); transition: left 0.1s linear; }
         .skill-active { background-color: #00e5ff !important; box-shadow: 0 0 10px 4px #00e5ff !important; z-index: 6; }
         .ult-active { background-color: #ffeb3b !important; box-shadow: 0 0 15px 5px #ff5722 !important; z-index: 7; transform: scale(1.3); }
 
-        /* 경기장 8레인 높이 고정 및 줌인 트랜지션 */
         #game-window { position: relative; width: 100%; height: 470px; background-color: #55a630; border: 4px solid #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s; }
         #track { position: absolute; left: 0; top: 0; width: 10000px; height: 100%; background-image: repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(255,255,255,0.1) 100px, rgba(255,255,255,0.1) 102px); }
         .start-line { position: absolute; left: 280px; top: 0; bottom: 0; width: 8px; background: repeating-linear-gradient(to bottom, white, white 10px, transparent 10px, transparent 20px); z-index: 1; }
@@ -41,15 +40,23 @@
         
         .runner-container { position: absolute; width: 50px; height: 50px; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
         .runner-name-tag { font-size: 11px; font-weight: bold; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; position: absolute; top: -15px; white-space: nowrap; z-index: 4; box-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .runner-sprite { width: 100%; height: 100%; background-image: url('runner.png'); background-size: contain; background-repeat: no-repeat; background-position: bottom center; z-index: 3; }
+        .runner-sprite { width: 100%; height: 100%; background-image: url('runner.png'); background-size: contain; background-repeat: no-repeat; background-position: bottom center; z-index: 3; transition: filter 0.2s; }
         
         @keyframes runWiggle {
             0% { transform: translateY(0px) rotate(-12deg); }
             100% { transform: translateY(-8px) rotate(12deg); }
         }
         
+        /* 💡 파워에 밀려서 비틀거리는 몸싸움 시각 효과 */
+        @keyframes bodyCheckShake {
+            0% { transform: translateX(-2px) translateY(-2px); }
+            50% { transform: translateX(2px) translateY(2px); }
+            100% { transform: translateX(-2px) translateY(-2px); }
+        }
+        .struggling { animation: bodyCheckShake 0.1s infinite !important; }
+
         .stamina-bar-bg { position: absolute; bottom: -8px; width: 80%; height: 5px; background-color: #333; border-radius: 3px; overflow: hidden; border: 1px solid #fff; z-index: 4; }
-        .stamina-bar-fill { width: 100%; height: 100%; background-color: #00ff00; }
+        .stamina-bar-fill { width: 100%; height: 100%; background-color: #00ff00; transition: width 0.1s linear, background-color 0.2s; }
         .stunned-sprite { filter: grayscale(100%) brightness(50%) !important; animation-play-state: paused !important; transform: rotate(-20deg) translateY(10px) !important; }
         .immune-sprite { opacity: 0.5; }
 
@@ -68,11 +75,17 @@
         button:hover { background-color: #e68a00; transform: scale(1.05); }
         .btn-blue { background-color: #3498db; }
         .btn-blue:hover { background-color: #2980b9; }
+        
+        #debug-panel { width: 100%; background-color: #fff; color: #000; border-radius: 8px; padding: 15px; box-sizing: border-box; font-size: 13px; margin-top: 15px; margin-bottom: 30px; }
+        #debug-panel h3 { margin-top: 0; color: #d32f2f; text-align: center; }
+        table { width: 100%; border-collapse: collapse; text-align: center; }
+        th, td { border: 1px solid #ccc; padding: 6px; }
+        th { background-color: #eee; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>🐎 고닉 무스메 Gonik Musume</h1>
+    <h1>🐎 고닉 무스메 챔피언스 미팅</h1>
     
     <div id="lobby-panel">
         <h2>🏆 대회 준비 및 참가자 스크리닝</h2>
@@ -85,7 +98,7 @@
         <div id="filter-box"></div>
         
         <div id="setup-box">
-            <label for="datetimeInput">⏰ 언제 레이스를 시작할까요? (예약 시간 설정)</label>
+            <label for="datetimeInput">⏰ 언제 레이스를 상영할까요? (예약 시간 설정)</label>
             <input type="datetime-local" id="datetimeInput">
             <br><br>
             <button onclick="createRoomFinal()" id="createFinalBtn" class="btn-blue">최종 대회 방 생성하기</button>
@@ -367,14 +380,21 @@
             const cutin = document.getElementById('ult-cutin');
             document.getElementById('ult-user').innerText = runner.name;
             cutin.style.display = 'flex';
-            showCommentary(`💥 기적의 스퍼트! 중위권의 ${runner.name}가 괴력을 발휘합니다!!`);
+            showCommentary(`💥 기적의 스퍼트! 중위권의 ${runner.name}가 궁극기를 발동합니다!!`);
 
             setTimeout(() => {
                 cutin.style.display = 'none';
                 isPaused = false;
+                
                 runner.stats.speed += 35; 
                 runner.isUltimateActive = true;
-                runner.spriteEl.style.filter += " drop-shadow(0 0 10px #ffeb3b) brightness(1.2)";
+                
+                runner.currentStamina += runner.maxStamina * 0.2;
+                if (runner.currentStamina > runner.maxStamina) runner.currentStamina = runner.maxStamina;
+                if (runner.isExhausted && runner.currentStamina >= runner.maxStamina / 3) {
+                    runner.isExhausted = false;
+                }
+
                 focusRunner = runner;
                 focusEndTime = gameTime + 3.0; 
                 lastRealTime = Date.now(); 
@@ -394,8 +414,8 @@
                 let remain = 110; 
                 while(remain > 0) {
                     let rIdx = Math.floor(seededRandom() * 5);
-                    if (baseStats[rIdx] < 80) {
-                        let add = Math.min(remain, 80 - baseStats[rIdx], Math.floor(seededRandom() * 5) + 1);
+                    if (baseStats[rIdx] < 100) {
+                        let add = Math.min(remain, 100 - baseStats[rIdx], Math.floor(seededRandom() * 5) + 1);
                         baseStats[rIdx] += add; remain -= add;
                     }
                 }
@@ -456,7 +476,10 @@
                     speedBoost: 1.0, hasSkill: true,
                     stunnedUntil: 0, immuneUntil: 0, 
                     maxStamina: stats.stamina * 38, currentStamina: stats.stamina * 38, 
-                    isNormalSkillActive: false, isUltimateActive: false, finished: false
+                    isNormalSkillActive: false, isUltimateActive: false, finished: false,
+                    isExhausted: false,
+                    currentSpeed: 0, // 💡 [파워 패치] 현재 가속도 상태 저장을 위한 변수
+                    isStruggling: false // 💡 [파워 패치] 몸싸움 패배(압박) 상태 확인용
                 });
 
                 debugTbody.innerHTML += `<tr><td><strong>${name}</strong></td>
@@ -491,6 +514,8 @@
             renderFrame(); 
             if (!raceEnded && !isPaused) requestAnimationFrame(gameLoop);
         }
+
+        let bodyCheckCommentaryCd = 0; // 몸싸움 해설 쿨타임
 
         function updatePhysics(dt) {
             leaderX = 0;
@@ -535,10 +560,40 @@
                 physicsDt = dt * 0.25; 
             }
 
+            // 💡 [파워 패치] 몸싸움/오라 억제 계산 (시작 3초 후 발동)
             runners.forEach(runner => {
-                if (runner.finished) return;
-                let trackPercent = runner.x / FINISH_LINE;
+                runner.isStruggling = false;
+                let auraDebuff = 1.0;
 
+                if (gameTime > 3.0 && !runner.finished && !runner.isExhausted) {
+                    runners.forEach(other => {
+                        if (runner !== other && !other.finished) {
+                            let distanceX = Math.abs(runner.x - other.x);
+                            // 40px 이내로 겹쳐서 달릴 때 (마군 형성)
+                            if (distanceX < 40) {
+                                // 내 파워가 상대보다 낮으면 짓눌림
+                                if (runner.stats.power < other.stats.power) {
+                                    let powerDiff = other.stats.power - runner.stats.power;
+                                    // 파워 차이와 거리에 비례하여 최대 30% 감속
+                                    let penalty = (powerDiff / 100) * 0.3 * (1 - (distanceX / 40));
+                                    auraDebuff -= penalty;
+                                }
+                            }
+                        }
+                    });
+                }
+                // 디버프 하한선 설정
+                auraDebuff = Math.max(0.7, auraDebuff);
+                if (auraDebuff < 0.85) runner.isStruggling = true; // 시각적 떨림 트리거
+
+                // 몸싸움 해설 가끔 출력
+                if (runner.isStruggling && gameTime > bodyCheckCommentaryCd && seededRandom() < 0.05) {
+                    showCommentary(`💥 마군 속 거친 몸싸움! 파워가 약한 주자가 밀려납니다.`);
+                    bodyCheckCommentaryCd = gameTime + 5.0; // 5초 쿨타임
+                }
+
+                // 덫 등 기존 로직
+                let trackPercent = runner.x / FINISH_LINE;
                 if (runner.x > OBSTACLE_START && runner.x < OBSTACLE_END) {
                     let isInStun = (gameTime < runner.stunnedUntil);
                     let isImmune = (gameTime < runner.immuneUntil);
@@ -559,9 +614,12 @@
                     }
                 }
                 
-                if (gameTime < runner.stunnedUntil) return; 
+                if (gameTime < runner.stunnedUntil) {
+                    runner.currentSpeed = 0; // 기절 시 속도 0으로 초기화
+                    return; 
+                }
 
-                let skillDisabled = (leaderX > FINISH_LINE * 0.85) || !(runner.x > FINISH_LINE * 0.20);
+                let skillDisabled = (leaderX > FINISH_LINE * 0.85) || !(runner.x > FINISH_LINE * 0.20) || (runner === currentLeader);
                 let isGlobalCooldown = (gameTime - lastSkillTime < 5.0);
                 let skillProb = 0.005 + (runner.stats.intel / 1000); 
 
@@ -570,7 +628,7 @@
                     lastSkillTime = gameTime;
                     runner.speedBoost = 2.0;
                     runner.isNormalSkillActive = true;
-                    showCommentary(`💡 [스킬] ${runner.name} 선수가 매끄럽게 치고 나갑니다!`);
+                    showCommentary(`💡 [스킬] ${runner.name} 선수가 가속합니다!`);
                 }
 
                 let strategyMultiplier = 1.0;
@@ -579,13 +637,28 @@
                 if (runner.strategy === "선입" && trackPercent > 0.4 && trackPercent < 0.75) strategyMultiplier = 1.15;
                 if (runner.strategy === "추입" && trackPercent > 0.7) strategyMultiplier = 1.25;
 
-                runner.currentStamina -= (runner.stats.speed * 0.025) * strategyMultiplier * physicsDt * 60; 
+                let staminaDrainMult = runner.isUltimateActive ? 0.5 : 1.0;
 
-                let staminaMod = 1.0;
-                if (runner.currentStamina <= 0 && trackPercent > 0.4) staminaMod = 0.5; 
+                // 근성 기반 탈진 회복 로직
+                if (runner.isExhausted) {
+                    let recoveryPerSec = (runner.maxStamina * runner.stats.guts) / 900;
+                    runner.currentStamina += recoveryPerSec * (physicsDt * 60);
 
-                let gutsMod = 1.0;
-                if (trackPercent > 0.7) gutsMod = 1.0 + (runner.stats.guts / 150);
+                    if (runner.currentStamina >= runner.maxStamina / 3) {
+                        runner.currentStamina = runner.maxStamina / 3;
+                        runner.isExhausted = false;
+                    }
+                } else {
+                    runner.currentStamina -= (runner.stats.speed * 0.025) * strategyMultiplier * staminaDrainMult * (physicsDt * 60); 
+                    if (runner.currentStamina <= 0) {
+                        runner.currentStamina = 0;
+                        runner.isExhausted = true;
+                        if (runner === currentLeader) showCommentary(`💦 헉헉.. 선두 [${runner.name}] 스태미나 고갈! 페이스가 떨어집니다.`);
+                    }
+                }
+
+                let staminaMod = runner.isExhausted ? 0.4 : 1.0; 
+                let gutsMod = 1.0; 
 
                 if (runner.speedBoost > 1.0) runner.speedBoost -= 0.015 * (physicsDt * 60); 
                 else { runner.speedBoost = 1.0; runner.isNormalSkillActive = false; }
@@ -596,8 +669,20 @@
                     catchUpMod = 1.0 + Math.min(0.25, distanceToLeader / 4000); 
                 }
 
-                let moveAmount = (runner.stats.speed * 0.055) * strategyMultiplier * staminaMod * gutsMod * runner.speedBoost * catchUpMod * (seededRandom() * 0.2 + 0.9);
-                runner.x += moveAmount * (physicsDt * 60);
+                // 💡 [파워 패치] 목표 최고 속도를 먼저 계산
+                let targetSpeed = (runner.stats.speed * 0.055) * strategyMultiplier * staminaMod * gutsMod * catchUpMod * (seededRandom() * 0.2 + 0.9);
+                
+                // 💡 [파워 패치] 파워에 비례한 가속도로 현재 속도를 목표 속도까지 끌어올림 (높을수록 확 가속됨)
+                let accelRate = (runner.stats.power / 100) * 1.5; 
+                if (runner.currentSpeed < targetSpeed) {
+                    runner.currentSpeed += (targetSpeed - runner.currentSpeed) * accelRate * (physicsDt * 60);
+                } else {
+                    runner.currentSpeed = targetSpeed; // 감속은 즉시 적용
+                }
+
+                // 최종 이동 거리에 스킬 부스트와 '몸싸움(오라) 디버프'를 곱해서 반영
+                let finalMoveAmount = runner.currentSpeed * runner.speedBoost * auraDebuff;
+                runner.x += finalMoveAmount * (physicsDt * 60);
 
                 if (runner.x >= FINISH_LINE && !raceEnded) {
                     raceEnded = true;
@@ -624,7 +709,12 @@
                 runner.element.style.left = runner.x + 'px';
                 let staminaPercent = Math.max(0, (runner.currentStamina / runner.maxStamina) * 100);
                 runner.staminaFillEl.style.width = staminaPercent + '%';
-                if (runner.currentStamina <= 0) runner.staminaFillEl.style.backgroundColor = 'red';
+                
+                if (runner.isExhausted) {
+                    runner.staminaFillEl.style.backgroundColor = '#ff5555';
+                } else {
+                    runner.staminaFillEl.style.backgroundColor = '#00ff00';
+                }
 
                 let isStunned = (gameTime < runner.stunnedUntil);
                 let isFinished = runner.x >= FINISH_LINE;
@@ -637,10 +727,17 @@
                     runner.spriteEl.style.animationPlayState = 'paused';
                     runner.spriteEl.style.transform = 'rotate(0deg) translateY(0px)';
                 } else {
-                    runner.spriteEl.className = 'runner-sprite running';
+                    // 💡 [파워 패치] 몸싸움에서 밀려서 억제당할 때 부들부들 떠는 클래스 추가
+                    let spriteClass = 'runner-sprite running';
+                    if (runner.isStruggling) spriteClass += ' struggling';
+                    runner.spriteEl.className = spriteClass;
+                    
                     runner.spriteEl.style.animationPlayState = 'running';
+                    
                     if (runner.isUltimateActive) {
                         runner.spriteEl.style.filter = `hue-rotate(${runner.baseHue}deg) drop-shadow(0 0 10px #ffeb3b) brightness(1.2)`;
+                    } else if (runner.isExhausted) {
+                        runner.spriteEl.style.filter = `hue-rotate(${runner.baseHue}deg) brightness(0.8) sepia(0.5)`;
                     } else {
                         runner.spriteEl.style.filter = `hue-rotate(${runner.baseHue}deg)`;
                     }
@@ -662,7 +759,6 @@
             let trackLeftOffset = Math.max(0, cameraX - 600);
             if (trackLeftOffset > TRACK_LENGTH - 900) trackLeftOffset = TRACK_LENGTH - 900;
             
-            // 🚨 버그 수정: 지붕 레이어(roof-layer)가 없는데 움직이려고 해서 발생한 에러 제거
             document.getElementById('track').style.left = -trackLeftOffset + 'px';
             document.getElementById('minimap-viewport').style.left = `${(trackLeftOffset / TRACK_LENGTH) * 100}%`;
         }
