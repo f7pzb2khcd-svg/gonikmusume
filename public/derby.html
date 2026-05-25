@@ -98,7 +98,7 @@
         <div id="filter-box"></div>
         
         <div id="setup-box">
-            <label for="datetimeInput">⏰ 언제 레이스를 시작할까요? (예약 시간 설정)</label>
+            <label for="datetimeInput">⏰ 언제 레이스를 상영할까요? (예약 시간 설정)</label>
             <input type="datetime-local" id="datetimeInput">
             <br><br>
             <button onclick="createRoomFinal()" id="createFinalBtn" class="btn-blue">최종 대회 방 생성하기</button>
@@ -386,11 +386,9 @@
                 cutin.style.display = 'none';
                 isPaused = false;
                 
-                // 💡 [궁극기 너프] 속도 보너스 35 -> 18로 대폭 감소
                 runner.stats.speed += 18; 
                 runner.isUltimateActive = true;
                 
-                // 💡 [궁극기 너프] 스태미나 회복량 20% -> 10%로 감소
                 runner.currentStamina += runner.maxStamina * 0.1;
                 if (runner.currentStamina > runner.maxStamina) runner.currentStamina = runner.maxStamina;
                 if (runner.isExhausted && runner.currentStamina >= runner.maxStamina / 3) {
@@ -475,6 +473,7 @@
                 runners.push({
                     name: name, element: runnerEl, spriteEl: sprite, baseHue: randomHue, staminaFillEl: staminaFill, dotElement: dotEl,
                     x: startX, stats: stats, strategy: strategy,
+                    lane: laneIndex, // 💡 [패치] 파워 판정용 레인(줄) 번호 저장
                     speedBoost: 1.0, hasSkill: true,
                     stunnedUntil: 0, immuneUntil: 0, 
                     maxStamina: stats.stamina * 38, currentStamina: stats.stamina * 38, 
@@ -497,7 +496,7 @@
             if (isRacing) return;
             isRacing = true; isPaused = false;
             lastRealTime = Date.now();
-            showCommentary("🏁 레이스 시작! 네 발로 뛰는 숨막히는 대결이 펼쳐집니다.");
+            showCommentary("🏁 레이스 시작! 갸샤욘들의 숨막히는 대결이 펼쳐집니다.");
             requestAnimationFrame(gameLoop);
         }
 
@@ -533,7 +532,6 @@
                 showCommentary("💨 선두 주자가 위험 구간을 무사히 돌파했습니다!");
             }
 
-            // 💡 [궁극기 너프] 발동 조건을 선두가 트랙의 75%를 지났을 때(극후반)로 대폭 늦춤
             if (!ultimateUsed && leaderX > FINISH_LINE * 0.75) {
                 let sortedRunners = [...runners].sort((a, b) => b.x - a.x);
                 let eligibleRunners = sortedRunners.slice(1).filter(r => r.x > 100);
@@ -567,14 +565,17 @@
                 runner.isStruggling = false;
                 let auraDebuff = 1.0;
 
-                if (gameTime > 3.0 && !runner.finished && !runner.isExhausted) {
+                // 💡 [패치] 파워 억제 발동 조건을 시작 5초 이후로 지연, 범위도 같은 줄 + 위아래 1줄(60px)로 축소
+                if (gameTime > 5.0 && !runner.finished && !runner.isExhausted) {
                     runners.forEach(other => {
                         if (runner !== other && !other.finished) {
                             let distanceX = Math.abs(runner.x - other.x);
-                            if (distanceX < 100) {
+                            let distanceLane = Math.abs(runner.lane - other.lane);
+                            
+                            if (distanceX < 60 && distanceLane <= 1) {
                                 if (runner.stats.power < other.stats.power) {
                                     let powerDiff = other.stats.power - runner.stats.power;
-                                    let penalty = (powerDiff / 50) * 0.5 * (1 - (distanceX / 100));
+                                    let penalty = (powerDiff / 50) * 0.5 * (1 - (distanceX / 60));
                                     auraDebuff -= penalty;
                                 }
                             }
@@ -634,7 +635,6 @@
                 if (runner.strategy === "선입" && trackPercent > 0.4 && trackPercent < 0.75) strategyMultiplier = 1.15;
                 if (runner.strategy === "추입" && trackPercent > 0.7) strategyMultiplier = 1.25;
 
-                // 💡 [궁극기 너프] 지속 중 스태미나 소모 감소율을 50%에서 20%로 하향 조정 (0.5 -> 0.8)
                 let staminaDrainMult = runner.isUltimateActive ? 0.8 : 1.0;
 
                 if (runner.isExhausted) {
