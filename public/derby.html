@@ -23,6 +23,7 @@
 
         #countdown-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; }
         #countdown-text { font-size: 80px; font-weight: bold; color: #ffeb3b; text-shadow: 0 0 20px #ff9800; margin-bottom: 20px; font-variant-numeric: tabular-nums; }
+        #sync-text { font-size: 16px; color: #00e5ff; margin-top: 10px; }
 
         #game-scale-wrapper { width: 900px; transform-origin: top center; display: none; flex-direction: column; align-items: center; transition: transform 0.2s; }
         
@@ -43,16 +44,8 @@
         .runner-name-tag { font-size: 11px; font-weight: bold; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; position: absolute; top: -15px; white-space: nowrap; z-index: 4; box-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
         .runner-sprite { width: 100%; height: 100%; background-image: url('runner.png'); background-size: contain; background-repeat: no-repeat; background-position: bottom center; z-index: 3; transition: filter 0.2s; }
         
-        @keyframes runWiggle {
-            0% { transform: translateY(0px) rotate(-12deg); }
-            100% { transform: translateY(-8px) rotate(12deg); }
-        }
-        
-        @keyframes bodyCheckShake {
-            0% { transform: translateX(-2px) translateY(-2px); }
-            50% { transform: translateX(2px) translateY(2px); }
-            100% { transform: translateX(-2px) translateY(-2px); }
-        }
+        @keyframes runWiggle { 0% { transform: translateY(0px) rotate(-12deg); } 100% { transform: translateY(-8px) rotate(12deg); } }
+        @keyframes bodyCheckShake { 0% { transform: translateX(-2px) translateY(-2px); } 50% { transform: translateX(2px) translateY(2px); } 100% { transform: translateX(-2px) translateY(-2px); } }
         .struggling { animation: bodyCheckShake 0.1s infinite !important; }
 
         .stamina-bar-bg { position: absolute; bottom: -8px; width: 80%; height: 5px; background-color: #333; border-radius: 3px; overflow: hidden; border: 1px solid #fff; z-index: 4; }
@@ -66,21 +59,35 @@
         .cutin-title { font-size: 30px; font-weight: bold; color: white; text-shadow: 2px 2px 4px #000; margin-bottom: 10px; }
         .cutin-name { font-size: 45px; font-weight: 900; color: #ffe082; text-shadow: 3px 3px 5px #000; }
 
-        #commentary-board { width: 100%; height: 120px; background-color: #fff; color: #000; border: 3px solid #333; border-radius: 8px; margin-top: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .msg-line { font-size: 14px; color: #888; margin-top: 4px; transition: all 0.3s ease; }
-        .msg-line.latest { font-size: 18px; font-weight: bold; color: #000; }
+        /* 👥 관중 실루엣 및 말풍선 UI */
+        #audience-layer { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; z-index: 8; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M10,60 a12,15 0 0,1 24,0 M30,60 a15,20 0 0,1 30,0 M55,60 a10,12 0 0,1 20,0 M75,60 a18,22 0 0,1 36,0 M100,60 a12,15 0 0,1 24,0' fill='rgba(0,0,0,0.5)'/%3E%3C/svg%3E"); pointer-events: none; }
+        .chat-bubble { position: absolute; bottom: 60px; background: rgba(255, 255, 255, 0.95); color: #000; padding: 6px 12px; border-radius: 15px; border-bottom-left-radius: 3px; font-size: 13px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); z-index: 9; animation: floatUp 3s ease-out forwards; pointer-events: none; }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            15% { transform: translateY(-15px) scale(1.1); opacity: 1; }
+            30% { transform: translateY(-20px) scale(1); opacity: 1; }
+            80% { transform: translateY(-50px) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-60px) scale(0.8); opacity: 0; }
+        }
+
+        #commentary-board { width: 100%; height: 90px; background-color: #fff; color: #000; border: 3px solid #333; border-radius: 8px; margin-top: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .msg-line { font-size: 13px; color: #888; margin-top: 3px; transition: all 0.3s ease; }
+        .msg-line.latest { font-size: 16px; font-weight: bold; color: #000; }
         .msg-line .icon { color: #e53935; }
+
+        /* 💬 채팅 입력 UI */
+        #chat-interface { width: 100%; background: #fff; padding: 10px; border-radius: 8px; margin-top: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .chat-macros { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+        .chat-macros button { padding: 6px 12px; font-size: 12px; font-weight: bold; background: #e0e0e0; color: #333; border: 1px solid #ccc; border-radius: 15px; cursor: pointer; transition: 0.2s; }
+        .chat-macros button:hover { background: #ffeb3b; }
+        .chat-input-row { display: flex; gap: 5px; }
+        .chat-input-row input { flex: 1; padding: 8px; border: 2px solid #ccc; border-radius: 5px; font-size: 14px; }
+        .chat-input-row button { padding: 8px 15px; background: #3498db; color: white; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+        .chat-input-row button:hover { background: #2980b9; }
 
         button { padding: 12px 25px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: #ff9800; color: white; border: none; border-radius: 8px; transition: 0.2s; }
         button:hover { background-color: #e68a00; transform: scale(1.05); }
         .btn-blue { background-color: #3498db; }
-        .btn-blue:hover { background-color: #2980b9; }
-        
-        #debug-panel { width: 100%; background-color: #fff; color: #000; border-radius: 8px; padding: 15px; box-sizing: border-box; font-size: 13px; margin-top: 15px; margin-bottom: 30px; }
-        #debug-panel h3 { margin-top: 0; color: #d32f2f; text-align: center; }
-        table { width: 100%; border-collapse: collapse; text-align: center; }
-        th, td { border: 1px solid #ccc; padding: 6px; }
-        th { background-color: #eee; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -98,7 +105,7 @@
         <div id="filter-box"></div>
         
         <div id="setup-box">
-            <label for="datetimeInput">⏰ 언제 레이스를 상영할까요? (예약 시간 설정)</label>
+            <label for="datetimeInput">⏰ 언제 레이스를 시작할까요? (예약 시간 설정)</label>
             <input type="datetime-local" id="datetimeInput">
             <br><br>
             <button onclick="createRoomFinal()" id="createFinalBtn" class="btn-blue">최종 대회 방 생성하기</button>
@@ -110,6 +117,7 @@
     <div id="countdown-overlay">
         <div id="countdown-info">데이터 로딩 완료. 경기 시작 대기 중...</div>
         <div id="countdown-text">00:00</div>
+        <div id="sync-text"></div>
     </div>
 
     <div id="game-scale-wrapper">
@@ -127,39 +135,34 @@
             
             <div id="ult-cutin" class="cutin">
                 <div id="ult-cutin-bg">
-                    <div class="cutin-title" style="color:#ffeb3b;">🔥 [각성! 궁극기 발동!] 🔥</div>
+                    <div class="cutin-title" style="color:#ffeb3b;">🔥 [각성! 갸샤욘의 폭주!] 🔥</div>
                     <div id="ult-user" class="cutin-name" style="color:#fff;">닉네임</div>
                 </div>
             </div>
+
+            <div id="audience-layer"></div>
         </div>
 
         <div id="commentary-board">
             <div class="msg-line latest"><span class="icon">▶</span> 선수들 게이트 진입 대기 중...</div>
         </div>
 
-        <div id="debug-panel">
-            <h3>📊 출전 선수 스탯 분석</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>닉네임</th>
-                        <th>컨디션</th>
-                        <th>스피드</th>
-                        <th>스태미나</th>
-                        <th>파워</th>
-                        <th>근성</th>
-                        <th>지능</th>
-                        <th>각질</th>
-                    </tr>
-                </thead>
-                <tbody id="debug-tbody">
-                </tbody>
-            </table>
+        <div id="chat-interface">
+            <div class="chat-macros">
+                <button onclick="sendChat('우오오오오!! 🔥')">우오오오오!! 🔥</button>
+                <button onclick="sendChat('가즈아아아아!! 🚀')">가즈아아아아!! 🚀</button>
+                <button onclick="sendChat('폼 미쳤다 ㄷㄷ')">폼 미쳤다 ㄷㄷ</button>
+                <button onclick="sendChat('방해물 억까 ㅋㅋㅋ')">방해물 억까 ㅋㅋㅋ</button>
+                <button onclick="sendChat('망겜 수준 ㅡㅡ')">망겜 수준 ㅡㅡ</button>
+            </div>
+            <div class="chat-input-row">
+                <input type="text" id="chatInput" placeholder="응원 메시지를 입력하세요 (엔터 전송)" onkeypress="if(event.key==='Enter') sendCustomChat()">
+                <button onclick="sendCustomChat()">응원하기</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // 백엔드 API 서버 주소
         const API_BASE = "https://gonik-musume.onrender.com/api"; 
         
         let seededRandom = Math.random; 
@@ -204,6 +207,7 @@
         let isRacing = false;
         let isPaused = false;
         let raceEnded = false;
+        let isFastForwarding = false; // 타임머신 동기화 플래그
         
         let lastSkillTime = -10;
         let ultimateUsed = false;
@@ -220,6 +224,39 @@
         const OBSTACLE_START = 3500;
         const OBSTACLE_END = 5000;
         const strategies = ["도주", "선행", "선입", "추입"];
+
+        // 💬 채팅 전송 로직 (현재는 UI 테스트용 시뮬레이션, 향후 Firebase 연동)
+        function sendCustomChat() {
+            const input = document.getElementById('chatInput');
+            if (input.value.trim() !== '') {
+                sendChat(input.value.trim());
+                input.value = '';
+            }
+        }
+
+        function sendChat(msg) {
+            // [Firebase] 향후 이 부분에 firebase.database().ref('chats').push({msg: msg}) 코드를 넣습니다.
+            // 현재는 내 화면에서 바로 말풍선이 뜨도록 연결
+            spawnChatBubble(msg);
+        }
+
+        function spawnChatBubble(msg) {
+            const gameWin = document.getElementById('game-window');
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.innerText = msg;
+            
+            // X좌표 랜덤 배치 (관중석 위)
+            const randomX = Math.random() * 80; // 0% ~ 80%
+            bubble.style.left = `${randomX}%`;
+            
+            gameWin.appendChild(bubble);
+            
+            // 애니메이션 끝나면 제거
+            setTimeout(() => {
+                if(gameWin.contains(bubble)) gameWin.removeChild(bubble);
+            }, 3000);
+        }
 
         let currentExtractedList = [];
         async function extractParticipants() {
@@ -350,8 +387,9 @@
 
         function startCountdown() {
             let timer = setInterval(() => {
-                const now = Math.floor(Date.now() / 1000);
-                let diff = roomData.scheduled_time - now;
+                const nowUnix = Math.floor(Date.now() / 1000);
+                let diff = roomData.scheduled_time - nowUnix;
+                
                 if (diff <= 0) {
                     clearInterval(timer);
                     document.getElementById('countdown-overlay').style.display = 'none';
@@ -362,9 +400,18 @@
                     document.getElementById('countdown-text').innerText = `${m}:${s}`;
                 }
             }, 1000);
+            
+            // 이미 예정 시간이 지난 경우(지각생) 즉시 실행하여 동기화 연산 시작
+            const nowUnix = Math.floor(Date.now() / 1000);
+            if (nowUnix >= roomData.scheduled_time) {
+                clearInterval(timer);
+                document.getElementById('sync-text').innerText = "경기가 이미 시작되었습니다. 실시간 동기화 중...";
+                setTimeout(startRace, 500); // 텍스트 보여주고 0.5초 뒤 동기화
+            }
         }
 
         function showCommentary(text) {
+            if (isFastForwarding) return; // 동기화(스킵) 중에는 해설 렌더링 생략
             const board = document.getElementById('commentary-board');
             const existing = board.querySelectorAll('.msg-line');
             existing.forEach(el => el.classList.remove('latest'));
@@ -375,7 +422,19 @@
             if (board.children.length > 5) board.removeChild(board.firstChild);
         }
 
+        // 💡 [패치] 궁극기 뽕맛 리워크: 즉발 부스터 + 고정 속도 너프
         function triggerUltimate(runner) {
+            // 지각생 타임머신 동기화 중일 경우 연출 캔슬하고 즉시 적용
+            if (isFastForwarding) {
+                runner.stats.speed += 8; // 고정 스탯 너프
+                runner.speedBoost = 3.5; // 로켓 엔진(즉발 부스트)
+                runner.isUltimateActive = true;
+                runner.currentStamina += runner.maxStamina * 0.1;
+                if (runner.currentStamina > runner.maxStamina) runner.currentStamina = runner.maxStamina;
+                if (runner.isExhausted && runner.currentStamina >= runner.maxStamina / 3) runner.isExhausted = false;
+                return;
+            }
+
             isPaused = true;
             const cutin = document.getElementById('ult-cutin');
             document.getElementById('ult-user').innerText = runner.name;
@@ -386,7 +445,8 @@
                 cutin.style.display = 'none';
                 isPaused = false;
                 
-                runner.stats.speed += 18; 
+                runner.stats.speed += 8; 
+                runner.speedBoost = 3.5; // 순간적으로 엄청난 가속 (서서히 줄어듦)
                 runner.isUltimateActive = true;
                 
                 runner.currentStamina += runner.maxStamina * 0.1;
@@ -430,7 +490,6 @@
                 };
 
                 const strategy = strategies[Math.floor(seededRandom() * strategies.length)];
-                
                 const laneIndex = index % MAX_LANES; 
                 const rowIndex = Math.floor(index / MAX_LANES); 
                 let startX = 250 - (rowIndex * 70);
@@ -473,14 +532,12 @@
                 runners.push({
                     name: name, element: runnerEl, spriteEl: sprite, baseHue: randomHue, staminaFillEl: staminaFill, dotElement: dotEl,
                     x: startX, stats: stats, strategy: strategy,
-                    lane: laneIndex, // 💡 [패치] 파워 판정용 레인(줄) 번호 저장
+                    lane: laneIndex, 
                     speedBoost: 1.0, hasSkill: true,
                     stunnedUntil: 0, immuneUntil: 0, 
                     maxStamina: stats.stamina * 38, currentStamina: stats.stamina * 38, 
                     isNormalSkillActive: false, isUltimateActive: false, finished: false,
-                    isExhausted: false,
-                    currentSpeed: 0, 
-                    isStruggling: false 
+                    isExhausted: false, currentSpeed: 0, isStruggling: false 
                 });
 
                 debugTbody.innerHTML += `<tr><td><strong>${name}</strong></td>
@@ -492,9 +549,26 @@
             renderFrame(); 
         }
 
+        // 💡 [패치] 지각생 타임머신(Absolute Sync) 로직
         function startRace() {
             if (isRacing) return;
+            document.getElementById('countdown-overlay').style.display = 'none';
             isRacing = true; isPaused = false;
+            
+            // 현재 시간이 예정 시간보다 얼마나 지났는지 확인
+            const nowRealUnix = Date.now() / 1000;
+            let elapsedSec = nowRealUnix - roomData.scheduled_time;
+
+            if (elapsedSec > 0) {
+                isFastForwarding = true;
+                // 지나간 시간만큼 엔진을 광속으로 돌려서 상태를 따라잡음
+                while (gameTime < elapsedSec && !raceEnded) {
+                    updatePhysics(TICK_DT);
+                    gameTime += TICK_DT;
+                }
+                isFastForwarding = false;
+            }
+
             lastRealTime = Date.now();
             showCommentary("🏁 레이스 시작! 갸샤욘들의 숨막히는 대결이 펼쳐집니다.");
             requestAnimationFrame(gameLoop);
@@ -548,7 +622,8 @@
                         if (randomVal <= sum) { luckyRunner = eligibleRunners[i]; break; }
                     }
                     triggerUltimate(luckyRunner);
-                    return; 
+                    if(isFastForwarding) return; // 동기화 중이면 return 하지 않고 계속 루프
+                    else return; 
                 }
             }
 
@@ -565,7 +640,6 @@
                 runner.isStruggling = false;
                 let auraDebuff = 1.0;
 
-                // 💡 [패치] 파워 억제 발동 조건을 시작 5초 이후로 지연, 범위도 같은 줄 + 위아래 1줄(60px)로 축소
                 if (gameTime > 5.0 && !runner.finished && !runner.isExhausted) {
                     runners.forEach(other => {
                         if (runner !== other && !other.finished) {
@@ -657,6 +731,7 @@
                 let staminaMod = runner.isExhausted ? 0.4 : 1.0; 
                 let gutsMod = 1.0; 
 
+                // 로켓 엔진(궁극기) 부스트가 서서히 원래대로 1.0으로 돌아옴
                 if (runner.speedBoost > 1.0) runner.speedBoost -= 0.015 * (physicsDt * 60); 
                 else { runner.speedBoost = 1.0; runner.isNormalSkillActive = false; }
 
@@ -686,6 +761,8 @@
         }
 
         function renderFrame() {
+            if (isFastForwarding) return; // 타임머신 동기화 중에는 렌더링을 완전히 꺼서 연산 자원 확보
+            
             const gameWin = document.getElementById('game-window');
             let isCloseRace = false;
             let sorted = [...runners].sort((a,b) => b.x - a.x);
