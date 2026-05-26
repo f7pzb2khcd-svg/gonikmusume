@@ -59,19 +59,11 @@
         .cutin-title { font-size: 30px; font-weight: bold; color: white; text-shadow: 2px 2px 4px #000; margin-bottom: 10px; }
         .cutin-name { font-size: 45px; font-weight: 900; color: #ffe082; text-shadow: 3px 3px 5px #000; }
 
-        /* 👥 관중 실루엣 (만세, 팔 흔들기 등 다양한 포즈 SVG) */
         #audience-layer { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; z-index: 8; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='60'%3E%3Ccircle cx='20' cy='35' r='8' fill='rgba(0,0,0,0.6)'/%3E%3Cpath d='M8,60 Q20,35 32,60' fill='rgba(0,0,0,0.6)'/%3E%3Ccircle cx='55' cy='25' r='8' fill='rgba(0,0,0,0.8)'/%3E%3Cpath d='M40,60 Q55,30 70,60' fill='rgba(0,0,0,0.8)'/%3E%3Cpath d='M45,45 Q40,25 35,20 M65,45 Q70,25 75,20' stroke='rgba(0,0,0,0.8)' stroke-width='4' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='85' cy='38' r='6' fill='rgba(0,0,0,0.5)'/%3E%3Cpath d='M75,60 Q85,45 95,60' fill='rgba(0,0,0,0.5)'/%3E%3Ccircle cx='115' cy='28' r='7' fill='rgba(0,0,0,0.7)'/%3E%3Cpath d='M100,60 Q115,35 130,60' fill='rgba(0,0,0,0.7)'/%3E%3Cpath d='M105,45 L95,25 M125,45 L135,25' stroke='rgba(0,0,0,0.7)' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='150' cy='36' r='8' fill='rgba(0,0,0,0.6)'/%3E%3Cpath d='M135,60 Q150,40 165,60' fill='rgba(0,0,0,0.6)'/%3E%3Ccircle cx='180' cy='22' r='8' fill='rgba(0,0,0,0.8)'/%3E%3Cpath d='M165,60 Q180,30 195,60' fill='rgba(0,0,0,0.8)'/%3E%3Cpath d='M175,40 Q165,20 160,15' stroke='rgba(0,0,0,0.8)' stroke-width='4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E"); pointer-events: none; }
         
-        /* 💬 말풍선 UI (아래로 향하는 꼬리 추가) */
         .chat-bubble { position: absolute; bottom: 65px; background: rgba(255, 255, 255, 0.95); color: #000; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); z-index: 9; animation: floatUp 3s ease-out forwards; pointer-events: none; transform: translateX(-50%); }
         .chat-bubble::after { content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); border-width: 6px 6px 0; border-style: solid; border-color: rgba(255, 255, 255, 0.95) transparent transparent transparent; display: block; width: 0; }
-        @keyframes floatUp {
-            0% { bottom: 60px; scale: 0.5; opacity: 0; }
-            15% { bottom: 75px; scale: 1.1; opacity: 1; }
-            30% { bottom: 80px; scale: 1; opacity: 1; }
-            80% { bottom: 100px; scale: 1; opacity: 0.8; }
-            100% { bottom: 110px; scale: 0.8; opacity: 0; }
-        }
+        @keyframes floatUp { 0% { bottom: 60px; scale: 0.5; opacity: 0; } 15% { bottom: 75px; scale: 1.1; opacity: 1; } 30% { bottom: 80px; scale: 1; opacity: 1; } 80% { bottom: 100px; scale: 1; opacity: 0.8; } 100% { bottom: 110px; scale: 0.8; opacity: 0; } }
 
         #commentary-board { width: 100%; height: 90px; background-color: #fff; color: #000; border: 3px solid #333; border-radius: 8px; margin-top: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .msg-line { font-size: 13px; color: #888; margin-top: 3px; transition: all 0.3s ease; }
@@ -244,7 +236,6 @@
             bubble.className = 'chat-bubble';
             bubble.innerText = msg;
             
-            // 말풍선이 화면 좌우 끝을 벗어나지 않게 범위 조정 (10% ~ 90%)
             const randomX = 10 + Math.random() * 80; 
             bubble.style.left = `${randomX}%`;
             
@@ -369,11 +360,10 @@
                 roomData = resData.data;
                 document.getElementById('game-scale-wrapper').style.display = 'flex';
                 resizeGame();
-                initRunners();
+                initRunners(); // 표 업데이트 코드 완벽 삭제됨
                 document.getElementById('countdown-overlay').style.display = 'flex';
                 startCountdown();
             } catch (err) {
-                // 💡 상세 에러 원인 표기 및 안내
                 alert(`방 정보를 불러올 수 없습니다. (상세 에러: ${err.message})\n\n※ 일정 시간 사용하지 않아 Render 무료 서버 메모리가 초기화되었을 수 있습니다. 다시 방을 파주세요!`);
             }
         };
@@ -455,8 +445,6 @@
         function initRunners() {
             let seedNumber = xmur3(roomData.seed)(); 
             seededRandom = mulberry32(seedNumber);
-            const debugTbody = document.getElementById('debug-tbody');
-            debugTbody.innerHTML = '';
             runners = [];
             
             roomData.participants.forEach((name, index) => {
@@ -527,12 +515,6 @@
                     isNormalSkillActive: false, isUltimateActive: false, finished: false,
                     isExhausted: false, currentSpeed: 0, isStruggling: false 
                 });
-
-                debugTbody.innerHTML += `<tr><td><strong>${name}</strong></td>
-                    <td style="color:${condIdx>=3?'blue':(condIdx<=1?'red':'black')}">${conditions[condIdx]}</td>
-                    <td>${stats.speed.toFixed(1)}</td><td>${stats.stamina.toFixed(1)}</td><td>${stats.power.toFixed(1)}</td>
-                    <td>${stats.guts.toFixed(1)}</td><td>${stats.intel.toFixed(1)}</td>
-                    <td style="font-weight:bold;">${strategy}</td></tr>`;
             });
             renderFrame(); 
         }
