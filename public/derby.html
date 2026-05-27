@@ -439,19 +439,21 @@
                     OBSTACLE_START = 7000;
                     OBSTACLE_END = 8500;
 
+                    // 💡 구역이 겹치지 않도록 깔끔하게 재배치
                     trackEl.innerHTML = `
                         <div class="start-line"></div>
-                        <div class="zone-label" style="left: 3000px; width: 3000px; background: linear-gradient(to right, rgba(0,150,255,0.2), rgba(0,150,255,0.05)); border-left: 3px solid #00e5ff;">🔄 우코너 (인코스: 아래)</div>
+                        <div class="zone-label" style="left: 3000px; width: 2500px; background: linear-gradient(to right, rgba(0,150,255,0.2), rgba(0,150,255,0.05)); border-left: 3px solid #00e5ff;">🔄 커브 구간 (원심력 발생)</div>
+                        
                         <div class="obstacle-zone" style="left: 7000px; width: 1500px;"></div>
                         <div class="obstacle-label" style="left: 7010px;">🚧 위험 지대 🚧</div>
-                        <div class="zone-label" style="left: 9000px; width: 3000px; background: linear-gradient(to right, rgba(255,100,0,0.2), rgba(255,100,0,0.05)); border-left: 3px solid #ff9800;">⛰️ 마의 오르막길 (파워/스태미나 감소)</div>
-                        <div class="zone-label" style="left: 12000px; width: 3000px; background: linear-gradient(to right, rgba(0,150,255,0.2), rgba(0,150,255,0.05)); border-left: 3px solid #00e5ff;">🔄 좌코너 (인코스: 위)</div>
-                        <div class="zone-label" style="left: 15000px; width: 2000px; background: linear-gradient(to right, rgba(0,255,100,0.2), rgba(0,255,100,0.05)); border-left: 3px solid #00ff00;">🎢 내리막길 (무료 가속)</div>
                         
-                        <div id="boss-trail" style="display:none; position:absolute; top:0; height:100%; background:rgba(0,255,0,0.3); z-index:0; border-bottom: 5px solid #00ff00;"></div>
-                        <img id="boss-character" src="Boss.gif" style="display:none; position:absolute; bottom:-10px; width:250px; z-index:4; filter: drop-shadow(0 0 15px #00ff00);">
+                        <div class="zone-label" style="left: 10000px; width: 2000px; background: linear-gradient(to right, rgba(255,100,0,0.2), rgba(255,100,0,0.05)); border-left: 3px solid #ff9800;">⛰️ 마의 오르막길 (파워 필요)</div>
+                        <div class="zone-label" style="left: 13000px; width: 2000px; background: linear-gradient(to right, rgba(0,255,100,0.2), rgba(0,255,100,0.05)); border-left: 3px solid #00ff00;">🎢 내리막길 (무료 가속)</div>
                         
-                        <div class="zone-label" style="left: 17000px; width: 2000px; background: linear-gradient(to right, rgba(255,200,0,0.2), rgba(255,200,0,0.05)); border-left: 3px dashed #ffd700; color: #ffd700;">🍔 징버거 보급 투하 구역</div>
+                        <div id="boss-trail" style="display:none; position:absolute; top:0; height:100%; background:rgba(0,100,0,0.4); z-index:0; border-bottom: 5px solid #00ff00;"></div>
+                        <img id="boss-character" src="Boss.gif" style="display:none; position:absolute; bottom:-10px; width:300px; z-index:4; filter: drop-shadow(0 0 15px #00ff00);">
+                        
+                        <div class="zone-label" style="left: 17500px; width: 1500px; background: linear-gradient(to right, rgba(255,200,0,0.2), rgba(255,200,0,0.05)); border-left: 3px dashed #ffd700; color: #ffd700;">🍔 징버거 보급 투하 구역</div>
                         <div id="burger-container"></div>
                         
                         <div class="finish-line" style="left: 19600px;"></div>
@@ -703,11 +705,11 @@
                 showCommentary("💨 선두 주자가 위험 구간을 무사히 돌파했습니다!");
             }
 
-            // 🐌 거대 보스(달팽왁) 장판 기믹
+           // 🐌 거대 보스(달팽왁) 장판 기믹
             if (roomData.map_type === 'long') {
-                if (!bossActive && leaderX >= 13000) {
+                if (!bossActive && leaderX >= 15500) {
                     bossActive = true;
-                    bossStartX = leaderX + 1000; // 1등 앞 1000m에서 등장
+                    bossStartX = leaderX + 800; // 1등 앞 800m에서 등장
                     bossX = bossStartX;
                     showCommentary("🚨 [경고] 으악! 선두 앞쪽에 거대 달팽왁이 등장해 트랙을 맹독으로 덮고 있습니다!");
                     
@@ -804,56 +806,37 @@
                     });
                 }
 
+                // 💡 [패치] 짜치는 Y축 이동 삭제, 구역 재배치에 따른 순수 속도/스태미나 기믹만 남김
                 let terrainSpeedMult = 1.0;
                 let terrainStaminaMult = 1.0;
-                let targetY = runner.baseY;
-                let driftForce = 0;
+                runner.y = runner.baseY; // 위아래 이동 안 함 (자기 레인 유지)
+                runner.lane = Math.floor((runner.y - 20) / 52);
 
                 if (roomData.map_type === 'long') {
-                    if (runner.x >= 3000 && runner.x < 6000) {
-                        targetY = 400; 
-                        driftForce = (runner.currentSpeed / 100) * (100 - runner.stats.intel) * -0.04;
-                        let outCoursePenalty = Math.max(0, (400 - runner.y) / 380) * 0.15;
-                        terrainSpeedMult = 1.0 - outCoursePenalty;
-                    } else if (runner.x >= 12000 && runner.x < 15000) {
-                        targetY = 20;
-                        driftForce = (runner.currentSpeed / 100) * (100 - runner.stats.intel) * 0.04;
-                        let outCoursePenalty = Math.max(0, (runner.y - 20) / 380) * 0.15; 
-                        terrainSpeedMult = 1.0 - outCoursePenalty;
-                    } else if (runner.x >= 9000 && runner.x < 12000) {
+                    if (runner.x >= 3000 && runner.x < 5500) { // 코너링
+                        let cornerPenalty = (100 - runner.stats.intel) / 100 * 0.15; // 지능 낮으면 원심력에 의해 감속
+                        terrainSpeedMult = 1.0 - cornerPenalty;
+                    } else if (runner.x >= 10000 && runner.x < 12000) { // 오르막길
                         terrainSpeedMult = 0.6 + (runner.stats.power / 100) * 0.4; 
                         terrainStaminaMult = 1.5; 
-                    } else if (runner.x >= 15000 && runner.x < 17000) {
+                    } else if (runner.x >= 13000 && runner.x < 15000) { // 내리막길
                         terrainSpeedMult = 1.35;
                         terrainStaminaMult = 0.0; 
                     }
-                } else {
-                    if (runner.x >= 1500 && runner.x < 3500) {
-                        targetY = 400;
-                        driftForce = (runner.currentSpeed / 100) * (100 - runner.stats.intel) * -0.04;
-                        let outCoursePenalty = Math.max(0, (400 - runner.y) / 380) * 0.12; 
-                        terrainSpeedMult = 1.0 - outCoursePenalty;
-                    } else if (runner.x >= 7000 && runner.x < 8800) {
-                        terrainSpeedMult = 0.65 + (runner.stats.power / 100) * 0.35;
-                        terrainStaminaMult = 1.4;
-                    }
                 }
 
-                // 🐌 보스 달팽왁 장판 디버프 연산 (지능으로 완화)
+                // 보스 장판 디버프 연산 (15,500m 지점부터)
                 if (bossActive && runner.x >= bossStartX && runner.x <= bossX) {
-                    let intelMitigation = runner.stats.intel / 100; // 지능에 따른 디버프 경감 (0~1)
-                    let slimeSpeedPenalty = 0.5 * (1 - intelMitigation * 0.5); // 이속 대폭 감소 (최대 50%까지 깎임)
+                    let intelMitigation = runner.stats.intel / 100;
+                    let slimeSpeedPenalty = 0.5 * (1 - intelMitigation * 0.5); 
                     terrainSpeedMult *= (1 - slimeSpeedPenalty);
-                    terrainStaminaMult *= 1.8; // 스태미나 광속 증발
-                    runner.isStruggling = true; // 점액에 허우적댐
+                    terrainStaminaMult *= 1.8; 
+                    runner.isStruggling = true; 
                     
                     if (!isFastForwarding && seededRandom() < 0.005) {
-                        showCommentary(`🤢 [${runner.name}] 달팽왁의 맹독 점액에 발이 묶여 끔찍하게 고통받고 있습니다!!`);
+                        showCommentary(`🤢 [${runner.name}] 달팽왁의 맹독 장판을 지나며 고통받습니다!!`);
                     }
                 }
-
-                let yMoveRate = 0.5 + (runner.stats.intel / 100) * 1.5;
-                runner.y += ((targetY - runner.y) * yMoveRate + driftForce) * (physicsDt * 5);
                 if (runner.y < 20) runner.y = 20;
                 if (runner.y > 400) runner.y = 400;
                 runner.lane = Math.floor((runner.y - 20) / 52);
@@ -1041,18 +1024,32 @@
                 }
             }
 
+            // 💡 [패치] 선두의 위치에 따라 카메라(게임 화면)를 물리적으로 기울이거나 비틂
             const gameWin = document.getElementById('game-window');
             let isCloseRace = false;
             let sorted = [...runners].sort((a,b) => b.x - a.x);
             if (sorted.length >= 2 && (sorted[0].x - sorted[1].x) < 180) { isCloseRace = true; }
 
+            let currentTransform = "scale(1)";
+            
+            // 피니시 라인 접전 시 줌인
             if (!raceEnded && leaderX > FINISH_LINE - 400 && leaderX < FINISH_LINE && isCloseRace) {
-                gameWin.style.transform = "scale(1.15)"; 
+                currentTransform = "scale(1.15)"; 
                 gameWin.style.filter = "contrast(1.1) brightness(0.95)"; 
             } else {
-                gameWin.style.transform = "scale(1)";
                 gameWin.style.filter = "none";
+                // 지형에 따른 카메라 틸트(기울기) 효과
+                if (roomData.map_type === 'long') {
+                    if (leaderX >= 3000 && leaderX < 5500) {
+                        currentTransform = "scale(1) skewX(-5deg)"; // 코너: 화면이 살짝 쏠림
+                    } else if (leaderX >= 10000 && leaderX < 12000) {
+                        currentTransform = "scale(1) rotate(-3deg)"; // 오르막: 화면 전체가 위로 들림
+                    } else if (leaderX >= 13000 && leaderX < 15000) {
+                        currentTransform = "scale(1) rotate(3deg)"; // 내리막: 화면 전체가 아래로 쏠림
+                    }
+                }
             }
+            gameWin.style.transform = currentTransform;
 
             runners.forEach(runner => {
                 runner.element.style.left = runner.x + 'px';
