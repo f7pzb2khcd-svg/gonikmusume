@@ -54,7 +54,6 @@
         .stunned-sprite { filter: grayscale(100%) brightness(50%) !important; animation-play-state: paused !important; transform: rotate(-20deg) translateY(10px) !important; }
         .immune-sprite { opacity: 0.5; }
 
-        /* 🍔 버거 낙하 애니메이션 (오류 수정) */
         .burger-item { position: absolute; width: 35px; height: 35px; background-image: url('burger.png'); background-size: cover; z-index: 3; pointer-events: none; opacity: 0; }
         @keyframes dropFromSky { 0% { transform: translateY(-500px) scale(0.5); opacity: 0; } 1% { opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
         .falling { animation: dropFromSky 1.5s ease-in forwards; animation-fill-mode: both; }
@@ -189,7 +188,6 @@
     <script>
         const API_BASE = "https://gonik-musume.onrender.com/api"; 
         
-        // 💬 [파이어베이스 초기화]
         const firebaseConfig = { databaseURL: "https://wak-derby-chat-default-rtdb.firebaseio.com/" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
@@ -203,8 +201,8 @@
         let OBSTACLE_START = 3500; 
         let OBSTACLE_END = 5000;   
 
-        // 💡 템포 살짝 업! (이전보다는 조금 더 스피디하게)
-        const BASE_MOVE_SPEED_MULT = 0.042; 
+        // 💡 템포 살짝 업! (속도 배율 상향)
+        const BASE_MOVE_SPEED_MULT = 0.045; 
         const BASE_STAMINA_DRAIN = 0.020;   
         const ACCEL_MULT = 0.5;             
         
@@ -216,12 +214,16 @@
         let burgers = [];
         let supplyActivated = false;
         
-        // 카메라 제어용 변수
+        // 💡 다이나믹 카메라 제어 변수 완벽 정리
         let currentCameraX = 0; 
         let manualCameraTargetX = -1;
         let manualCameraEndTime = 0;
+        
+        let clusterViewCount = 0;   // 💡 게임당 딱 1번만 마군 비추기
         let clusterViewEndTime = 0;
-        let clusterViewCooldown = 0; // 마군을 너무 자주 비추지 않도록 쿨타임 도입
+        
+        let burgerCameraTargetX = 0;
+        let burgerCameraEndTime = 0; // 💡 버거 떨어질 때 고정용
         // ==============================================
 
         let seededRandom = Math.random; 
@@ -547,7 +549,7 @@
                 }
 
                 focusRunner = runner;
-                focusEndTime = gameTime + 3.0; // 💡 3초 뒤에 카메라가 선두로 정상 복귀하도록 설정
+                focusEndTime = gameTime + 3.0; 
                 lastRealTime = Date.now(); 
                 requestAnimationFrame(gameLoop); 
             }, 2000); 
@@ -560,8 +562,10 @@
             
             roomData.participants.forEach((name, index) => {
                 const strategy = strategies[Math.floor(seededRandom() * strategies.length)];
+                
+                // 💡 [패치] 도주마 스태미나/근성 소폭 하향 조정하여 후반 퍼짐 유도
                 let statWeights = [1, 1, 1, 1, 1];
-                if (strategy === "도주") statWeights = [3.0, 0.8, 1.0, 1.0, 1.5]; 
+                if (strategy === "도주") statWeights = [3.0, 0.5, 1.0, 0.6, 1.5]; 
                 if (strategy === "선행") statWeights = [1.5, 1.5, 2.0, 1.0, 1.0]; 
                 if (strategy === "선입") statWeights = [1.0, 2.0, 2.0, 1.5, 1.0]; 
                 if (strategy === "추입") statWeights = [0.5, 1.5, 1.5, 3.0, 1.0]; 
@@ -689,7 +693,7 @@
             currentLeader = null;
             runners.forEach(r => { if (r.x > leaderX) { leaderX = r.x; currentLeader = r; } });
 
-            // 💡 [필살기 카메라 수정] 3초가 지나면 포커스 해제
+            // 💡 필살기 카메라 포커스 타이머 처리
             if (focusRunner && gameTime > focusEndTime) {
                 focusRunner = null;
             }
@@ -703,15 +707,18 @@
                 showCommentary("💨 선두 주자가 위험 구간을 무사히 돌파했습니다!");
             }
 
-            // 💡 [버거 투하 버그 완벽 수정] 
-            // 카메라 화면 안에 들어오도록 선두 주자보다 100~400px 앞쪽에 투하!
+            // 🍔 징버거 투하
             if (roomData.map_type === 'long' && !supplyActivated && leaderX >= SUPPLY_START) {
                 supplyActivated = true;
                 showCommentary("🛩️ 선두가 보급 구역 진입! 징버거 보급이 투하됩니다!");
                 
+                // 💡 [패치] 카메라를 버거 투하 지점으로 4초간 이동시킴
+                burgerCameraTargetX = leaderX + 600; 
+                burgerCameraEndTime = gameTime + 4.0;
+                
                 const trackEl = document.getElementById('track');
                 for (let i = 0; i < 7; i++) { 
-                    let bx = leaderX + 100 + (seededRandom() * 300); 
+                    let bx = leaderX + 100 + (seededRandom() * 800); 
                     let randomLane = Math.floor(seededRandom() * MAX_LANES);
                     let by = 20 + (randomLane * 52); 
                     let dropDelay = seededRandom() * 1.5; 
@@ -764,7 +771,6 @@
             runners.forEach(runner => {
                 if (runner.finished) return;
 
-                // 🍔 보급 섭취 로직
                 if (roomData.map_type === 'long' && supplyActivated && runner.x >= SUPPLY_START - 100 && runner.x <= SUPPLY_END) {
                     burgers.forEach(burger => {
                         if (!burger.consumed && gameTime > burger.activateTime) {
@@ -806,7 +812,7 @@
                 runner.isOverpacing = false;
                 let trackPercent = runner.x / FINISH_LINE;
                 
-                // 💡 [수정] 도주마 페이스 오버: 초중반(5%~35%) 구간에만 발동
+                // 💡 도주마 페이스 오버: 초중반 (5% ~ 35%) 구간에만 발동
                 if (gameTime > 3.0 && runner.strategy === "도주" && trackPercent >= 0.05 && trackPercent <= 0.35) {
                     let nearbyDoju = runners.find(other => 
                         other !== runner && 
@@ -821,7 +827,7 @@
                     bodyCheckCommentaryCd = gameTime + 5.0; 
                 }
 
-                // 💡 [수정] 흥분 상태: 확률 대폭 축소 (0.001)
+                // 💡 흥분 상태: 확률 대폭 하향 적용, 선입/추입 한정 유지
                 if (gameTime > 5.0 && !runner.hasExcited && trackPercent < 0.4 && seededRandom() < 0.001) {
                     if (runner.strategy === "선입" || runner.strategy === "추입") {
                         let exciteChance = (100 - runner.stats.intel) / 100; 
@@ -938,7 +944,8 @@
                         runner.isExhausted = false;
                     }
                 } else {
-                    runner.currentStamina -= (runner.stats.speed * BASE_STAMINA_DRAIN) * strategyMultiplier * staminaDrainMult * terrainStaminaMult * catchUpMod * (physicsDt * 60); 
+                    // 💡 [패치] 공짜 추격 버프! (스태미나 소모에 catchUpMod 곱하기 제거됨)
+                    runner.currentStamina -= (runner.stats.speed * BASE_STAMINA_DRAIN) * strategyMultiplier * staminaDrainMult * terrainStaminaMult * (physicsDt * 60); 
                     if (runner.currentStamina <= 0) {
                         runner.currentStamina = 0;
                         runner.isExhausted = true;
@@ -971,6 +978,7 @@
                 
                 runner.x += finalMoveAmount * (physicsDt * 60);
 
+                // 👑 우승자 판정
                 if (runner.x >= FINISH_LINE && !raceEnded) {
                     raceEnded = true;
                     runner.finished = true;
@@ -1042,9 +1050,9 @@
                 else runner.dotElement.className = 'minimap-dot';
             });
 
-            // 💡 [수정] 다이나믹 카메라 로직 완벽 제어
+            // 💡 [수정] 다이나믹 카메라 최적화 (버거, 1회 마군뷰, 선두 고정)
             let targetCameraX = leaderX;
-            let prepDist = 250; // 구역 진입 약 2초 전(거리 250)에 선두 복귀
+            let prepDist = 250; 
             let leaderInZone = false;
             
             if (roomData.map_type === 'long') {
@@ -1069,34 +1077,32 @@
                 }
             }
 
-            // 💡 [수정] 선두가 구역에 다가가면 마군 중계 즉시 종료
-            if (leaderInZone && clusterViewEndTime > 0) {
-                clusterViewEndTime = 0; 
-            }
-
             if (clusterViewEndTime > 0 && gameTime > clusterViewEndTime) {
                 clusterViewEndTime = 0; 
-                clusterViewCooldown = gameTime + 10.0; // 너무 자주 비추지 않도록 쿨타임
             }
             
-            // 💡 일반 구역이고 쿨타임이 끝났을 때만 마군 비추기
-            if (!leaderInZone && gameTime > 10.0 && clusterViewEndTime === 0 && gameTime > clusterViewCooldown) {
+            // 💡 딱 1번만 마군을 비춥니다. 버거 보급 중일 때는 마군을 잡지 않습니다.
+            if (!leaderInZone && gameTime > 10.0 && clusterViewCount < 1 && clusterViewEndTime === 0 && gameTime > burgerCameraEndTime) {
                 if (maxClusterSize >= 3 && clusterX < leaderX - 400) {
+                    clusterViewCount++;
                     clusterViewEndTime = gameTime + 5.0;
                     if (!isFastForwarding) showCommentary(`🎥 카메라가 치열한 중위권 다툼을 포착합니다!`);
                 }
             }
 
+            // 💡 1순위: 플레이어, 2순위: 징버거 투하, 3순위: 궁극기, 4순위: 존 진입 전후 선두, 5순위: 치열한 마군(1회 한정), 기본: 선두
             if (gameTime < manualCameraEndTime) {
                 targetCameraX = manualCameraTargetX; 
+            } else if (gameTime < burgerCameraEndTime) {
+                targetCameraX = burgerCameraTargetX; 
             } else if (focusRunner) {
                 targetCameraX = focusRunner.x; 
             } else if (leaderInZone) {
-                targetCameraX = leaderX; // 기믹 구역 진입 전 무조건 선두 비추기
+                targetCameraX = leaderX; 
             } else if (clusterViewEndTime > 0) {
                 targetCameraX = clusterX; 
             } else {
-                targetCameraX = leaderX; // 기본은 항상 선두!
+                targetCameraX = leaderX; 
             }
 
             if (currentCameraX === 0 || isNaN(currentCameraX)) currentCameraX = leaderX; 
