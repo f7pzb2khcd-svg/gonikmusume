@@ -54,19 +54,16 @@
         .stunned-sprite { filter: grayscale(100%) brightness(50%) !important; animation-play-state: paused !important; transform: rotate(-20deg) translateY(10px) !important; }
         .immune-sprite { opacity: 0.5; }
 
-        /* 🍔 버거 낙하 애니메이션 (오류 수정: animation-fill-mode both) */
         .burger-item { position: absolute; width: 35px; height: 35px; background-image: url('burger.png'); background-size: cover; z-index: 3; pointer-events: none; opacity: 0; }
         @keyframes dropFromSky { 0% { transform: translateY(-500px) scale(0.5); opacity: 0; } 1% { opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
         .falling { animation: dropFromSky 1.5s ease-in forwards; animation-fill-mode: both; }
 
-        /* 🔥 궁극기 컷인 */
         .cutin { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #ult-cutin { background: rgba(50,0,0,0.8); }
         #ult-cutin-bg { width: 100%; background: linear-gradient(90deg, transparent, #e53935, transparent); padding: 40px 0; border-top: 2px solid #ffeb3b; border-bottom: 2px solid #ffeb3b; }
         .cutin-title { font-size: 30px; font-weight: bold; color: white; text-shadow: 2px 2px 4px #000; margin-bottom: 10px; }
         .cutin-name { font-size: 45px; font-weight: 900; color: #ffe082; text-shadow: 3px 3px 5px #000; }
 
-        /* 👑 우승 화면 UI */
         #victory-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 20; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 1s ease-in; }
         #victory-image { width: 250px; margin-bottom: 10px; filter: drop-shadow(0 0 15px #ffeb3b); animation: floatUp 2s infinite alternate ease-in-out; }
         #victory-name { font-size: 60px; font-weight: 900; color: #ffeb3b; text-shadow: 3px 3px 5px #000, 0 0 20px #ff9800; margin-bottom: 10px; }
@@ -76,7 +73,6 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes floatUp { 0% { transform: translateY(0px); } 100% { transform: translateY(-15px); } }
 
-        /* 👥 관중 실루엣 */
         #audience-layer { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; z-index: 8; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='60'%3E%3Cpath d='M0,60 C10,30 30,30 40,60 M30,60 C40,20 60,20 70,60 M60,60 C70,35 90,35 100,60 M90,60 C100,25 120,25 130,60 M120,60 C130,30 150,30 160,60' fill='rgba(0,0,0,0.5)'/%3E%3Ccircle cx='20' cy='35' r='7' fill='rgba(0,0,0,0.5)'/%3E%3Ccircle cx='50' cy='25' r='8' fill='rgba(0,0,0,0.5)'/%3E%3Ccircle cx='80' cy='40' r='7' fill='rgba(0,0,0,0.5)'/%3E%3Ccircle cx='110' cy='30' r='8' fill='rgba(0,0,0,0.5)'/%3E%3Ccircle cx='140' cy='35' r='7' fill='rgba(0,0,0,0.5)'/%3E%3Cpath d='M-10,60 C0,40 20,40 30,60 M20,60 C30,35 50,35 60,60 M50,60 C60,45 80,45 90,60 M80,60 C90,30 110,30 120,60 M110,60 C120,40 140,40 150,60 M140,60 C150,35 170,35 180,60' fill='rgba(0,0,0,0.8)'/%3E%3Ccircle cx='10' cy='45' r='8' fill='rgba(0,0,0,0.8)'/%3E%3Ccircle cx='40' cy='40' r='7' fill='rgba(0,0,0,0.8)'/%3E%3Ccircle cx='70' cy='50' r='8' fill='rgba(0,0,0,0.8)'/%3E%3Ccircle cx='100' cy='35' r='8' fill='rgba(0,0,0,0.8)'/%3E%3Ccircle cx='130' cy='45' r='7' fill='rgba(0,0,0,0.8)'/%3E%3Ccircle cx='160' cy='40' r='8' fill='rgba(0,0,0,0.8)'/%3E%3C/svg%3E"); pointer-events: none; }
         
         .chat-bubble { position: absolute; bottom: 65px; background: rgba(255, 255, 255, 0.95); color: #000; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); z-index: 9; animation: floatUpChat 3s ease-out forwards; pointer-events: none; transform: translateX(-50%); }
@@ -193,24 +189,20 @@
         const API_BASE = "https://gonik-musume.onrender.com/api"; 
         
         // 💬 [파이어베이스 초기화]
-        const firebaseConfig = {
-            databaseURL: "https://wak-derby-chat-default-rtdb.firebaseio.com/"
-        };
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        const firebaseConfig = { databaseURL: "https://wak-derby-chat-default-rtdb.firebaseio.com/" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         let chatRef = null; 
 
         // ==============================================
-        // 🛠️ [기획자 수정 가능 설정 변수]
+        // 🛠️ [기획자 설정 변수 완벽 세팅]
         // ==============================================
         let TRACK_LENGTH = 10000;    
         let FINISH_LINE = 9600; 
         let OBSTACLE_START = 3500; 
         let OBSTACLE_END = 5000;   
 
-        // 💡 전체적인 달리기 템포 늦춤
+        // 속도와 스태미나 소모량을 하향하여 게임 템포 조절
         const BASE_MOVE_SPEED_MULT = 0.035; 
         const BASE_STAMINA_DRAIN = 0.015;   
         const ACCEL_MULT = 0.5;             
@@ -223,7 +215,7 @@
         let burgers = [];
         let supplyActivated = false;
         
-        // 💡 카메라 제어용 변수
+        // 다이나믹 카메라 제어 변수
         let currentCameraX = 0; 
         let manualCameraTargetX = -1;
         let manualCameraEndTime = 0;
@@ -277,6 +269,7 @@
         let obstacleZoneClearedTime = -1;
         let leaderX = 0;
         let currentLeader = null;
+        let bodyCheckCommentaryCd = 0; 
         const MAX_LANES = 8; 
         const strategies = ["도주", "선행", "선입", "추입"];
 
@@ -426,7 +419,6 @@
                 }
                 roomData = resData.data;
                 
-                // 💬 파이어베이스 수신 설정
                 chatRef = database.ref('rooms/' + roomId + '/chats');
                 let isFirstLoad = true;
                 chatRef.limitToLast(1).on('child_added', (snapshot) => {
@@ -442,17 +434,12 @@
                     OBSTACLE_START = 6000;
                     OBSTACLE_END = 7500;
 
-                    // 짜치는 코너/내리막 삭제, 오르막/덫/보급소만 재배치
                     trackEl.innerHTML = `
                         <div class="start-line"></div>
-                        
                         <div class="obstacle-zone" style="left: 6000px; width: 1500px;"></div>
                         <div class="obstacle-label" style="left: 6010px;">🚧 위험 지대 🚧</div>
-                        
                         <div class="zone-label" style="left: 10000px; width: 2000px; background: linear-gradient(to right, rgba(255,100,0,0.2), rgba(255,100,0,0.05)); border-left: 3px solid #ff9800;">⛰️ 마의 오르막길 (파워/스태미나 감소)</div>
-                        
                         <div class="zone-label" style="left: 17000px; width: 2000px; background: linear-gradient(to right, rgba(255,200,0,0.2), rgba(255,200,0,0.05)); border-left: 3px dashed #ffd700; color: #ffd700;">🍔 징버거 보급 투하 구역</div>
-                        
                         <div class="finish-line" style="left: 19600px;"></div>
                     `;
                 } else {
@@ -463,12 +450,9 @@
 
                     trackEl.innerHTML = `
                         <div class="start-line"></div>
-                        
                         <div class="obstacle-zone" style="left: 3500px; width: 1500px;"></div>
                         <div class="obstacle-label" style="left: 3510px;">🚧 위험 지대 🚧</div>
-                        
                         <div class="zone-label" style="left: 7000px; width: 1500px; background: linear-gradient(to right, rgba(255,100,0,0.2), rgba(255,100,0,0.05)); border-left: 3px solid #ff9800;">⛰️ 언덕 오르막길 (파워 필요!)</div>
-                        
                         <div class="finish-line" style="left: 9600px;"></div>
                     `;
                 }
@@ -478,7 +462,6 @@
                 resizeGame();
                 initRunners(); 
                 
-                // 💡 미니맵 클릭 시 5초간 카메라 수동 조작
                 const minimapEl = document.getElementById('minimap-container');
                 minimapEl.addEventListener('mousedown', (e) => {
                     const rect = minimapEl.getBoundingClientRect();
@@ -671,7 +654,9 @@
 
             if (elapsedSec > 0) {
                 isFastForwarding = true;
-                while (gameTime < elapsedSec && !raceEnded) {
+                // 안전장치: 지나치게 많은 시간이 흘러 브라우저가 다운되는 것 방지 (최대 180초까지만 스킵)
+                let skipLimit = Math.min(elapsedSec, 180);
+                while (gameTime < skipLimit && !raceEnded) {
                     updatePhysics(TICK_DT);
                     gameTime += TICK_DT;
                 }
@@ -699,8 +684,6 @@
             if (!raceEnded && !isPaused) requestAnimationFrame(gameLoop);
         }
 
-        let bodyCheckCommentaryCd = 0; 
-
         function updatePhysics(dt) {
             leaderX = 0;
             currentLeader = null;
@@ -715,17 +698,14 @@
                 showCommentary("💨 선두 주자가 위험 구간을 무사히 돌파했습니다!");
             }
 
-            // 💡 [버거 투하 버그 수정] 트랙 자체에 append 하고 레인(Y)을 정확히 맞춤
+            // 🍔 징버거 투하 (충돌 처리를 위해 트랙에 완벽히 동기화)
             if (roomData.map_type === 'long' && !supplyActivated && leaderX >= SUPPLY_START) {
                 supplyActivated = true;
                 showCommentary("🛩️ 선두가 보급 구역 진입! 징버거 보급이 투하됩니다!");
                 
                 const trackEl = document.getElementById('track');
                 for (let i = 0; i < 7; i++) { 
-                    // 선두보다 800~1800m 앞에 투하하여 중위권이 정확히 먹을 수 있게 유도
                     let bx = leaderX + 800 + (seededRandom() * 1000); 
-                    
-                    // 주자들의 레인 Y좌표 (20, 72, 124...)와 정확히 일치시켜 충돌 판정 완벽하게 처리
                     let randomLane = Math.floor(seededRandom() * MAX_LANES);
                     let by = 20 + (randomLane * 52); 
                     let dropDelay = seededRandom() * 1.5; 
@@ -740,7 +720,7 @@
                     
                     burgers.push({
                         x: bx, y: by, el: bEl, active: false, consumed: false,
-                        activateTime: gameTime + dropDelay + 0.5 // 땅에 닿자마자 바로 먹어지도록 조정
+                        activateTime: gameTime + dropDelay + 0.5 
                     });
                 }
             }
@@ -766,17 +746,25 @@
                 }
             }
 
+            let isCloseRace = false;
+            let sorted = [...runners].sort((a,b) => b.x - a.x);
+            if (sorted.length >= 2 && (sorted[0].x - sorted[1].x) < 180) { isCloseRace = true; }
+            
+            let physicsDt = dt;
+            if (leaderX > FINISH_LINE - 400 && leaderX < FINISH_LINE && isCloseRace) {
+                physicsDt = dt * 0.25; 
+            }
+
             runners.forEach(runner => {
                 if (runner.finished) return;
 
-                // 🍔 보급 섭취 로직
+                // 🍔 보급 섭취 (버그 완벽 수정)
                 if (roomData.map_type === 'long' && supplyActivated && runner.x >= SUPPLY_START - 100 && runner.x <= SUPPLY_END) {
                     burgers.forEach(burger => {
                         if (!burger.consumed && gameTime > burger.activateTime) {
                             let distX = Math.abs(runner.x - burger.x);
                             let distY = Math.abs(runner.y - burger.y);
                             
-                            // 넉넉한 충돌 판정 (Y는 완벽 일치하므로 X만 맞으면 됨)
                             if (distX < 50 && distY < 45) { 
                                 burger.consumed = true;
                                 burger.el.style.opacity = '0';
@@ -794,10 +782,9 @@
 
                 let terrainSpeedMult = 1.0;
                 let terrainStaminaMult = 1.0;
-                runner.y = runner.baseY; // 위아래 이동 삭제 (레인 유지)
+                runner.y = runner.baseY; 
                 runner.lane = Math.floor((runner.y - 20) / 52);
 
-                // 오르막길 물리 연산 유지 (코너, 내리막 완전 삭제)
                 if (roomData.map_type === 'long') {
                     if (runner.x >= 10000 && runner.x < 12000) { 
                         terrainSpeedMult = 0.6 + (runner.stats.power / 100) * 0.4; 
@@ -813,7 +800,6 @@
                 runner.isOverpacing = false;
                 let trackPercent = runner.x / FINISH_LINE;
                 
-                // 💡 도주마 페이스 오버: 시작 3초 후 발동, 위아래 1칸 내에 있을 경우에만
                 if (gameTime > 3.0 && runner.strategy === "도주" && trackPercent < 0.5) {
                     let nearbyDoju = runners.find(other => 
                         other !== runner && 
@@ -828,7 +814,6 @@
                     bodyCheckCommentaryCd = gameTime + 5.0; 
                 }
 
-                // 💡 돌발 흥분 상태: 시작 5초 이후, 선입/추입 한정 발동
                 if (gameTime > 5.0 && !runner.hasExcited && trackPercent < 0.4 && seededRandom() < 0.005) {
                     if (runner.strategy === "선입" || runner.strategy === "추입") {
                         let exciteChance = (100 - runner.stats.intel) / 100; 
@@ -964,6 +949,10 @@
                 let targetSpeed = (runner.stats.speed * BASE_MOVE_SPEED_MULT) * strategyMultiplier * staminaMod * gutsMod * catchUpMod * terrainSpeedMult * eventSpeedMult * (seededRandom() * 0.2 + 0.9);
                 let accelRate = (runner.stats.power / 100) * ACCEL_MULT; 
                 
+                // NaN 보호 로직 안전장치 (Failsafe)
+                if (isNaN(targetSpeed) || targetSpeed < 0) targetSpeed = 1.0;
+                if (isNaN(accelRate)) accelRate = 0.5;
+
                 if (runner.currentSpeed < targetSpeed) {
                     runner.currentSpeed += (targetSpeed - runner.currentSpeed) * accelRate * (physicsDt * 60);
                 } else {
@@ -971,9 +960,10 @@
                 }
 
                 let finalMoveAmount = runner.currentSpeed * runner.speedBoost * auraDebuff;
+                if (isNaN(finalMoveAmount)) finalMoveAmount = 1.0; // Failsafe
+                
                 runner.x += finalMoveAmount * (physicsDt * 60);
 
-                // 👑 우승자 판정 및 화면 표시
                 if (runner.x >= FINISH_LINE && !raceEnded) {
                     raceEnded = true;
                     runner.finished = true;
@@ -993,8 +983,10 @@
             if (isFastForwarding) return; 
 
             runners.forEach(runner => {
-                runner.element.style.left = runner.x + 'px';
-                runner.element.style.top = runner.y + 'px';
+                // NaN 오염 시 렌더링 증발 방지
+                if(!isNaN(runner.x)) runner.element.style.left = runner.x + 'px';
+                if(!isNaN(runner.y)) runner.element.style.top = runner.y + 'px';
+                
                 let staminaPercent = Math.max(0, (runner.currentStamina / runner.maxStamina) * 100);
                 runner.staminaFillEl.style.width = staminaPercent + '%';
                 
@@ -1036,17 +1028,17 @@
                 if (gameTime < runner.immuneUntil && gameTime >= runner.stunnedUntil) runner.spriteEl.classList.add('immune-sprite');
 
                 let minimapPercent = Math.max(0, Math.min((runner.x / TRACK_LENGTH) * 100, 100));
-                runner.dotElement.style.left = `calc(${minimapPercent}% - 7px)`;
-                runner.dotElement.style.top = `${ (runner.y / 470) * 100 }%`;
+                if(!isNaN(minimapPercent)) runner.dotElement.style.left = `calc(${minimapPercent}% - 7px)`;
+                if(!isNaN(runner.y)) runner.dotElement.style.top = `${ (runner.y / 470) * 100 }%`;
                 
                 if (runner.isUltimateActive) runner.dotElement.className = 'minimap-dot ult-active';
                 else if (runner.isNormalSkillActive) runner.dotElement.className = 'minimap-dot skill-active';
                 else runner.dotElement.className = 'minimap-dot';
             });
 
-            // 💡 [다이나믹 스무딩 카메라 로직 완벽 개편]
+            // 💡 다이나믹 스무딩 카메라 로직
             let targetCameraX = leaderX;
-            let prepDist = 200; // 지형 진입 약 1초 전부터 선두 집중
+            let prepDist = 200; 
             let leaderInZone = false;
             
             if (roomData.map_type === 'long') {
@@ -1056,7 +1048,6 @@
                 if (leaderX >= 7000 - prepDist && leaderX < 8800) leaderInZone = true;
             }
 
-            // 가장 치열한 마군 탐색 (Cluster)
             let clusterX = leaderX;
             let maxClusterSize = 0;
             for (let i = 0; i < runners.length; i++) {
@@ -1070,7 +1061,6 @@
                 }
             }
 
-            // 마군 뷰 트리거 (최대 2번, 5초간)
             if (clusterViewEndTime > 0 && gameTime > clusterViewEndTime) {
                 clusterViewEndTime = 0; 
             }
@@ -1082,7 +1072,6 @@
                 }
             }
 
-            // 카메라 우선순위
             if (gameTime < manualCameraEndTime) {
                 targetCameraX = manualCameraTargetX; 
             } else if (leaderInZone || focusRunner) {
@@ -1093,9 +1082,8 @@
                 targetCameraX = leaderX;
             }
 
-            // 지수 감쇠 스무딩 (부드러운 카메라 이동)
-            if (currentCameraX === 0) currentCameraX = leaderX; 
-            currentCameraX += (targetCameraX - currentCameraX) * 0.05; 
+            if (currentCameraX === 0 || isNaN(currentCameraX)) currentCameraX = leaderX; 
+            if (!isNaN(targetCameraX)) currentCameraX += (targetCameraX - currentCameraX) * 0.05; 
 
             let trackLeftOffset = Math.max(0, currentCameraX - 600);
             if (trackLeftOffset > TRACK_LENGTH - 900) trackLeftOffset = TRACK_LENGTH - 900;
@@ -1103,19 +1091,6 @@
             document.getElementById('track').style.left = -trackLeftOffset + 'px';
             document.getElementById('minimap-viewport').style.left = `${(trackLeftOffset / TRACK_LENGTH) * 100}%`;
             
-            // 결승선 접전 시 카메라 줌 효과 복구
-            const gameWin = document.getElementById('game-window');
-            let isCloseRace = false;
-            let sorted = [...runners].sort((a,b) => b.x - a.x);
-            if (sorted.length >= 2 && (sorted[0].x - sorted[1].x) < 180) { isCloseRace = true; }
-
-            if (!raceEnded && leaderX > FINISH_LINE - 400 && leaderX < FINISH_LINE && isCloseRace) {
-                gameWin.style.transform = "scale(1.15)"; 
-                gameWin.style.filter = "contrast(1.1) brightness(0.95)"; 
-            } else {
-                gameWin.style.transform = "scale(1)";
-                gameWin.style.filter = "none";
-            }
         }
     </script>
 </body>
