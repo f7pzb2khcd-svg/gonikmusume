@@ -209,23 +209,23 @@
         let OBSTACLE_START = 3500; 
         let OBSTACLE_END = 5000;   
 
-        const BASE_MOVE_SPEED_MULT = 0.055; 
-        const BASE_STAMINA_DRAIN = 0.025;   
+        // 💡 [템포 패치] 전체적인 달리기 속도와 스태미나 소모량을 대폭 낮춤
+        const BASE_MOVE_SPEED_MULT = 0.035; 
+        const BASE_STAMINA_DRAIN = 0.015;   
         const ACCEL_MULT = 0.5;             
         
         const ULT_SPEED_BOOST = 8;          
         const ULT_ROCKET_BOOST = 3.5;       
         
-        // 장거리 맵 특수 기믹 변수
         const SUPPLY_START = 17000; 
         const SUPPLY_END = 19000;
         let burgers = [];
         let supplyActivated = false;
         
-        let bossActive = false;
-        let bossStartX = 0;
-        let bossX = 0;
-        let bossSpeed = 35; // 달팽왁의 이속 (보통 주자들보다 살짝 느려 추월 가능)
+        // 💡 [카메라 패치] 다이나믹 카메라 제어 변수
+        let currentCameraX = 0; 
+        let manualCameraTargetX = -1;
+        let manualCameraEndTime = 0;
         // ==============================================
 
         let seededRandom = Math.random; 
@@ -449,10 +449,7 @@
                         
                         <div class="zone-label" style="left: 10000px; width: 2000px; background: linear-gradient(to right, rgba(255,100,0,0.2), rgba(255,100,0,0.05)); border-left: 3px solid #ff9800;">⛰️ 마의 오르막길 (파워 필요)</div>
                         <div class="zone-label" style="left: 13000px; width: 2000px; background: linear-gradient(to right, rgba(0,255,100,0.2), rgba(0,255,100,0.05)); border-left: 3px solid #00ff00;">🎢 내리막길 (무료 가속)</div>
-                        
-                        <div id="boss-trail" style="display:none; position:absolute; top:0; height:100%; background:rgba(0,100,0,0.4); z-index:0; border-bottom: 5px solid #00ff00;"></div>
-                        <img id="boss-character" src="Boss.gif" style="display:none; position:absolute; bottom:-10px; width:300px; z-index:4; filter: drop-shadow(0 0 15px #00ff00);">
-                        
+                       
                         <div class="zone-label" style="left: 17500px; width: 1500px; background: linear-gradient(to right, rgba(255,200,0,0.2), rgba(255,200,0,0.05)); border-left: 3px dashed #ffd700; color: #ffd700;">🍔 징버거 보급 투하 구역</div>
                         <div id="burger-container"></div>
                         
@@ -478,6 +475,16 @@
                 document.getElementById('game-scale-wrapper').style.display = 'flex';
                 resizeGame();
                 initRunners(); 
+                
+                const minimapEl = document.getElementById('minimap-container');
+                minimapEl.addEventListener('mousedown', (e) => {
+                    const rect = minimapEl.getBoundingClientRect();
+                    const clickRatio = (e.clientX - rect.left) / rect.width;
+                    manualCameraTargetX = clickRatio * TRACK_LENGTH;
+                    manualCameraEndTime = gameTime + 5.0; // 5초 유지
+                    showCommentary(`🎥 관전 카메라 시점을 수동으로 조작합니다.`);
+                });
+                
                 document.getElementById('countdown-overlay').style.display = 'flex';
                 startCountdown();
             } catch (err) {
@@ -705,25 +712,6 @@
                 showCommentary("💨 선두 주자가 위험 구간을 무사히 돌파했습니다!");
             }
 
-           // 🐌 거대 보스(달팽왁) 장판 기믹
-            if (roomData.map_type === 'long') {
-                if (!bossActive && leaderX >= 15500) {
-                    bossActive = true;
-                    bossStartX = leaderX + 800; // 1등 앞 800m에서 등장
-                    bossX = bossStartX;
-                    showCommentary("🚨 [경고] 으악! 선두 앞쪽에 거대 달팽왁이 등장해 트랙을 맹독으로 덮고 있습니다!");
-                    
-                    const bTrail = document.getElementById('boss-trail');
-                    const bChar = document.getElementById('boss-character');
-                    if (bTrail) bTrail.style.display = 'block';
-                    if (bChar) bChar.style.display = 'block';
-                }
-                
-                if (bossActive) {
-                    bossX += bossSpeed * (dt * 60); // 35 속도로 기어감 (보통 주자보다 느림)
-                }
-            }
-
             // 🍔 징버거 보급 투하
             if (roomData.map_type === 'long' && !supplyActivated && leaderX >= SUPPLY_START) {
                 supplyActivated = true;
@@ -843,16 +831,22 @@
 
                 runner.isOverpacing = false;
                 let trackPercent = runner.x / FINISH_LINE;
-                if (runner.strategy === "도주" && trackPercent < 0.5) {
-                    let nearbyDoju = runners.find(other => other !== runner && other.strategy === "도주" && Math.abs(runner.x - other.x) < 150);
+                if (gameTime > 3.0 && runner.strategy === "도주" && trackPercent < 0.5) {
+                    let nearbyDoju = runners.find(other => 
+                        other !== runner && 
+                        other.strategy === "도주" && 
+                        Math.abs(runner.x - other.x) < 150 && 
+                        Math.abs(runner.lane - other.lane) <= 1
+                    );
                     if (nearbyDoju) runner.isOverpacing = true;
                 }
                 if (runner.isOverpacing && gameTime > bodyCheckCommentaryCd && seededRandom() < 0.05) {
-                    showCommentary(`🔥 도주마들의 치열한 선두 경쟁! 오버페이스로 스태미나가 타들어갑니다!`);
+                    showCommentary(`🔥 도주마들의 맹렬한 선두 경쟁! 오버페이스로 스태미나가 타들어갑니다!`);
                     bodyCheckCommentaryCd = gameTime + 5.0; 
                 }
 
-                if (!runner.hasExcited && trackPercent < 0.4 && seededRandom() < 0.005) {
+                // 💡 [패치] 시작 5초 후부터 흥분 상태 돌발 가능
+                if (gameTime > 5.0 && !runner.hasExcited && trackPercent < 0.4 && seededRandom() < 0.005) {
                     let exciteChance = (100 - runner.stats.intel) / 100; 
                     if (seededRandom() < exciteChance) {
                         runner.hasExcited = true;
@@ -867,7 +861,7 @@
                     showCommentary(`💦 무리한 질주의 대가인가요? [${runner.name}] 급격히 체력이 빠집니다!`);
                 }
 
-                if (!runner.isStruggling) runner.isStruggling = false; // 보스 장판이 아닐경우 초기화 위해
+                runner.isStruggling = false; 
                 let auraDebuff = 1.0;
 
                 if (gameTime > 5.0 && !runner.isExhausted) {
@@ -1013,17 +1007,6 @@
         function renderFrame() {
             if (isFastForwarding) return; 
             
-            // 🐌 보스 UI 렌더링
-            if (bossActive) {
-                let trail = document.getElementById('boss-trail');
-                let bossImg = document.getElementById('boss-character');
-                if (trail && bossImg) {
-                    trail.style.left = bossStartX + 'px';
-                    trail.style.width = Math.max(0, bossX - bossStartX) + 'px';
-                    bossImg.style.left = (bossX - 125) + 'px'; // 250px 넓이 중앙 보정
-                }
-            }
-
             // 💡 [패치] 선두의 위치에 따라 카메라(게임 화면)를 물리적으로 기울이거나 비틂
             const gameWin = document.getElementById('game-window');
             let isCloseRace = false;
@@ -1103,10 +1086,50 @@
                 else runner.dotElement.className = 'minimap-dot';
             });
 
-            let cameraX = leaderX;
-            if (focusRunner && gameTime < focusEndTime) cameraX = focusRunner.x;
+            // 💡 [카메라 패치] 다이나믹 스무딩 카메라 로직
+            let targetCameraX = leaderX;
             
-            let trackLeftOffset = Math.max(0, cameraX - 600);
+            // 1. 선두 주자의 주요 지형 진입 판정 (약 1초 전 = 거리 100~150 앞부터)
+            let leaderInZone = false;
+            let prepDist = 150; 
+            if (roomData.map_type === 'long') {
+                if ((leaderX >= 3000 - prepDist && leaderX < 5500) || 
+                    (leaderX >= 10000 - prepDist && leaderX < 12000) || 
+                    (leaderX >= 13000 - prepDist && leaderX < 15000) ||
+                    (leaderX >= SUPPLY_START - prepDist && leaderX < SUPPLY_END)) leaderInZone = true;
+            } else {
+                if ((leaderX >= 1500 - prepDist && leaderX < 3500) || 
+                    (leaderX >= 7000 - prepDist && leaderX < 8800)) leaderInZone = true;
+            }
+
+            // 2. 가장 치열한 마군(Cluster) 찾기
+            let clusterX = leaderX;
+            let maxClusterSize = 0;
+            for (let i = 0; i < runners.length; i++) {
+                let count = 0;
+                for (let j = 0; j < runners.length; j++) {
+                    if (Math.abs(runners[i].x - runners[j].x) < 300) count++;
+                }
+                if (count > maxClusterSize) {
+                    maxClusterSize = count;
+                    clusterX = runners[i].x;
+                }
+            }
+
+            // 3. 카메라 우선순위 결정
+            if (gameTime < manualCameraEndTime) {
+                targetCameraX = manualCameraTargetX; // 1순위: 플레이어 수동 클릭 조작
+            } else if (leaderInZone || focusRunner) {
+                targetCameraX = focusRunner ? focusRunner.x : leaderX; // 2순위: 지형 진입 시 무조건 선두 (또는 궁극기)
+            } else if (maxClusterSize >= 3 && clusterX < leaderX - 400) {
+                targetCameraX = clusterX; // 3순위: 중위권에 3명 이상 뭉쳐있을 경우 그곳을 중계
+            }
+
+            // 4. 지수 감쇠(Exponential decay) 곡선 스무딩 적용
+            if (currentCameraX === 0) currentCameraX = leaderX; // 최초 세팅
+            currentCameraX += (targetCameraX - currentCameraX) * 0.05; // 릴리즈 타임처럼 부드럽게 감속하며 이동
+
+            let trackLeftOffset = Math.max(0, currentCameraX - 600);
             if (trackLeftOffset > TRACK_LENGTH - 900) trackLeftOffset = TRACK_LENGTH - 900;
             
             document.getElementById('track').style.left = -trackLeftOffset + 'px';
