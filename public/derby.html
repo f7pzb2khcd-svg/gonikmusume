@@ -194,17 +194,15 @@
         let chatRef = null; 
 
         // ==============================================
-        // 🛠️ [기획자 설정 변수]
+        // 🛠️ [기획자 설정 변수 완벽 세팅]
         // ==============================================
         let TRACK_LENGTH = 10000;    
         let FINISH_LINE = 9600; 
-        
-        // 💡 덫 구간 길이 1000m로 단축
         let OBSTACLE_START = 3500; 
-        let OBSTACLE_END = 4500;   
+        let OBSTACLE_END = 5000;   
 
         const BASE_MOVE_SPEED_MULT = 0.045; 
-        const BASE_STAMINA_DRAIN = 0.020;   
+        const BASE_STAMINA_DRAIN = 0.012; // 💡 기본 연비(효율) 향상 (0.020 -> 0.012)
         const ACCEL_MULT = 0.5;             
         
         const ULT_SPEED_BOOST = 1.5;          
@@ -437,7 +435,7 @@
                     TRACK_LENGTH = 20000;
                     FINISH_LINE = 19600;
                     OBSTACLE_START = 6000;
-                    OBSTACLE_END = 7000; // 💡 길이 단축
+                    OBSTACLE_END = 7000; 
 
                     trackEl.innerHTML = `
                         <div class="start-line"></div>
@@ -451,7 +449,7 @@
                     TRACK_LENGTH = 10000;
                     FINISH_LINE = 9600;
                     OBSTACLE_START = 3500;
-                    OBSTACLE_END = 4500; // 💡 길이 단축
+                    OBSTACLE_END = 4500; 
 
                     trackEl.innerHTML = `
                         <div class="start-line"></div>
@@ -565,11 +563,12 @@
             roomData.participants.forEach((name, index) => {
                 const strategy = strategies[Math.floor(seededRandom() * strategies.length)];
                 
+                // 💡 [스탯 유도 개편] 근성은 균일하게, 선입/추입은 스태미나와 파워에 극단적 몰빵
                 let statWeights = [1, 1, 1, 1, 1];
-                if (strategy === "도주") statWeights = [3.0, 0.5, 1.0, 0.6, 1.5]; 
-                if (strategy === "선행") statWeights = [1.5, 1.5, 2.0, 1.0, 1.0]; 
-                if (strategy === "선입") statWeights = [1.0, 2.0, 2.0, 1.5, 1.0]; 
-                if (strategy === "추입") statWeights = [0.5, 1.5, 1.5, 3.0, 1.0]; 
+                if (strategy === "도주") statWeights = [3.0, 0.6, 1.0, 1.0, 1.2]; 
+                if (strategy === "선행") statWeights = [1.5, 1.5, 1.5, 1.0, 1.0]; 
+                if (strategy === "선입") statWeights = [0.8, 2.5, 2.0, 1.0, 1.0]; 
+                if (strategy === "추입") statWeights = [0.5, 2.5, 2.5, 1.0, 1.0]; 
 
                 let baseStats = [40, 40, 40, 40, 40]; 
                 let remain = 110; 
@@ -874,7 +873,6 @@
                 auraDebuff = Math.max(0.5, auraDebuff);
                 if (auraDebuff < 0.95) runner.isStruggling = true; 
                 
-                // 💡 [패치] 몸싸움 시 속도 감소폭(auraDebuff)에 비례해 스태미나 소모 대폭 증가
                 let bodyCheckStaminaMult = 1.0 + ((1.0 - auraDebuff) * 1.5);
 
                 if (runner.x > OBSTACLE_START && runner.x < OBSTACLE_END) {
@@ -882,7 +880,6 @@
                     let isImmune = (gameTime < runner.immuneUntil);
                     if (!isInStun && !isImmune) {
                         let timeSinceActive = gameTime - obstacleZoneActivatedAt;
-                        // 💡 [패치] 기본 덫 확률 하향 (4% -> 2.5%) & 쿨타임 감소 (15초 -> 10초)
                         let baseTrapChance = 0.025 * Math.max(0, 1 - (timeSinceActive / 10.0));
                         if (seededRandom() < baseTrapChance) {
                             let evadeChance = (runner.stats.intel / 100) * 0.5; 
@@ -925,7 +922,7 @@
 
                 let staminaDrainMult = runner.isUltimateActive ? 0.8 : 1.0;
                 if (runner.isOverpacing) staminaDrainMult *= 1.8; 
-                if (runner.isExcited) staminaDrainMult *= 1.5; 
+                if (runner.isExcited) staminaDrainMult *= 3.0; // 💡 흥분 페널티 대폭 상향 (1.5 -> 3.0)
                 if (runner.excitedPenalty) staminaDrainMult *= 1.2; 
 
                 let catchUpMod = 1.0;
@@ -935,19 +932,21 @@
                 }
 
                 if (runner.isExhausted) {
-                    let gutsModForRecovery = runner.stats.guts;
-                    if (runner.excitedPenalty) gutsModForRecovery *= 0.3; 
+                    // 💡 [패치] 스태미나 스탯(최대 체력)이 높을수록 회복에 시간이 더 걸리는 고정 수치 회복 방식
+                    let baseRecovery = 4.0; 
+                    if (runner.excitedPenalty) baseRecovery *= 0.5; 
 
-                    let recoveryPerFrame = (runner.maxStamina * gutsModForRecovery) / 27000;
-                    runner.currentStamina += recoveryPerFrame * (physicsDt * 60);
+                    runner.currentStamina += baseRecovery * (physicsDt * 60);
 
                     if (runner.currentStamina >= runner.maxStamina / 3) {
                         runner.currentStamina = runner.maxStamina / 3;
                         runner.isExhausted = false;
                     }
                 } else {
-                    // 💡 [패치] 몸싸움 시 추가 스태미나 소모량 연산 (bodyCheckStaminaMult)
-                    runner.currentStamina -= (runner.stats.speed * BASE_STAMINA_DRAIN) * strategyMultiplier * staminaDrainMult * terrainStaminaMult * bodyCheckStaminaMult * (physicsDt * 60); 
+                    // 💡 [패치] 근성(guts) 스탯이 높을수록 스태미나 소모량이 대폭 감소 (효율 증가)
+                    let gutsEfficiency = 1.0 - (runner.stats.guts / 250); // 근성 100일 경우 소모량 40% 감소
+                    
+                    runner.currentStamina -= (runner.stats.speed * BASE_STAMINA_DRAIN) * strategyMultiplier * staminaDrainMult * terrainStaminaMult * bodyCheckStaminaMult * gutsEfficiency * (physicsDt * 60); 
                     if (runner.currentStamina <= 0) {
                         runner.currentStamina = 0;
                         runner.isExhausted = true;
@@ -962,7 +961,6 @@
                 
                 let ultPowerMult = runner.isUltimateActive ? 1.5 : 1.0; 
 
-                // 💡 [패치] 스피드 스탯 기여도 상향 (1.5 -> 2.2), 파워 스탯 기여도 약간 하향 (3.5 -> 3.3)
                 let targetSpeedPortion = (runner.stats.speed / 100) * 2.2 * globalMult;
                 let targetPowerPortion = (runner.stats.power / 100) * 3.3 * globalMult * ultPowerMult;
 
