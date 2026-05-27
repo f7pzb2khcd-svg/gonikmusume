@@ -36,9 +36,9 @@
         #game-window { position: relative; width: 100%; height: 470px; background-color: #55a630; border: 4px solid #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s; }
         #track { position: absolute; left: 0; top: 0; width: 10000px; height: 100%; background-image: repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(255,255,255,0.1) 100px, rgba(255,255,255,0.1) 102px); }
         .start-line { position: absolute; left: 280px; top: 0; bottom: 0; width: 8px; background: repeating-linear-gradient(to bottom, white, white 10px, transparent 10px, transparent 20px); z-index: 1; }
-        .obstacle-zone { position: absolute; left: 3500px; width: 1500px; height: 100%; background-color: rgba(255, 0, 0, 0.2); z-index: 0; border-left: 2px dashed red; border-right: 2px dashed red; }
-        .obstacle-label { position: absolute; left: 3510px; top: 10px; color: #ff5555; font-weight: bold; font-size: 20px; z-index: 1; text-shadow: 1px 1px 2px black; }
-        .finish-line { position: absolute; left: 9800px; top: 0; bottom: 0; width: 20px; background: repeating-linear-gradient(to bottom, white, white 20px, black 20px, black 40px); z-index: 1; }
+        .obstacle-zone { position: absolute; height: 100%; background-color: rgba(255, 0, 0, 0.2); z-index: 0; border-left: 2px dashed red; border-right: 2px dashed red; }
+        .obstacle-label { position: absolute; top: 10px; color: #ff5555; font-weight: bold; font-size: 20px; z-index: 1; text-shadow: 1px 1px 2px black; }
+        .finish-line { position: absolute; top: 0; bottom: 0; width: 20px; background: repeating-linear-gradient(to bottom, white, white 20px, black 20px, black 40px); z-index: 1; }
         .zone-label { position: absolute; top: 0; bottom: 0; color: rgba(255,255,255,0.8); font-size: 24px; font-weight: bold; padding: 10px; box-sizing: border-box; display: flex; align-items: flex-end; padding-bottom: 30px; text-shadow: 2px 2px 4px #000; z-index: 0; }
         
         .runner-container { position: absolute; width: 50px; height: 50px; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
@@ -194,18 +194,19 @@
         let chatRef = null; 
 
         // ==============================================
-        // 🛠️ [기획자 설정 변수 완벽 세팅]
+        // 🛠️ [기획자 설정 변수]
         // ==============================================
         let TRACK_LENGTH = 10000;    
         let FINISH_LINE = 9600; 
+        
+        // 💡 덫 구간 길이 1000m로 단축
         let OBSTACLE_START = 3500; 
-        let OBSTACLE_END = 5000;   
+        let OBSTACLE_END = 4500;   
 
         const BASE_MOVE_SPEED_MULT = 0.045; 
         const BASE_STAMINA_DRAIN = 0.020;   
         const ACCEL_MULT = 0.5;             
         
-        // 💡 필살기 개편 (순간 로켓 부스트 하향, 기본 스피드 증가량 하향)
         const ULT_SPEED_BOOST = 1.5;          
         const ULT_ROCKET_BOOST = 1.5;       
         
@@ -436,13 +437,13 @@
                     TRACK_LENGTH = 20000;
                     FINISH_LINE = 19600;
                     OBSTACLE_START = 6000;
-                    OBSTACLE_END = 7500;
+                    OBSTACLE_END = 7000; // 💡 길이 단축
 
                     trackEl.innerHTML = `
                         <div class="start-line"></div>
-                        <div class="obstacle-zone" style="left: 6000px; width: 1500px;"></div>
+                        <div class="obstacle-zone" style="left: 6000px; width: 1000px;"></div>
                         <div class="obstacle-label" style="left: 6010px;">🚧 위험 지대 🚧</div>
-                        <div class="zone-label" style="left: 10000px; width: 2000px; background: linear-gradient(to right, rgba(255,100,0,0.2), rgba(255,100,0,0.05)); border-left: 3px solid #ff9800;">⛰️ 마의 오르막길 (파워/스태미나 감소)</div>
+                        <div class="zone-label" style="left: 10000px; width: 2000px; background: linear-gradient(to right, rgba(255,100,0,0.2), rgba(255,100,0,0.05)); border-left: 3px solid #ff9800;">⛰️ 마의 오르막길 (속도 감소 / 스태미나 소모 증가)</div>
                         <div class="zone-label" style="left: 17000px; width: 2000px; background: linear-gradient(to right, rgba(255,200,0,0.2), rgba(255,200,0,0.05)); border-left: 3px dashed #ffd700; color: #ffd700;">🍔 징버거 보급 투하 구역</div>
                         <div class="finish-line" style="left: 19600px;"></div>
                     `;
@@ -450,13 +451,13 @@
                     TRACK_LENGTH = 10000;
                     FINISH_LINE = 9600;
                     OBSTACLE_START = 3500;
-                    OBSTACLE_END = 5000;
+                    OBSTACLE_END = 4500; // 💡 길이 단축
 
                     trackEl.innerHTML = `
                         <div class="start-line"></div>
-                        <div class="obstacle-zone" style="left: 3500px; width: 1500px;"></div>
+                        <div class="obstacle-zone" style="left: 3500px; width: 1000px;"></div>
                         <div class="obstacle-label" style="left: 3510px;">🚧 위험 지대 🚧</div>
-                        <div class="zone-label" style="left: 7000px; width: 1500px; background: linear-gradient(to right, rgba(255,100,0,0.2), rgba(255,100,0,0.05)); border-left: 3px solid #ff9800;">⛰️ 언덕 오르막길 (파워 필요!)</div>
+                        <div class="zone-label" style="left: 7000px; width: 1500px; background: linear-gradient(to right, rgba(255,100,0,0.2), rgba(255,100,0,0.05)); border-left: 3px solid #ff9800;">⛰️ 마의 오르막길 (속도 감소 / 스태미나 소모 증가)</div>
                         <div class="finish-line" style="left: 9600px;"></div>
                     `;
                 }
@@ -539,7 +540,6 @@
                 cutin.style.display = 'none';
                 isPaused = false;
                 
-                // 💡 [패치] 스피드 즉발 상승량을 크게 깎음
                 runner.stats.speed += ULT_SPEED_BOOST; 
                 runner.speedBoost = ULT_ROCKET_BOOST; 
                 runner.isUltimateActive = true;
@@ -708,7 +708,6 @@
                 showCommentary("💨 선두 주자가 위험 구간을 무사히 돌파했습니다!");
             }
 
-            // 💡 [패치] 버거 투하 타이밍 지연 설정 (1.5 ~ 3.5초 뒤 낙하)
             if (roomData.map_type === 'long' && !supplyActivated && leaderX >= SUPPLY_START) {
                 supplyActivated = true;
                 showCommentary("🛩️ 선두가 보급 구역 진입! 곧 징버거 보급이 투하됩니다!");
@@ -718,12 +717,9 @@
                 
                 const trackEl = document.getElementById('track');
                 for (let i = 0; i < 7; i++) { 
-                    // 선두가 지나간 자리에 떨어지도록 랜덤 좌표 지정
-                    let bx = leaderX + (seededRandom() * 1000); 
+                    let bx = leaderX + 100 + (seededRandom() * 800); 
                     let randomLane = Math.floor(seededRandom() * MAX_LANES);
                     let by = 20 + (randomLane * 52); 
-                    
-                    // 💡 버거가 떨어지는 시간을 대폭 늦춤
                     let dropDelay = 1.5 + (seededRandom() * 2.0); 
                     
                     let bEl = document.createElement('div');
@@ -774,7 +770,6 @@
             runners.forEach(runner => {
                 if (runner.finished) return;
 
-                // 💡 [패치] 버거 섭취 시 완벽한 증발 (DOM 요소 완전 삭제)
                 if (roomData.map_type === 'long' && supplyActivated && runner.x >= SUPPLY_START - 100 && runner.x <= SUPPLY_END) {
                     burgers.forEach(burger => {
                         if (!burger.consumed && gameTime > burger.activateTime) {
@@ -783,7 +778,7 @@
                             
                             if (distX < 50 && distY < 45) { 
                                 burger.consumed = true;
-                                burger.el.remove(); // 화면에서 영구 삭제
+                                burger.el.remove(); 
                                 
                                 runner.currentStamina += runner.maxStamina * 0.3;
                                 if (runner.currentStamina > runner.maxStamina) runner.currentStamina = runner.maxStamina;
@@ -878,13 +873,17 @@
                 
                 auraDebuff = Math.max(0.5, auraDebuff);
                 if (auraDebuff < 0.95) runner.isStruggling = true; 
+                
+                // 💡 [패치] 몸싸움 시 속도 감소폭(auraDebuff)에 비례해 스태미나 소모 대폭 증가
+                let bodyCheckStaminaMult = 1.0 + ((1.0 - auraDebuff) * 1.5);
 
                 if (runner.x > OBSTACLE_START && runner.x < OBSTACLE_END) {
                     let isInStun = (gameTime < runner.stunnedUntil);
                     let isImmune = (gameTime < runner.immuneUntil);
                     if (!isInStun && !isImmune) {
                         let timeSinceActive = gameTime - obstacleZoneActivatedAt;
-                        let baseTrapChance = 0.04 * Math.max(0, 1 - (timeSinceActive / 15.0));
+                        // 💡 [패치] 기본 덫 확률 하향 (4% -> 2.5%) & 쿨타임 감소 (15초 -> 10초)
+                        let baseTrapChance = 0.025 * Math.max(0, 1 - (timeSinceActive / 10.0));
                         if (seededRandom() < baseTrapChance) {
                             let evadeChance = (runner.stats.intel / 100) * 0.5; 
                             if (runner === currentLeader) evadeChance = -0.3; 
@@ -947,7 +946,8 @@
                         runner.isExhausted = false;
                     }
                 } else {
-                    runner.currentStamina -= (runner.stats.speed * BASE_STAMINA_DRAIN) * strategyMultiplier * staminaDrainMult * terrainStaminaMult * (physicsDt * 60); 
+                    // 💡 [패치] 몸싸움 시 추가 스태미나 소모량 연산 (bodyCheckStaminaMult)
+                    runner.currentStamina -= (runner.stats.speed * BASE_STAMINA_DRAIN) * strategyMultiplier * staminaDrainMult * terrainStaminaMult * bodyCheckStaminaMult * (physicsDt * 60); 
                     if (runner.currentStamina <= 0) {
                         runner.currentStamina = 0;
                         runner.isExhausted = true;
@@ -960,13 +960,13 @@
                 
                 let globalMult = strategyMultiplier * staminaMod * catchUpMod * terrainSpeedMult * eventSpeedMult * auraDebuff;
                 
-                // 💡 [패치] 궁극기 상태일 경우 파워로 오르는 속도 한계 배율 1.5배 상승
                 let ultPowerMult = runner.isUltimateActive ? 1.5 : 1.0; 
 
-                let targetSpeedPortion = (runner.stats.speed / 100) * 1.5 * globalMult;
-                let targetPowerPortion = (runner.stats.power / 100) * 3.5 * globalMult * ultPowerMult;
+                // 💡 [패치] 스피드 스탯 기여도 상향 (1.5 -> 2.2), 파워 스탯 기여도 약간 하향 (3.5 -> 3.3)
+                let targetSpeedPortion = (runner.stats.speed / 100) * 2.2 * globalMult;
+                let targetPowerPortion = (runner.stats.power / 100) * 3.3 * globalMult * ultPowerMult;
 
-                let speedRate = 0.15; 
+                let speedRate = 0.20; 
                 runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * speedRate * (physicsDt * 60);
 
                 let powerRate = targetPowerPortion > runner.currentPowerPortion ? 0.005 : 0.05;
@@ -1081,8 +1081,8 @@
             let leaderInZone = false;
             
             let zones = roomData.map_type === 'long' 
-                ? [{s: 6000, e: 7500}, {s: 10000, e: 12000}, {s: 17000, e: 19000}]
-                : [{s: 3500, e: 5000}, {s: 7000, e: 8800}];
+                ? [{s: 6000, e: 7000}, {s: 10000, e: 12000}, {s: 17000, e: 19000}]
+                : [{s: 3500, e: 4500}, {s: 7000, e: 8800}];
 
             zones.forEach(z => {
                 if (leaderX >= z.s - prepDist && leaderX <= z.e) leaderInZone = true;
