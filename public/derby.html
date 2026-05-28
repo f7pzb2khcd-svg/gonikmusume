@@ -914,10 +914,6 @@
                 }
 
                 let strategyMultiplier = 1.0;
-                if (runner.strategy === "도주" && trackPercent < 0.3) strategyMultiplier = 1.20;
-                if (runner.strategy === "선행" && trackPercent > 0.15 && trackPercent < 0.5) strategyMultiplier = 1.15;
-                if (runner.strategy === "선입" && trackPercent > 0.4 && trackPercent < 0.75) strategyMultiplier = 1.15;
-                if (runner.strategy === "추입" && trackPercent > 0.7) strategyMultiplier = 1.25;
 
                 let staminaDrainMult = 1.0; 
                 if (runner.isOverpacing) staminaDrainMult *= 1.8; 
@@ -968,22 +964,17 @@
                     
                     let globalMult = strategyMultiplier * staminaMod * catchUpMod * terrainSpeedMult * eventSpeedMult * auraDebuff;
                     
-                    let targetSpeedPortion = (effSpeed / 100) * 2.75 * globalMult;
-                    let targetPowerPortion = (effPower / 100) * 2.75 * globalMult;
+                    // 💡 [패치] 스피드 배율 상향(3.0), 파워 배율 하향(2.4) 적용
+                let targetSpeedPortion = (effSpeed / 100) * 3.0 * globalMult;
+                let targetPowerPortion = (effPower / 100) * 2.4 * globalMult * ultPowerMult;
 
-                    let speedRate = 0.20; 
-                    if (runner.currentSpeedPortion < targetSpeedPortion) {
-                        runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * speedRate * (physicsDt * 60);
-                    } else {
-                        runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * 0.1 * (physicsDt * 60);
-                    }
+                // 스피드 어택 타임은 여전히 빠름
+                let speedRate = 0.20; 
+                runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * speedRate * (physicsDt * 60);
 
-                    let powerRate = 0.005;
-                    if (runner.currentPowerPortion < targetPowerPortion) {
-                        runner.currentPowerPortion += (targetPowerPortion - runner.currentPowerPortion) * powerRate * (physicsDt * 60);
-                    } else {
-                        runner.currentPowerPortion += (targetPowerPortion - runner.currentPowerPortion) * 0.05 * (physicsDt * 60);
-                    }
+                // 💡 [패치] 파워로 속도가 쌓이는 시간 대폭 연장 (0.005 -> 0.0015)
+                let powerRate = targetPowerPortion > runner.currentPowerPortion ? 0.0015 : 0.05;
+                runner.currentPowerPortion += (targetPowerPortion - runner.currentPowerPortion) * powerRate * (physicsDt * 60);
 
                     if (terrainSpeedMult < 1.0) {
                         let hillCapS = targetSpeedPortion * terrainSpeedMult;
