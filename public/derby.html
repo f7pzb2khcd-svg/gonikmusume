@@ -390,41 +390,27 @@
             }
         }
 
+        // 💡 [패치] 문자열 파싱 오류를 원천 차단한 절대 시간 비교 로직
         window.applyTimeFilter = function() {
             const useTimeCutoff = document.getElementById('timeCutoffToggle').checked;
-            const cutoffVal = document.getElementById('timeCutoffInput').value;
             
             let timeFiltered = [];
-            if (useTimeCutoff && cutoffVal) {
-                const cutoffTime = new Date(cutoffVal.replace(' ', 'T')).getTime();
+            
+            // fpTimeCutoff(Flatpickr 인스턴스)에서 완벽한 Date 객체를 직접 꺼내옴
+            if (useTimeCutoff && fpTimeCutoff && fpTimeCutoff.selectedDates.length > 0) {
+                // 초(Seconds) 단위로 맞춰서 백엔드와 규격 통일
+                const cutoffTime = Math.floor(fpTimeCutoff.selectedDates[0].getTime() / 1000);
                 
                 timeFiltered = rawParticipants.filter(p => {
-                    if (!p.reg_date) return true; 
-                    
-                    // 💡 [버그 방어] 연도 표기 방식 차이에 완벽 대응하는 정규식 추출 파서
-                    let parts = p.reg_date.match(/\d+/g);
-                    if (!parts || parts.length < 5) return true; // 형식이 이상하면 그냥 통과시킴
-                    
-                    let year = parts[0].length === 2 ? "20" + parts[0] : parts[0];
-                    let month = parts[1] - 1; 
-                    let day = parts[2];
-                    let hour = parts[3];
-                    let min = parts[4];
-                    let sec = parts.length > 5 ? parts[5] : 0;
-                    
-                    let cmtTime = new Date(year, month, day, hour, min, sec).getTime();
-                    
-                    if (isNaN(cmtTime)) return true;
-                    return cmtTime <= cutoffTime;
+                    if (!p.timestamp) return true; // 예외 처리된 사람은 무조건 통과
+                    return p.timestamp <= cutoffTime; // 절대 숫자값으로 칼같이 필터링
                 });
             } else {
                 timeFiltered = rawParticipants;
             }
 
             let allValidNames = timeFiltered.map(p => p.name);
-            
             currentExtractedList = allValidNames.filter(name => !excludedNames.has(name));
-
             renderFilterBadges(allValidNames); 
         }
 
