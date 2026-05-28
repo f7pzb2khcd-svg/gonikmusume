@@ -390,20 +390,35 @@
             }
         }
 
-        // 💡 [패치] 문자열 파싱 오류를 원천 차단한 절대 시간 비교 로직
+        // 💡 [패치] 시차 오류를 원천 차단한 프론트엔드 자체 시간 계산 로직
         window.applyTimeFilter = function() {
             const useTimeCutoff = document.getElementById('timeCutoffToggle').checked;
             
             let timeFiltered = [];
-            
-            // fpTimeCutoff(Flatpickr 인스턴스)에서 완벽한 Date 객체를 직접 꺼내옴
             if (useTimeCutoff && fpTimeCutoff && fpTimeCutoff.selectedDates.length > 0) {
-                // 초(Seconds) 단위로 맞춰서 백엔드와 규격 통일
-                const cutoffTime = Math.floor(fpTimeCutoff.selectedDates[0].getTime() / 1000);
+                // 설정한 기준 시간 (밀리초)
+                const cutoffTime = fpTimeCutoff.selectedDates[0].getTime();
                 
                 timeFiltered = rawParticipants.filter(p => {
-                    if (!p.timestamp) return true; // 예외 처리된 사람은 무조건 통과
-                    return p.timestamp <= cutoffTime; // 절대 숫자값으로 칼같이 필터링
+                    if (!p.reg_date) return true; 
+                    
+                    // 디시 날짜 "YYYY.MM.DD HH:MM:SS" 에서 숫자만 추출
+                    let parts = p.reg_date.match(/\d+/g);
+                    if (!parts || parts.length < 5) return true; 
+                    
+                    let year = parts[0].length === 2 ? "20" + parts[0] : parts[0];
+                    let month = parts[1] - 1; 
+                    let day = parts[2];
+                    let hour = parts[3];
+                    let min = parts[4];
+                    let sec = parts.length > 5 ? parts[5] : 0;
+                    
+                    // 기획자님 컴퓨터(한국) 기준으로 정확하게 변환
+                    let cmtTime = new Date(year, month, day, hour, min, sec).getTime();
+                    
+                    if (isNaN(cmtTime)) return true;
+                    // 작성 시간과 컷오프 시간을 비교
+                    return cmtTime <= cutoffTime;
                 });
             } else {
                 timeFiltered = rawParticipants;
