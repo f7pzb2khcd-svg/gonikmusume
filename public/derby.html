@@ -199,13 +199,15 @@
         let TRACK_LENGTH = 10000;    
         let FINISH_LINE = 9600; 
         let OBSTACLE_START = 3500; 
-        let OBSTACLE_END = 5000;   
+        let OBSTACLE_END = 4500;   
 
         const BASE_MOVE_SPEED_MULT = 0.045; 
-        const BASE_STAMINA_DRAIN = 0.012; // 💡 기본 연비(효율) 향상 (0.020 -> 0.012)
+        
+        // 💡 [패치] 스태미나 소비량 원상복구 (0.012 -> 0.022)
+        const BASE_STAMINA_DRAIN = 0.022;   
         const ACCEL_MULT = 0.5;             
         
-        const ULT_SPEED_BOOST = 1.5;          
+        // 💡 [패치] 필살기 순간 속도(로켓부스트)는 약간만 남기고 모두 삭제
         const ULT_ROCKET_BOOST = 1.5;       
         
         const SUPPLY_START = 17000; 
@@ -517,14 +519,11 @@
             if (board.children.length > 5) board.removeChild(board.firstChild);
         }
 
+        // 💡 [패치] 궁극기 발동 메커니즘 전면 개편 (모든 버프/회복 삭제, 약간의 로켓 + 스탯 뻥튀기만 남김)
         function triggerUltimate(runner) {
             if (isFastForwarding) {
-                runner.stats.speed += ULT_SPEED_BOOST; 
                 runner.speedBoost = ULT_ROCKET_BOOST; 
                 runner.isUltimateActive = true;
-                runner.currentStamina += runner.maxStamina * 0.1;
-                if (runner.currentStamina > runner.maxStamina) runner.currentStamina = runner.maxStamina;
-                if (runner.isExhausted && runner.currentStamina >= runner.maxStamina / 3) runner.isExhausted = false;
                 return;
             }
 
@@ -538,15 +537,8 @@
                 cutin.style.display = 'none';
                 isPaused = false;
                 
-                runner.stats.speed += ULT_SPEED_BOOST; 
                 runner.speedBoost = ULT_ROCKET_BOOST; 
                 runner.isUltimateActive = true;
-                
-                runner.currentStamina += runner.maxStamina * 0.1;
-                if (runner.currentStamina > runner.maxStamina) runner.currentStamina = runner.maxStamina;
-                if (runner.isExhausted && runner.currentStamina >= runner.maxStamina / 3) {
-                    runner.isExhausted = false;
-                }
 
                 focusRunner = runner;
                 focusEndTime = gameTime + 3.0; 
@@ -563,10 +555,9 @@
             roomData.participants.forEach((name, index) => {
                 const strategy = strategies[Math.floor(seededRandom() * strategies.length)];
                 
-                // 💡 [스탯 유도 개편] 근성은 균일하게, 선입/추입은 스태미나와 파워에 극단적 몰빵
                 let statWeights = [1, 1, 1, 1, 1];
-                if (strategy === "도주") statWeights = [3.0, 0.6, 1.0, 1.0, 1.2]; 
-                if (strategy === "선행") statWeights = [1.5, 1.5, 1.5, 1.0, 1.0]; 
+                if (strategy === "도주") statWeights = [3.0, 0.5, 1.0, 0.6, 1.5]; 
+                if (strategy === "선행") statWeights = [1.5, 1.5, 2.0, 1.0, 1.0]; 
                 if (strategy === "선입") statWeights = [0.8, 2.5, 2.0, 1.0, 1.0]; 
                 if (strategy === "추입") statWeights = [0.5, 2.5, 2.5, 1.0, 1.0]; 
 
@@ -769,6 +760,13 @@
             runners.forEach(runner => {
                 if (runner.finished) return;
 
+                // 💡 [궁극기 올스탯 1.8배 폭증 효과 적용] (한계치를 넘어감)
+                let ultStatMult = runner.isUltimateActive ? 1.8 : 1.0;
+                let effSpeed = runner.stats.speed * ultStatMult;
+                let effPower = runner.stats.power * ultStatMult;
+                let effGuts  = runner.stats.guts  * ultStatMult;
+                let effIntel = runner.stats.intel * ultStatMult;
+
                 if (roomData.map_type === 'long' && supplyActivated && runner.x >= SUPPLY_START - 100 && runner.x <= SUPPLY_END) {
                     burgers.forEach(burger => {
                         if (!burger.consumed && gameTime > burger.activateTime) {
@@ -796,12 +794,12 @@
 
                 if (roomData.map_type === 'long') {
                     if (runner.x >= 10000 && runner.x < 12000) { 
-                        terrainSpeedMult = 0.6 + (runner.stats.power / 100) * 0.4; 
+                        terrainSpeedMult = 0.6 + (effPower / 100) * 0.4; 
                         terrainStaminaMult = 1.5; 
                     } 
                 } else {
                     if (runner.x >= 7000 && runner.x < 8800) {
-                        terrainSpeedMult = 0.65 + (runner.stats.power / 100) * 0.35;
+                        terrainSpeedMult = 0.65 + (effPower / 100) * 0.35;
                         terrainStaminaMult = 1.4;
                     }
                 }
@@ -825,7 +823,7 @@
 
                 if (gameTime > 5.0 && !runner.hasExcited && trackPercent < 0.4 && seededRandom() < 0.001) {
                     if (runner.strategy === "선입" || runner.strategy === "추입") {
-                        let exciteChance = (100 - runner.stats.intel) / 100; 
+                        let exciteChance = (100 - effIntel) / 100; 
                         if (seededRandom() < exciteChance) {
                             runner.hasExcited = true;
                             runner.isExcited = true;
@@ -850,12 +848,15 @@
                             let distanceLane = Math.abs(runner.lane - other.lane);
                             
                             if (distanceX < 60 && distanceLane <= 1) {
-                                if (runner.stats.power < other.stats.power) {
-                                    let escapeChance = runner.stats.intel / 150; 
+                                let otherUltStatMult = other.isUltimateActive ? 1.8 : 1.0;
+                                let effOtherPower = other.stats.power * otherUltStatMult;
+
+                                if (effPower < effOtherPower) {
+                                    let escapeChance = effIntel / 150; 
                                     if (seededRandom() > escapeChance) {
-                                        let powerDiff = other.stats.power - runner.stats.power;
+                                        let powerDiff = effOtherPower - effPower;
                                         let penalty = (powerDiff / 50) * 0.5 * (1 - (distanceX / 60));
-                                        let intelMitigation = (runner.stats.intel / 100) * 0.5;
+                                        let intelMitigation = (effIntel / 100) * 0.5;
                                         penalty *= (1 - intelMitigation);
                                         auraDebuff -= penalty;
                                     } else {
@@ -882,10 +883,10 @@
                         let timeSinceActive = gameTime - obstacleZoneActivatedAt;
                         let baseTrapChance = 0.025 * Math.max(0, 1 - (timeSinceActive / 10.0));
                         if (seededRandom() < baseTrapChance) {
-                            let evadeChance = (runner.stats.intel / 100) * 0.5; 
+                            let evadeChance = (effIntel / 100) * 0.5; 
                             if (runner === currentLeader) evadeChance = -0.3; 
                             if (seededRandom() > evadeChance) {
-                                let stunDur = (800 - (runner.stats.power * 2)) / 1000.0;
+                                let stunDur = (800 - (effPower * 2)) / 1000.0;
                                 if(stunDur < 0.3) stunDur = 0.3;
                                 runner.stunnedUntil = gameTime + stunDur;
                                 runner.immuneUntil = runner.stunnedUntil + 1.5; 
@@ -904,7 +905,7 @@
 
                 let skillDisabled = (leaderX > FINISH_LINE * 0.85) || !(runner.x > FINISH_LINE * 0.20) || (runner === currentLeader);
                 let isGlobalCooldown = (gameTime - lastSkillTime < 5.0);
-                let skillProb = 0.005 + (runner.stats.intel / 1000); 
+                let skillProb = 0.005 + (effIntel / 1000); 
 
                 if (runner.hasSkill && !skillDisabled && !isGlobalCooldown && seededRandom() < skillProb) {
                     runner.hasSkill = false;
@@ -920,9 +921,9 @@
                 if (runner.strategy === "선입" && trackPercent > 0.4 && trackPercent < 0.75) strategyMultiplier = 1.15;
                 if (runner.strategy === "추입" && trackPercent > 0.7) strategyMultiplier = 1.25;
 
-                let staminaDrainMult = runner.isUltimateActive ? 0.8 : 1.0;
+                let staminaDrainMult = 1.0; 
                 if (runner.isOverpacing) staminaDrainMult *= 1.8; 
-                if (runner.isExcited) staminaDrainMult *= 3.0; // 💡 흥분 페널티 대폭 상향 (1.5 -> 3.0)
+                if (runner.isExcited) staminaDrainMult *= 3.0; 
                 if (runner.excitedPenalty) staminaDrainMult *= 1.2; 
 
                 let catchUpMod = 1.0;
@@ -932,8 +933,8 @@
                 }
 
                 if (runner.isExhausted) {
-                    // 💡 [패치] 스태미나 스탯(최대 체력)이 높을수록 회복에 시간이 더 걸리는 고정 수치 회복 방식
-                    let baseRecovery = 4.0; 
+                    // 💡 [패치] 기진맥진 시 회복 속도 기존(4.0)보다 1.5배 느리게 조정 (2.6)
+                    let baseRecovery = 2.6; 
                     if (runner.excitedPenalty) baseRecovery *= 0.5; 
 
                     runner.currentStamina += baseRecovery * (physicsDt * 60);
@@ -943,10 +944,11 @@
                         runner.isExhausted = false;
                     }
                 } else {
-                    // 💡 [패치] 근성(guts) 스탯이 높을수록 스태미나 소모량이 대폭 감소 (효율 증가)
-                    let gutsEfficiency = 1.0 - (runner.stats.guts / 250); // 근성 100일 경우 소모량 40% 감소
+                    // 💡 [패치] 근성 효율 약간 감소 (100기준 40% 절감 -> 25% 절감)
+                    let gutsEfficiency = 1.0 - (effGuts / 400); 
+                    if (gutsEfficiency < 0.2) gutsEfficiency = 0.2; 
                     
-                    runner.currentStamina -= (runner.stats.speed * BASE_STAMINA_DRAIN) * strategyMultiplier * staminaDrainMult * terrainStaminaMult * bodyCheckStaminaMult * gutsEfficiency * (physicsDt * 60); 
+                    runner.currentStamina -= (effSpeed * BASE_STAMINA_DRAIN) * strategyMultiplier * staminaDrainMult * terrainStaminaMult * bodyCheckStaminaMult * gutsEfficiency * (physicsDt * 60); 
                     if (runner.currentStamina <= 0) {
                         runner.currentStamina = 0;
                         runner.isExhausted = true;
@@ -959,10 +961,9 @@
                 
                 let globalMult = strategyMultiplier * staminaMod * catchUpMod * terrainSpeedMult * eventSpeedMult * auraDebuff;
                 
-                let ultPowerMult = runner.isUltimateActive ? 1.5 : 1.0; 
-
-                let targetSpeedPortion = (runner.stats.speed / 100) * 2.2 * globalMult;
-                let targetPowerPortion = (runner.stats.power / 100) * 3.3 * globalMult * ultPowerMult;
+                // 💡 [패치] 스피드와 파워의 속도 배율 50:50 황금 밸런스 매칭 (둘 다 2.75)
+                let targetSpeedPortion = (effSpeed / 100) * 2.75 * globalMult;
+                let targetPowerPortion = (effPower / 100) * 2.75 * globalMult;
 
                 let speedRate = 0.20; 
                 runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * speedRate * (physicsDt * 60);
@@ -1079,8 +1080,8 @@
             let leaderInZone = false;
             
             let zones = roomData.map_type === 'long' 
-                ? [{s: 6000, e: 7000}, {s: 10000, e: 12000}, {s: 17000, e: 19000}]
-                : [{s: 3500, e: 4500}, {s: 7000, e: 8800}];
+                ? [{s: 6000, e: 7500}, {s: 10000, e: 12000}, {s: 17000, e: 19000}]
+                : [{s: 3500, e: 5000}, {s: 7000, e: 8800}];
 
             zones.forEach(z => {
                 if (leaderX >= z.s - prepDist && leaderX <= z.e) leaderInZone = true;
