@@ -10,7 +10,7 @@
         .subtitle { font-size: 18px; color: #ffeb3b; display: block; margin-top: 5px; font-weight: normal; }
         
         #lobby-panel { width: 90%; max-width: 650px; background-color: #fff; color: #000; border-radius: 10px; padding: 30px; box-sizing: border-box; text-align: center; margin-top: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        #lobby-panel input { width: 80%; padding: 12px; font-size: 16px; margin: 10px 0; border: 2px solid #ccc; border-radius: 5px; }
+        #lobby-panel input[type="text"] { width: 80%; padding: 12px; font-size: 16px; margin: 10px 0; border: 2px solid #ccc; border-radius: 5px; }
         
         #filter-box { display: none; background: #f5f6fa; padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 180px; overflow-y: auto; text-align: left; border: 1px solid #ddd; }
         .filter-badge { display: inline-block; background: #e74c3c; color: white; padding: 5px 10px; margin: 4px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
@@ -103,9 +103,20 @@
     <h1>🍔 왁마갤 무스메 <span class="subtitle">- 갸샤욘 레이싱 -</span></h1>
     
     <div id="lobby-panel">
-        <h2>🏆 대회 준비 및 참가자 스크리닝</h2>
+        <h2>🏆 참가자 뽑기</h2>
         <div id="step-1">
             <input type="text" id="dcUrl" placeholder="디시인사이드 게시글 주소를 입력하세요">
+            
+            <div style="margin: 10px 0; text-align: left; padding-left: 10%;">
+                <label style="cursor: pointer; font-weight: bold; color: #e53935;">
+                    <input type="checkbox" id="timeCutoffToggle" onchange="toggleTimeCutoff()"> ⏱️ 댓글 시간컷 활성화
+                </label>
+                <div id="timeCutoffContainer" style="display: none; margin-top: 8px;">
+                    <input type="datetime-local" id="timeCutoffInput" style="width: 80%; border: 2px solid #e53935;">
+                    <div style="font-size: 12px; color: #555; margin-top: 4px;">※ 지정된 시간 이전까지 작성된 댓글만 추출합니다.<br>(서버 API 단의 처리가 필요합니다.)</div>
+                </div>
+            </div>
+
             <br>
             <button onclick="extractParticipants()" id="extractBtn">참가자 먼저 추출하기</button>
         </div>
@@ -116,8 +127,8 @@
             <div style="margin-bottom: 15px;">
                 <label for="mapSelect" style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">🗺️ 개최할 경기장(맵)을 선택하세요</label>
                 <select id="mapSelect" style="width: 80%; padding: 10px; font-size: 16px; border: 2px solid #ccc; border-radius: 5px;">
-                    <option value="short">🏁 일반 단거리 레이스 (10,000m - 오르막 포함)</option>
-                    <option value="long">🏆 극한의 그랜드 더비 (20,000m - 오르막, 징버거 투하)</option>
+                    <option value="short">🏁 일반 단거리 레이스 (8,000m)</option>
+                    <option value="long">🏆 극한의 그랜드 더비 (20,000m)</option>
                 </select>
             </div>
 
@@ -171,7 +182,7 @@
                 <button onclick="sendChat('ㅠㅠ')">ㅠㅠ</button>
                 <button onclick="sendChat('ㅅㅅ')">ㅅㅅ</button>
                 <button onclick="sendChat('ㅅㅂ')">ㅅㅂ</button>
-                <button onclick="sendChat('ㅂㅅ')">ㅂㅅ</button>
+                <button onclick="sendChat('오')">오</button>
                 <button onclick="sendChat('ㅎㅇ')">ㅎㅇ</button>
                 <button onclick="sendChat('주작')">주작</button>
             </div>
@@ -194,7 +205,7 @@
         let chatRef = null; 
 
         // ==============================================
-        // 🛠️ [기획자 설정 변수 완벽 세팅]
+        // 🛠️ [기획자님 커스텀 밸런스 변수 세팅]
         // ==============================================
         let TRACK_LENGTH = 10000;    
         let FINISH_LINE = 9600; 
@@ -202,7 +213,7 @@
         let OBSTACLE_END = 4500;   
 
         const BASE_MOVE_SPEED_MULT = 0.045; 
-        const BASE_STAMINA_DRAIN = 0.015;   
+        const BASE_STAMINA_DRAIN = 0.015;   // 💡 완화된 스태미나 소모량
         const ACCEL_MULT = 0.5;             
         
         const ULT_ROCKET_BOOST = 1.2;       
@@ -248,6 +259,28 @@
             }
         }
         window.addEventListener('resize', resizeGame);
+
+        // 💡 [UI 패치] 시간컷 토글 및 복사 기능
+        window.toggleTimeCutoff = function() {
+            const container = document.getElementById('timeCutoffContainer');
+            const input = document.getElementById('timeCutoffInput');
+            if (document.getElementById('timeCutoffToggle').checked) {
+                container.style.display = 'block';
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                input.value = now.toISOString().slice(0, 16);
+            } else {
+                container.style.display = 'none';
+                input.value = '';
+            }
+        }
+        
+        window.copyShareUrl = function() {
+            const urlEl = document.getElementById('shareUrl');
+            urlEl.select();
+            document.execCommand('copy');
+            alert('방송 및 갤러리 공유용 링크가 복사되었습니다!');
+        }
 
         const TICK_RATE = 60; 
         const TICK_DT = 1.0 / TICK_RATE; 
@@ -314,11 +347,18 @@
             statusDiv.innerText = "디시인사이드 댓글에서 선수 명단을 추출하고 있습니다...";
             btn.disabled = true;
 
+            const useTimeCutoff = document.getElementById('timeCutoffToggle').checked;
+            const cutoffVal = document.getElementById('timeCutoffInput').value;
+            let payload = { url: urlInput };
+            if (useTimeCutoff && cutoffVal) {
+                payload.cutoff_time = Math.floor(new Date(cutoffVal).getTime() / 1000);
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/extract_only`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: urlInput })
+                    body: JSON.stringify(payload)
                 });
                 const data = await response.json();
                 
@@ -393,10 +433,18 @@
                     })
                 });
                 const data = await response.json();
+                
                 if (data.success) {
-                    statusDiv.style.color = 'green';
-                    statusDiv.innerText = "대회 방 생성 완료! 이동합니다.";
-                    setTimeout(() => { window.location.href = `?room=${data.room_id}`; }, 1000);
+                    const roomUrl = window.location.origin + window.location.pathname + '?room=' + data.room_id;
+                    statusDiv.innerHTML = `
+                        <h3 style="color: #00e5ff; margin-bottom: 5px;">🎉 대회 방이 생성되었습니다!</h3>
+                        <p style="font-size: 14px; color: #555;">아래 링크를 복사하여 참가자나 방송에 공유해 주세요.</p>
+                        <input type="text" id="shareUrl" value="${roomUrl}" readonly style="width: 90%; padding: 10px; font-size: 14px; margin-bottom: 10px; border: 2px solid #00e5ff; border-radius: 5px; background: #fdfdfd; color: #000; text-align: center;">
+                        <br>
+                        <button onclick="copyShareUrl()" style="background-color: #4CAF50; padding: 10px 20px; font-size: 16px; margin-right: 10px;">📋 링크 복사</button>
+                        <button onclick="window.location.href='${roomUrl}'" style="background-color: #ff9800; padding: 10px 20px; font-size: 16px;">🏃‍♂️ 방으로 입장</button>
+                    `;
+                    btn.style.display = 'none'; 
                 } else {
                     statusDiv.innerText = "오류: " + data.message;
                     btn.disabled = false;
@@ -445,8 +493,8 @@
                         <div class="finish-line" style="left: 19600px;"></div>
                     `;
                 } else {
-                    TRACK_LENGTH = 10000;
-                    FINISH_LINE = 9600;
+                    TRACK_LENGTH = 8000;
+                    FINISH_LINE = 7600;
                     OBSTACLE_START = 3500;
                     OBSTACLE_END = 4500; 
 
@@ -454,8 +502,7 @@
                         <div class="start-line"></div>
                         <div class="obstacle-zone" style="left: 3500px; width: 1000px;"></div>
                         <div class="obstacle-label" style="left: 3510px;">🚧 위험 지대 🚧</div>
-                        <div class="zone-label" style="left: 7000px; width: 1500px; background: linear-gradient(to right, rgba(255,100,0,0.2), rgba(255,100,0,0.05)); border-left: 3px solid #ff9800;">⛰️ 마의 오르막길 (속도 감소 / 스태미나 소모 증가)</div>
-                        <div class="finish-line" style="left: 9600px;"></div>
+                        <div class="finish-line" style="left: 7600px;"></div>
                     `;
                 }
                 trackEl.style.width = `${TRACK_LENGTH}px`;
@@ -792,11 +839,6 @@
                         terrainSpeedMult = 0.6 + (effPower / 100) * 0.4; 
                         terrainStaminaMult = 1.5; 
                     } 
-                } else {
-                    if (runner.x >= 7000 && runner.x < 8800) {
-                        terrainSpeedMult = 0.65 + (effPower / 100) * 0.35;
-                        terrainStaminaMult = 1.4;
-                    }
                 }
 
                 runner.isOverpacing = false;
@@ -843,7 +885,7 @@
                             let distanceLane = Math.abs(runner.lane - other.lane);
                             
                             if (distanceX < 60 && distanceLane <= 1) {
-                                let otherUltStatMult = other.isUltimateActive ? 1.4 : 1.0;
+                                let otherUltStatMult = other.isUltimateActive ? 1.25 : 1.0;
                                 let effOtherPower = other.stats.power * otherUltStatMult;
 
                                 if (effPower < effOtherPower) {
@@ -891,7 +933,6 @@
                     }
                 }
                 
-                // 💡 [패치] 스턴 발생 시 모멘텀(속도) 즉각 0으로 완전 초기화
                 if (gameTime < runner.stunnedUntil) {
                     runner.currentSpeedPortion = 0; 
                     runner.currentPowerPortion = 0;
@@ -906,7 +947,7 @@
                 if (runner.hasSkill && !skillDisabled && !isGlobalCooldown && seededRandom() < skillProb) {
                     runner.hasSkill = false;
                     lastSkillTime = gameTime;
-                    runner.speedBoost = 2.5;
+                    runner.speedBoost = 2.5; 
                     runner.isNormalSkillActive = true;
                     showCommentary(`💡 [스킬] ${runner.name} 선수가 가속합니다!`);
                 }
@@ -1030,8 +1071,6 @@
                 gameWin.style.filter = "none";
                 if (roomData.map_type === 'long') {
                     if (leaderX >= 10000 && leaderX < 12000) currentTransform = "scale(1) rotate(-3deg)";
-                } else {
-                    if (leaderX >= 7000 && leaderX < 8800) currentTransform = "scale(1) rotate(-3deg)";
                 }
             }
             gameWin.style.transform = currentTransform;
@@ -1095,7 +1134,7 @@
             
             let zones = roomData.map_type === 'long' 
                 ? [{s: 6000, e: 7500}, {s: 10000, e: 12000}, {s: 17000, e: 19000}]
-                : [{s: 3500, e: 5000}, {s: 7000, e: 8800}];
+                : [{s: 3500, e: 4500}]; // 💡 [단거리 맵 오르막 삭제 대응]
 
             zones.forEach(z => {
                 if (leaderX >= z.s - prepDist && leaderX <= z.e) leaderInZone = true;
