@@ -785,7 +785,8 @@
                     isNormalSkillActive: false, isUltimateActive: false, finished: false,
                     isExhausted: false, currentSpeed: 0, isStruggling: false,
                     isOverpacing: false, hasExcited: false, isExcited: false, excitedPenalty: false, excitedEndTime: 0,
-                    currentSpeedPortion: 0, currentPowerPortion: 0 
+                    packImmuneUntil: 0, // 💡 [패치] 마군 탈출 면역 타이머 추가
+                    currentSpeedPortion: 0, currentPowerPortion: 0
                 });
             });
             renderFrame(); 
@@ -986,33 +987,41 @@
                 let auraDebuff = 1.0;
 
                 if (gameTime > 5.0 && !runner.isExhausted) {
-                    runners.forEach(other => {
-                        if (runner !== other && !other.finished) {
-                            let distanceX = Math.abs(runner.x - other.x);
-                            let distanceLane = Math.abs(runner.lane - other.lane);
-                            
-                            if (distanceX < 60 && distanceLane <= 1) {
-                                let otherUltStatMult = other.isUltimateActive ? 1.25 : 1.0;
-                                let effOtherPower = other.stats.power * otherUltStatMult;
+                    // 💡 [패치] 지능으로 빠져나온 후 2초 동안은 몸싸움 면역
+                    if (gameTime < runner.packImmuneUntil) {
+                        // 면역 상태: 디버프 누적 생략 (auraDebuff = 1.0 유지)
+                    } else {
+                        runners.forEach(other => {
+                            if (runner !== other && !other.finished) {
+                                let distanceX = Math.abs(runner.x - other.x);
+                                let distanceLane = Math.abs(runner.lane - other.lane);
+                                
+                                if (distanceX < 60 && distanceLane <= 1) {
+                                    let otherUltStatMult = other.isUltimateActive ? 1.25 : 1.0;
+                                    let effOtherPower = other.stats.power * otherUltStatMult;
 
-                                if (effPower < effOtherPower) {
-                                    let escapeChance = effIntel / 150; 
-                                    if (seededRandom() > escapeChance) {
-                                        let powerDiff = effOtherPower - effPower;
-                                        let penalty = (powerDiff / 50) * 0.5 * (1 - (distanceX / 60));
-                                        let intelMitigation = (effIntel / 100) * 0.5;
-                                        penalty *= (1 - intelMitigation);
-                                        auraDebuff -= penalty;
-                                    } else {
-                                        if (gameTime > bodyCheckCommentaryCd && seededRandom() < 0.05) {
-                                            showCommentary(`🧠 [${runner.name}] 마군에 갇혔지만 영리하게 빈틈을 파고듭니다!`);
-                                            bodyCheckCommentaryCd = gameTime + 5.0; 
+                                    if (effPower < effOtherPower) {
+                                        let escapeChance = effIntel / 150; 
+                                        if (seededRandom() > escapeChance) {
+                                            // 탈출 실패: 페널티 계산
+                                            let powerDiff = effOtherPower - effPower;
+                                            let penalty = (powerDiff / 50) * 0.5 * (1 - (distanceX / 60));
+                                            let intelMitigation = (effIntel / 100) * 0.5;
+                                            penalty *= (1 - intelMitigation);
+                                            auraDebuff -= penalty;
+                                        } else {
+                                            // 💡 [패치] 탈출 성공: 3초간 몸싸움 면역 부여!
+                                            runner.packImmuneUntil = gameTime + 3.0; 
+                                            if (gameTime > bodyCheckCommentaryCd && seededRandom() < 0.1) {
+                                                showCommentary(`🧠 [${runner.name}] 마군에 갇혔지만 영리하게 빈틈을 파고들어 빠져나옵니다!`);
+                                                bodyCheckCommentaryCd = gameTime + 5.0; 
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
                 
                 auraDebuff = Math.max(0.5, auraDebuff);
@@ -1270,7 +1279,13 @@
                 clusterViewEndTime = 0; 
             }
             
-            if (!leaderInZone && gameTime > lastZoneExitTime + 10.0 && clusterViewCount < 1 && clusterViewEndTime === 0 && gameTime > burgerCameraEndTime) {
+            // 💡 [패치] 선두가 결승선 근처(800m 이내)에 도달하면 중위권 카메라 강제 종료 및 차단
+            let isNearFinish = leaderX > FINISH_LINE - 800;
+            if (isNearFinish) {
+                clusterViewEndTime = 0; // 이미 진행 중인 중위권 카메라도 즉시 끊어버림
+            }
+            
+            if (!isNearFinish && !leaderInZone && gameTime > lastZoneExitTime + 10.0 && clusterViewCount < 1 && clusterViewEndTime === 0 && gameTime > burgerCameraEndTime) {
                 if (maxClusterSize >= 3 && clusterX < leaderX - 400) {
                     clusterViewCount++;
                     clusterViewEndTime = gameTime + 5.0;
