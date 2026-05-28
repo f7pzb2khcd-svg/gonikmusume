@@ -202,12 +202,10 @@
         let OBSTACLE_END = 4500;   
 
         const BASE_MOVE_SPEED_MULT = 0.045; 
-        
-        // 💡 [패치] 스태미나 소비량 원상복구 (0.012 -> 0.022)
         const BASE_STAMINA_DRAIN = 0.022;   
         const ACCEL_MULT = 0.5;             
         
-        // 💡 [패치] 필살기 순간 속도(로켓부스트)는 약간만 남기고 모두 삭제
+        const ULT_SPEED_BOOST = 1.5;          
         const ULT_ROCKET_BOOST = 1.5;       
         
         const SUPPLY_START = 17000; 
@@ -519,7 +517,6 @@
             if (board.children.length > 5) board.removeChild(board.firstChild);
         }
 
-        // 💡 [패치] 궁극기 발동 메커니즘 전면 개편 (모든 버프/회복 삭제, 약간의 로켓 + 스탯 뻥튀기만 남김)
         function triggerUltimate(runner) {
             if (isFastForwarding) {
                 runner.speedBoost = ULT_ROCKET_BOOST; 
@@ -555,11 +552,12 @@
             roomData.participants.forEach((name, index) => {
                 const strategy = strategies[Math.floor(seededRandom() * strategies.length)];
                 
+                // 💡 [패치] 스탯 가중치 합계(7.5) 평준화 및 지정 수치 적용
                 let statWeights = [1, 1, 1, 1, 1];
-                if (strategy === "도주") statWeights = [3.0, 0.5, 1.0, 0.6, 1.5]; 
-                if (strategy === "선행") statWeights = [1.5, 1.5, 2.0, 1.0, 1.0]; 
-                if (strategy === "선입") statWeights = [0.8, 2.5, 2.0, 1.0, 1.0]; 
-                if (strategy === "추입") statWeights = [0.5, 2.5, 2.5, 1.0, 1.0]; 
+                if (strategy === "도주") statWeights = [3.0, 0.7, 1.0, 0.8, 2.0]; 
+                if (strategy === "선행") statWeights = [1.6, 1.5, 2.0, 0.9, 1.5]; 
+                if (strategy === "선입") statWeights = [0.8, 2.5, 2.0, 1.2, 1.0]; 
+                if (strategy === "추입") statWeights = [0.5, 2.5, 2.5, 1.1, 0.9]; 
 
                 let baseStats = [40, 40, 40, 40, 40]; 
                 let remain = 110; 
@@ -760,8 +758,8 @@
             runners.forEach(runner => {
                 if (runner.finished) return;
 
-                // 💡 [궁극기 올스탯 1.8배 폭증 효과 적용] (한계치를 넘어감)
-                let ultStatMult = runner.isUltimateActive ? 1.8 : 1.0;
+                // 💡 [패치] 궁극기 올스탯 증가 배율 너프 (1.8배 -> 1.4배)
+                let ultStatMult = runner.isUltimateActive ? 1.4 : 1.0;
                 let effSpeed = runner.stats.speed * ultStatMult;
                 let effPower = runner.stats.power * ultStatMult;
                 let effGuts  = runner.stats.guts  * ultStatMult;
@@ -807,11 +805,12 @@
                 runner.isOverpacing = false;
                 let trackPercent = runner.x / FINISH_LINE;
                 
+                // 💡 [패치] 오버페이스 경쟁 범위 축소 (150 -> 60)
                 if (gameTime > 3.0 && runner.strategy === "도주" && trackPercent >= 0.05 && trackPercent <= 0.35) {
                     let nearbyDoju = runners.find(other => 
                         other !== runner && 
                         other.strategy === "도주" && 
-                        Math.abs(runner.x - other.x) < 150 && 
+                        Math.abs(runner.x - other.x) < 60 && 
                         Math.abs(runner.lane - other.lane) <= 1
                     );
                     if (nearbyDoju) runner.isOverpacing = true;
@@ -848,7 +847,7 @@
                             let distanceLane = Math.abs(runner.lane - other.lane);
                             
                             if (distanceX < 60 && distanceLane <= 1) {
-                                let otherUltStatMult = other.isUltimateActive ? 1.8 : 1.0;
+                                let otherUltStatMult = other.isUltimateActive ? 1.4 : 1.0;
                                 let effOtherPower = other.stats.power * otherUltStatMult;
 
                                 if (effPower < effOtherPower) {
@@ -933,7 +932,6 @@
                 }
 
                 if (runner.isExhausted) {
-                    // 💡 [패치] 기진맥진 시 회복 속도 기존(4.0)보다 1.5배 느리게 조정 (2.6)
                     let baseRecovery = 2.6; 
                     if (runner.excitedPenalty) baseRecovery *= 0.5; 
 
@@ -944,7 +942,6 @@
                         runner.isExhausted = false;
                     }
                 } else {
-                    // 💡 [패치] 근성 효율 약간 감소 (100기준 40% 절감 -> 25% 절감)
                     let gutsEfficiency = 1.0 - (effGuts / 400); 
                     if (gutsEfficiency < 0.2) gutsEfficiency = 0.2; 
                     
@@ -960,8 +957,7 @@
                 let eventSpeedMult = runner.isExcited ? 1.3 : 1.0; 
                 
                 let globalMult = strategyMultiplier * staminaMod * catchUpMod * terrainSpeedMult * eventSpeedMult * auraDebuff;
-                
-                // 💡 [패치] 스피드와 파워의 속도 배율 50:50 황금 밸런스 매칭 (둘 다 2.75)
+
                 let targetSpeedPortion = (effSpeed / 100) * 2.75 * globalMult;
                 let targetPowerPortion = (effPower / 100) * 2.75 * globalMult;
 
