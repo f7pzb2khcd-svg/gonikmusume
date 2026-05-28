@@ -4,13 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>왁마갤 무스메 : 갸샤욘 레이싱</title>
+    
+    <!-- 💡 [패치] 외부 시간 설정 라이브러리 (Flatpickr) 임포트 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+    
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #2c3e50; padding: 20px 0; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; overflow-x: hidden; }
         h1 { text-align: center; margin-bottom: 5px; }
         .subtitle { font-size: 18px; color: #ffeb3b; display: block; margin-top: 5px; font-weight: normal; }
         
         #lobby-panel { width: 90%; max-width: 650px; background-color: #fff; color: #000; border-radius: 10px; padding: 30px; box-sizing: border-box; text-align: center; margin-top: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        #lobby-panel input[type="text"] { width: 80%; padding: 12px; font-size: 16px; margin: 10px 0; border: 2px solid #ccc; border-radius: 5px; }
+        #lobby-panel input[type="text"] { width: 80%; padding: 12px; font-size: 16px; margin: 10px 0; border: 2px solid #ccc; border-radius: 5px; text-align: center; }
         
         #filter-box { display: none; background: #f5f6fa; padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 180px; overflow-y: auto; text-align: left; border: 1px solid #ddd; }
         .filter-badge { display: inline-block; background: #e74c3c; color: white; padding: 5px 10px; margin: 4px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
@@ -19,7 +24,6 @@
         
         #setup-box { display: none; margin-top: 15px; border-top: 2px dashed #ccc; padding-top: 15px; }
         #setup-box label { font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px; }
-        #setup-box input[type="datetime-local"] { width: 60%; padding: 10px; font-size: 16px; text-align: center; }
 
         #countdown-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; }
         #countdown-text { font-size: 80px; font-weight: bold; color: #ffeb3b; text-shadow: 0 0 20px #ff9800; margin-bottom: 20px; font-variant-numeric: tabular-nums; }
@@ -106,17 +110,6 @@
         <h2>🏆 참가자 뽑기</h2>
         <div id="step-1">
             <input type="text" id="dcUrl" placeholder="디시인사이드 게시글 주소를 입력하세요">
-            
-            <div style="margin: 10px 0; text-align: left; padding-left: 10%;">
-                <label style="cursor: pointer; font-weight: bold; color: #e53935;">
-                    <input type="checkbox" id="timeCutoffToggle" onchange="toggleTimeCutoff()"> ⏱️ 댓글 시간컷 활성화
-                </label>
-                <div id="timeCutoffContainer" style="display: none; margin-top: 8px;">
-                    <input type="datetime-local" id="timeCutoffInput" style="width: 80%; border: 2px solid #e53935;">
-                    <div style="font-size: 12px; color: #555; margin-top: 4px;">※ 지정된 시간 이전까지 작성된 댓글만 추출합니다.<br>(서버 API 단의 처리가 필요합니다.)</div>
-                </div>
-            </div>
-
             <br>
             <button onclick="extractParticipants()" id="extractBtn">참가자 먼저 추출하기</button>
         </div>
@@ -124,16 +117,29 @@
         <div id="filter-box"></div>
         
         <div id="setup-box">
+            <!-- 💡 [패치] 시간컷 설정 UI를 Flatpickr 텍스트 입력창으로 변경하여 입력/조작 편의성 극대화 -->
+            <div style="margin-bottom: 15px; border-bottom: 2px dashed #ddd; padding-bottom: 15px; text-align: left;">
+                <label style="cursor: pointer; font-weight: bold; color: #e53935; display: inline-block;">
+                    <input type="checkbox" id="timeCutoffToggle" onchange="toggleTimeCutoff()"> ⏱️ 댓글 시간컷 필터링 (선택)
+                </label>
+                <div id="timeCutoffContainer" style="display: none; margin-top: 8px;">
+                    <input type="text" id="timeCutoffInput" placeholder="클릭하여 기준 시간 선택/입력" style="width: 70%; padding: 10px; border: 2px solid #e53935; border-radius: 5px; cursor: pointer;">
+                    <button onclick="extractParticipants()" style="margin-top: 10px; font-size: 14px; padding: 8px 15px; background: #e53935;">필터링 재추출</button>
+                    <div style="font-size: 12px; color: #555; margin-top: 6px;">※ 지정된 시간 이전까지 작성된 댓글만 다시 추출합니다.</div>
+                </div>
+            </div>
+
             <div style="margin-bottom: 15px;">
                 <label for="mapSelect" style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">🗺️ 개최할 경기장(맵)을 선택하세요</label>
                 <select id="mapSelect" style="width: 80%; padding: 10px; font-size: 16px; border: 2px solid #ccc; border-radius: 5px;">
-                    <option value="short">🏁 일반 단거리 레이스 (8,000m)</option>
-                    <option value="long">🏆 극한의 그랜드 더비 (20,000m)</option>
+                    <option value="short">🏁 일반 단거리 레이스 (8,000m - 평지 스피드 승부)</option>
+                    <option value="long">🏆 극한의 그랜드 더비 (20,000m - 오르막, 징버거 투하)</option>
                 </select>
             </div>
 
-            <label for="datetimeInput">⏰ 언제 레이스를 시작할까요? (예약 시간 설정)</label>
-            <input type="datetime-local" id="datetimeInput">
+            <label for="datetimeInput">⏰ 예약 시간 설정</label>
+            <input type="text" id="datetimeInput" placeholder="클릭하여 경기 시작 시간 선택/입력">
+            
             <br><br>
             <button onclick="createRoomFinal()" id="createFinalBtn" class="btn-blue">최종 대회 방 생성하기</button>
         </div>
@@ -168,7 +174,7 @@
                 <img id="victory-image" src="victory.png" alt="Victory">
                 <div id="victory-name">우승자 닉네임</div>
                 <div id="victory-text">대회에서 우승을 차지했습니다! 🎉</div>
-                <button class="reload-btn" onclick="location.reload()">처음으로 돌아가기</button>
+                <button class="reload-btn" onclick="window.location.href = window.location.pathname;">처음으로 돌아가기</button>
             </div>
         </div>
 
@@ -182,6 +188,7 @@
                 <button onclick="sendChat('ㅠㅠ')">ㅠㅠ</button>
                 <button onclick="sendChat('ㅅㅅ')">ㅅㅅ</button>
                 <button onclick="sendChat('ㅅㅂ')">ㅅㅂ</button>
+                <!-- 💡 [패치] 채팅 매크로 변경 -->
                 <button onclick="sendChat('오')">오</button>
                 <button onclick="sendChat('ㅎㅇ')">ㅎㅇ</button>
                 <button onclick="sendChat('주작')">주작</button>
@@ -195,6 +202,9 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- 💡 [패치] Flatpickr 날짜/시간 선택 라이브러리 JS 임포트 -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/ko.js"></script>
 
     <script>
         const API_BASE = "https://gonik-musume.onrender.com/api"; 
@@ -205,7 +215,7 @@
         let chatRef = null; 
 
         // ==============================================
-        // 🛠️ [기획자님 커스텀 밸런스 변수 세팅]
+        // 🛠️ [기획자 설정 변수 완벽 세팅]
         // ==============================================
         let TRACK_LENGTH = 10000;    
         let FINISH_LINE = 9600; 
@@ -213,7 +223,7 @@
         let OBSTACLE_END = 4500;   
 
         const BASE_MOVE_SPEED_MULT = 0.045; 
-        const BASE_STAMINA_DRAIN = 0.015;   // 💡 완화된 스태미나 소모량
+        const BASE_STAMINA_DRAIN = 0.015;   
         const ACCEL_MULT = 0.5;             
         
         const ULT_ROCKET_BOOST = 1.2;       
@@ -260,18 +270,17 @@
         }
         window.addEventListener('resize', resizeGame);
 
-        // 💡 [UI 패치] 시간컷 토글 및 복사 기능
+        // 💡 [패치] Flatpickr 라이브러리 초기화 적용
+        let fpTimeCutoff, fpDatetime;
+        
         window.toggleTimeCutoff = function() {
             const container = document.getElementById('timeCutoffContainer');
-            const input = document.getElementById('timeCutoffInput');
             if (document.getElementById('timeCutoffToggle').checked) {
                 container.style.display = 'block';
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                input.value = now.toISOString().slice(0, 16);
+                fpTimeCutoff.setDate(new Date()); 
             } else {
                 container.style.display = 'none';
-                input.value = '';
+                fpTimeCutoff.clear();
             }
         }
         
@@ -347,11 +356,12 @@
             statusDiv.innerText = "디시인사이드 댓글에서 선수 명단을 추출하고 있습니다...";
             btn.disabled = true;
 
-            const useTimeCutoff = document.getElementById('timeCutoffToggle').checked;
-            const cutoffVal = document.getElementById('timeCutoffInput').value;
+            const useTimeCutoff = document.getElementById('timeCutoffToggle')?.checked;
+            const cutoffVal = document.getElementById('timeCutoffInput')?.value;
             let payload = { url: urlInput };
             if (useTimeCutoff && cutoffVal) {
-                payload.cutoff_time = Math.floor(new Date(cutoffVal).getTime() / 1000);
+                // Flatpickr에서 반환된 값을 Date로 변환하여 유닉스타임으로 전송
+                payload.cutoff_time = Math.floor(new Date(cutoffVal.replace(' ', 'T')).getTime() / 1000);
             }
 
             try {
@@ -367,10 +377,11 @@
                     currentExtractedList = data.participants;
                     renderFilterBadges(); 
                     
-                    const now = new Date();
-                    now.setMinutes(now.getMinutes() + 2);
-                    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                    document.getElementById('datetimeInput').value = now.toISOString().slice(0, 16);
+                    if(!document.getElementById('datetimeInput').value) {
+                        let d = new Date();
+                        d.setMinutes(d.getMinutes() + 2);
+                        fpDatetime.setDate(d);
+                    }
                     
                     document.getElementById('filter-box').style.display = 'block';
                     document.getElementById('setup-box').style.display = 'block';
@@ -411,7 +422,7 @@
             }
             if (!timeInput) { statusDiv.innerText = "예약 시간을 지정해 주세요."; return; }
 
-            const scheduledTimestamp = Math.floor(new Date(timeInput).getTime() / 1000);
+            const scheduledTimestamp = Math.floor(new Date(timeInput.replace(' ', 'T')).getTime() / 1000);
             const nowTimestamp = Math.floor(Date.now() / 1000);
 
             if (scheduledTimestamp <= nowTimestamp) {
@@ -433,12 +444,11 @@
                     })
                 });
                 const data = await response.json();
-                
                 if (data.success) {
                     const roomUrl = window.location.origin + window.location.pathname + '?room=' + data.room_id;
                     statusDiv.innerHTML = `
                         <h3 style="color: #00e5ff; margin-bottom: 5px;">🎉 대회 방이 생성되었습니다!</h3>
-                        <p style="font-size: 14px; color: #555;">아래 링크를 복사하여 참가자나 방송에 공유해 주세요.</p>
+                        <p style="font-size: 14px; color: #555;">아래 링크를 복사하여 참가자나 시청자에게 공유해 주세요.</p>
                         <input type="text" id="shareUrl" value="${roomUrl}" readonly style="width: 90%; padding: 10px; font-size: 14px; margin-bottom: 10px; border: 2px solid #00e5ff; border-radius: 5px; background: #fdfdfd; color: #000; text-align: center;">
                         <br>
                         <button onclick="copyShareUrl()" style="background-color: #4CAF50; padding: 10px 20px; font-size: 16px; margin-right: 10px;">📋 링크 복사</button>
@@ -456,6 +466,20 @@
         }
 
         window.onload = async function() {
+            // 💡 [패치] Flatpickr 라이브러리 인스턴스 생성
+            fpTimeCutoff = flatpickr("#timeCutoffInput", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                locale: "ko",
+                time_24hr: true
+            });
+            fpDatetime = flatpickr("#datetimeInput", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                locale: "ko",
+                time_24hr: true
+            });
+
             const urlParams = new URLSearchParams(window.location.search);
             const roomId = urlParams.get('room');
             if (!roomId) return;
@@ -839,7 +863,7 @@
                         terrainSpeedMult = 0.6 + (effPower / 100) * 0.4; 
                         terrainStaminaMult = 1.5; 
                     } 
-                }
+                } 
 
                 runner.isOverpacing = false;
                 let trackPercent = runner.x / FINISH_LINE;
@@ -1071,7 +1095,7 @@
                 gameWin.style.filter = "none";
                 if (roomData.map_type === 'long') {
                     if (leaderX >= 10000 && leaderX < 12000) currentTransform = "scale(1) rotate(-3deg)";
-                }
+                } 
             }
             gameWin.style.transform = currentTransform;
 
@@ -1134,7 +1158,7 @@
             
             let zones = roomData.map_type === 'long' 
                 ? [{s: 6000, e: 7500}, {s: 10000, e: 12000}, {s: 17000, e: 19000}]
-                : [{s: 3500, e: 4500}]; // 💡 [단거리 맵 오르막 삭제 대응]
+                : [{s: 3500, e: 4500}]; 
 
             zones.forEach(z => {
                 if (leaderX >= z.s - prepDist && leaderX <= z.e) leaderInZone = true;
