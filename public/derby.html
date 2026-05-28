@@ -205,7 +205,6 @@
         const BASE_STAMINA_DRAIN = 0.022;   
         const ACCEL_MULT = 0.5;             
         
-        // 💡 [패치] 궁극기 순간 로켓 부스트 최소화
         const ULT_ROCKET_BOOST = 1.2;       
         
         const SUPPLY_START = 17000; 
@@ -757,7 +756,6 @@
             runners.forEach(runner => {
                 if (runner.finished) return;
 
-                // 💡 [패치] 궁극기 상태일 때만 '모든 스탯'이 1.4배로 한계를 돌파하여 폭증
                 let ultStatMult = runner.isUltimateActive ? 1.4 : 1.0;
                 let effSpeed = runner.stats.speed * ultStatMult;
                 let effPower = runner.stats.power * ultStatMult;
@@ -804,7 +802,6 @@
                 runner.isOverpacing = false;
                 let trackPercent = runner.x / FINISH_LINE;
                 
-                // 💡 [패치] 오버페이스 경쟁 범위 마군과 동일하게 축소 (150 -> 60)
                 if (gameTime > 3.0 && runner.strategy === "도주" && trackPercent >= 0.05 && trackPercent <= 0.35) {
                     let nearbyDoju = runners.find(other => 
                         other !== runner && 
@@ -894,6 +891,7 @@
                     }
                 }
                 
+                // 💡 [패치] 스턴 발생 시 모멘텀(속도) 즉각 0으로 완전 초기화
                 if (gameTime < runner.stunnedUntil) {
                     runner.currentSpeedPortion = 0; 
                     runner.currentPowerPortion = 0;
@@ -913,7 +911,7 @@
                     showCommentary(`💡 [스킬] ${runner.name} 선수가 가속합니다!`);
                 }
 
-                let strategyMultiplier = 1.0;
+                let strategyMultiplier = 1.0; 
 
                 let staminaDrainMult = 1.0; 
                 if (runner.isOverpacing) staminaDrainMult *= 1.8; 
@@ -927,16 +925,6 @@
                 }
 
                 if (runner.isExhausted) {
-                    runner.currentSpeedPortion *= (1.0 - 0.1 * (physicsDt * 60)); 
-                    runner.currentPowerPortion *= (1.0 - 0.02 * (physicsDt * 60)); 
-                    
-                    let exhaustCapS = (effSpeed / 100) * 2.75 * strategyMultiplier * catchUpMod * 0.3;
-                    let exhaustCapP = (effPower / 100) * 2.75 * strategyMultiplier * catchUpMod * 0.3;
-                    
-                    if (runner.currentSpeedPortion < exhaustCapS) runner.currentSpeedPortion = exhaustCapS;
-                    if (runner.currentPowerPortion < exhaustCapP) runner.currentPowerPortion = exhaustCapP;
-
-                    // 💡 [패치] 기진맥진 회복 속도 기존(2.6)보다 대폭 낮춤 (1.5)
                     let baseRecovery = 1.5; 
                     if (runner.excitedPenalty) baseRecovery *= 0.5; 
 
@@ -964,17 +952,22 @@
                     
                     let globalMult = strategyMultiplier * staminaMod * catchUpMod * terrainSpeedMult * eventSpeedMult * auraDebuff;
                     
-                    // 💡 [패치] 스피드 배율 상향(3.0), 파워 배율 하향(2.4) 적용
-                let targetSpeedPortion = (effSpeed / 100) * 3.0 * globalMult;
-                let targetPowerPortion = (effPower / 100) * 2.4 * globalMult * ultPowerMult;
+                    let targetSpeedPortion = (effSpeed / 100) * 3.0 * globalMult;
+                    let targetPowerPortion = (effPower / 100) * 2.4 * globalMult;
 
-                // 스피드 어택 타임은 여전히 빠름
-                let speedRate = 0.20; 
-                runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * speedRate * (physicsDt * 60);
+                    let speedRate = 0.20; 
+                    if (runner.currentSpeedPortion < targetSpeedPortion) {
+                        runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * speedRate * (physicsDt * 60);
+                    } else {
+                        runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * 0.1 * (physicsDt * 60);
+                    }
 
-                // 💡 [패치] 파워로 속도가 쌓이는 시간 대폭 연장 (0.005 -> 0.0015)
-                let powerRate = targetPowerPortion > runner.currentPowerPortion ? 0.0015 : 0.05;
-                runner.currentPowerPortion += (targetPowerPortion - runner.currentPowerPortion) * powerRate * (physicsDt * 60);
+                    let powerRate = 0.0015; 
+                    if (runner.currentPowerPortion < targetPowerPortion) {
+                        runner.currentPowerPortion += (targetPowerPortion - runner.currentPowerPortion) * powerRate * (physicsDt * 60);
+                    } else {
+                        runner.currentPowerPortion += (targetPowerPortion - runner.currentPowerPortion) * 0.05 * (physicsDt * 60);
+                    }
 
                     if (terrainSpeedMult < 1.0) {
                         let hillCapS = targetSpeedPortion * terrainSpeedMult;
@@ -988,6 +981,9 @@
                         runner.currentSpeedPortion *= (1.0 - impact * 0.15 * (physicsDt * 60)); 
                         runner.currentPowerPortion *= (1.0 - impact * 0.05 * (physicsDt * 60)); 
                     }
+                } else {
+                    runner.currentSpeedPortion *= (1.0 - 0.1 * (physicsDt * 60)); 
+                    runner.currentPowerPortion *= (1.0 - 0.02 * (physicsDt * 60)); 
                 }
 
                 if (isNaN(runner.currentSpeedPortion) || runner.currentSpeedPortion < 0) runner.currentSpeedPortion = 0;
