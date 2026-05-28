@@ -21,7 +21,6 @@
         .filter-badge:hover { background: #2980b9; transform: scale(1.05); }
         .filter-badge::after { content: " ✕"; font-size: 10px; margin-left: 5px; color: #ffbd9b; }
         
-        /* 💡 [패치] 제외된 명단 전용 스타일 */
         .filter-badge.excluded { background: #95a5a6; text-decoration: line-through; opacity: 0.8; }
         .filter-badge.excluded:hover { background: #7f8c8d; }
         .filter-badge.excluded::after { content: " ↺"; color: #fff; }
@@ -135,8 +134,8 @@
             <div style="margin-bottom: 15px;">
                 <label for="mapSelect" style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">🗺️ 개최할 경기장(맵)을 선택하세요</label>
                 <select id="mapSelect" style="width: 80%; padding: 10px; font-size: 16px; border: 2px solid #ccc; border-radius: 5px;">
-                    <option value="short">🏁 일반 단거리 레이스 (8,000m)</option>
-                    <option value="long">🏆 극한의 그랜드 더비 (20,000m)</option>
+                    <option value="short">🏁 일반 단거리 레이스 (8,000m - 평지 스피드 승부)</option>
+                    <option value="long">🏆 극한의 그랜드 더비 (20,000m - 오르막, 징버거 투하)</option>
                 </select>
             </div>
 
@@ -345,10 +344,9 @@
             setTimeout(() => { if(gameWin.contains(bubble)) gameWin.removeChild(bubble); }, 3000);
         }
 
-        // 💡 [패치] 상태 관리를 위한 변수 선언
         let rawParticipants = []; 
         let currentExtractedList = [];
-        let excludedNames = new Set(); // 수동으로 제외한 닉네임 목록
+        let excludedNames = new Set(); 
 
         async function extractParticipants() {
             const urlInput = document.getElementById('dcUrl').value;
@@ -360,7 +358,6 @@
             btn.disabled = true;
 
             try {
-                // 💡 더 이상 시간컷을 서버로 보내지 않고 원본 데이터를 전부 받아옴
                 const response = await fetch(`${API_BASE}/extract_only`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -371,9 +368,9 @@
                 if (data.success) {
                     statusDiv.innerText = "";
                     rawParticipants = data.participants; 
-                    excludedNames.clear(); // 💡 새로 추출 시 제외 목록 초기화
+                    excludedNames.clear(); 
                     
-                    applyTimeFilter(); // 즉시 필터링 후 렌더링
+                    applyTimeFilter(); 
                     
                     if(!document.getElementById('datetimeInput').value) {
                         let d = new Date();
@@ -393,30 +390,44 @@
             }
         }
 
-        // 💡 [패치] 0초 딜레이 프론트엔드 필터링 & 제외명단 처리
         window.applyTimeFilter = function() {
             const useTimeCutoff = document.getElementById('timeCutoffToggle').checked;
             const cutoffVal = document.getElementById('timeCutoffInput').value;
             
             let timeFiltered = [];
             if (useTimeCutoff && cutoffVal) {
-                const cutoffTime = new Date(cutoffVal.replace(' ', 'T')).getTime() / 1000;
-                timeFiltered = rawParticipants.filter(p => p.timestamp <= cutoffTime);
+                const cutoffTime = new Date(cutoffVal.replace(' ', 'T')).getTime();
+                
+                timeFiltered = rawParticipants.filter(p => {
+                    if (!p.reg_date) return true; 
+                    
+                    // 💡 [버그 방어] 연도 표기 방식 차이에 완벽 대응하는 정규식 추출 파서
+                    let parts = p.reg_date.match(/\d+/g);
+                    if (!parts || parts.length < 5) return true; // 형식이 이상하면 그냥 통과시킴
+                    
+                    let year = parts[0].length === 2 ? "20" + parts[0] : parts[0];
+                    let month = parts[1] - 1; 
+                    let day = parts[2];
+                    let hour = parts[3];
+                    let min = parts[4];
+                    let sec = parts.length > 5 ? parts[5] : 0;
+                    
+                    let cmtTime = new Date(year, month, day, hour, min, sec).getTime();
+                    
+                    if (isNaN(cmtTime)) return true;
+                    return cmtTime <= cutoffTime;
+                });
             } else {
                 timeFiltered = rawParticipants;
             }
 
-            // 시간에 부합하는 모든 이름
             let allValidNames = timeFiltered.map(p => p.name);
             
-            // 수동 제외 리스트(excludedNames)를 제외하여 게임 참가 배열 확정
             currentExtractedList = allValidNames.filter(name => !excludedNames.has(name));
 
-            // UI 렌더링 함수에 전체 유효 이름 전달
             renderFilterBadges(allValidNames); 
         }
 
-        // 💡 [패치] UI 분리 렌더링 (참가 중 / 제외됨)
         function renderFilterBadges(allValidNames = currentExtractedList) {
             const box = document.getElementById('filter-box');
             
@@ -437,12 +448,11 @@
             includedHTML += `</div>`;
             excludedHTML += `</div>`;
 
-            if (excludedCount === 0) excludedHTML = ""; // 제외된 사람이 0명이면 숨김
+            if (excludedCount === 0) excludedHTML = ""; 
 
             box.innerHTML = includedHTML + excludedHTML;
         }
 
-        // 💡 [패치] 수동 제외/복구 토글 함수
         window.toggleExclude = function(name) {
             if (excludedNames.has(name)) {
                 excludedNames.delete(name); 
@@ -1198,7 +1208,7 @@
             
             let zones = roomData.map_type === 'long' 
                 ? [{s: 6000, e: 7500}, {s: 10000, e: 12000}, {s: 17000, e: 19000}]
-                : [{s: 3500, e: 5000}]; 
+                : [{s: 3500, e: 4500}]; 
 
             zones.forEach(z => {
                 if (leaderX >= z.s - prepDist && leaderX <= z.e) leaderInZone = true;
