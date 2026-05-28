@@ -202,7 +202,7 @@
         let OBSTACLE_END = 4500;   
 
         const BASE_MOVE_SPEED_MULT = 0.045; 
-        const BASE_STAMINA_DRAIN = 0.022;   
+        const BASE_STAMINA_DRAIN = 0.015;   
         const ACCEL_MULT = 0.5;             
         
         const ULT_ROCKET_BOOST = 1.2;       
@@ -552,8 +552,8 @@
                 const strategy = strategies[Math.floor(seededRandom() * strategies.length)];
                 
                 let statWeights = [1, 1, 1, 1, 1];
-                if (strategy === "도주") statWeights = [3.0, 0.7, 1.0, 0.8, 2.0]; 
-                if (strategy === "선행") statWeights = [1.6, 1.5, 2.0, 0.9, 1.5]; 
+                if (strategy === "도주") statWeights = [4.0, 1.0, 1.0, 0.8, 2.0]; 
+                if (strategy === "선행") statWeights = [2.5, 1.5, 1.5, 0.9, 1.5]; 
                 if (strategy === "선입") statWeights = [0.8, 2.5, 2.0, 1.2, 1.0]; 
                 if (strategy === "추입") statWeights = [0.5, 2.5, 2.5, 1.1, 0.9]; 
 
@@ -906,7 +906,7 @@
                 if (runner.hasSkill && !skillDisabled && !isGlobalCooldown && seededRandom() < skillProb) {
                     runner.hasSkill = false;
                     lastSkillTime = gameTime;
-                    runner.speedBoost = 2.0;
+                    runner.speedBoost = 2.5;
                     runner.isNormalSkillActive = true;
                     showCommentary(`💡 [스킬] ${runner.name} 선수가 가속합니다!`);
                 }
@@ -925,7 +925,7 @@
                 }
 
                 if (runner.isExhausted) {
-                    let baseRecovery = 1.5; 
+                    let baseRecovery = 2.5; 
                     if (runner.excitedPenalty) baseRecovery *= 0.5; 
 
                     runner.currentStamina += baseRecovery * (physicsDt * 60);
