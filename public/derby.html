@@ -205,8 +205,8 @@
         const BASE_STAMINA_DRAIN = 0.022;   
         const ACCEL_MULT = 0.5;             
         
-        const ULT_SPEED_BOOST = 1.5;          
-        const ULT_ROCKET_BOOST = 1.5;       
+        // 💡 [패치] 궁극기 순간 로켓 부스트 최소화
+        const ULT_ROCKET_BOOST = 1.2;       
         
         const SUPPLY_START = 17000; 
         const SUPPLY_END = 19000;
@@ -552,7 +552,6 @@
             roomData.participants.forEach((name, index) => {
                 const strategy = strategies[Math.floor(seededRandom() * strategies.length)];
                 
-                // 💡 [패치] 스탯 가중치 합계(7.5) 평준화 및 지정 수치 적용
                 let statWeights = [1, 1, 1, 1, 1];
                 if (strategy === "도주") statWeights = [3.0, 0.7, 1.0, 0.8, 2.0]; 
                 if (strategy === "선행") statWeights = [1.6, 1.5, 2.0, 0.9, 1.5]; 
@@ -758,7 +757,7 @@
             runners.forEach(runner => {
                 if (runner.finished) return;
 
-                // 💡 [패치] 궁극기 올스탯 증가 배율 너프 (1.8배 -> 1.4배)
+                // 💡 [패치] 궁극기 상태일 때만 '모든 스탯'이 1.4배로 한계를 돌파하여 폭증
                 let ultStatMult = runner.isUltimateActive ? 1.4 : 1.0;
                 let effSpeed = runner.stats.speed * ultStatMult;
                 let effPower = runner.stats.power * ultStatMult;
@@ -805,7 +804,7 @@
                 runner.isOverpacing = false;
                 let trackPercent = runner.x / FINISH_LINE;
                 
-                // 💡 [패치] 오버페이스 경쟁 범위 축소 (150 -> 60)
+                // 💡 [패치] 오버페이스 경쟁 범위 마군과 동일하게 축소 (150 -> 60)
                 if (gameTime > 3.0 && runner.strategy === "도주" && trackPercent >= 0.05 && trackPercent <= 0.35) {
                     let nearbyDoju = runners.find(other => 
                         other !== runner && 
@@ -932,7 +931,17 @@
                 }
 
                 if (runner.isExhausted) {
-                    let baseRecovery = 2.6; 
+                    runner.currentSpeedPortion *= (1.0 - 0.1 * (physicsDt * 60)); 
+                    runner.currentPowerPortion *= (1.0 - 0.02 * (physicsDt * 60)); 
+                    
+                    let exhaustCapS = (effSpeed / 100) * 2.75 * strategyMultiplier * catchUpMod * 0.3;
+                    let exhaustCapP = (effPower / 100) * 2.75 * strategyMultiplier * catchUpMod * 0.3;
+                    
+                    if (runner.currentSpeedPortion < exhaustCapS) runner.currentSpeedPortion = exhaustCapS;
+                    if (runner.currentPowerPortion < exhaustCapP) runner.currentPowerPortion = exhaustCapP;
+
+                    // 💡 [패치] 기진맥진 회복 속도 기존(2.6)보다 대폭 낮춤 (1.5)
+                    let baseRecovery = 1.5; 
                     if (runner.excitedPenalty) baseRecovery *= 0.5; 
 
                     runner.currentStamina += baseRecovery * (physicsDt * 60);
@@ -953,25 +962,47 @@
                     }
                 }
 
-                let staminaMod = runner.isExhausted ? 0.4 : 1.0; 
-                let eventSpeedMult = runner.isExcited ? 1.3 : 1.0; 
-                
-                let globalMult = strategyMultiplier * staminaMod * catchUpMod * terrainSpeedMult * eventSpeedMult * auraDebuff;
+                if (!runner.isExhausted) {
+                    let staminaMod = 1.0; 
+                    let eventSpeedMult = runner.isExcited ? 1.3 : 1.0; 
+                    
+                    let globalMult = strategyMultiplier * staminaMod * catchUpMod * terrainSpeedMult * eventSpeedMult * auraDebuff;
+                    
+                    let targetSpeedPortion = (effSpeed / 100) * 2.75 * globalMult;
+                    let targetPowerPortion = (effPower / 100) * 2.75 * globalMult;
 
-                let targetSpeedPortion = (effSpeed / 100) * 2.75 * globalMult;
-                let targetPowerPortion = (effPower / 100) * 2.75 * globalMult;
+                    let speedRate = 0.20; 
+                    if (runner.currentSpeedPortion < targetSpeedPortion) {
+                        runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * speedRate * (physicsDt * 60);
+                    } else {
+                        runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * 0.1 * (physicsDt * 60);
+                    }
 
-                let speedRate = 0.20; 
-                runner.currentSpeedPortion += (targetSpeedPortion - runner.currentSpeedPortion) * speedRate * (physicsDt * 60);
+                    let powerRate = 0.005;
+                    if (runner.currentPowerPortion < targetPowerPortion) {
+                        runner.currentPowerPortion += (targetPowerPortion - runner.currentPowerPortion) * powerRate * (physicsDt * 60);
+                    } else {
+                        runner.currentPowerPortion += (targetPowerPortion - runner.currentPowerPortion) * 0.05 * (physicsDt * 60);
+                    }
 
-                let powerRate = targetPowerPortion > runner.currentPowerPortion ? 0.005 : 0.05;
-                runner.currentPowerPortion += (targetPowerPortion - runner.currentPowerPortion) * powerRate * (physicsDt * 60);
+                    if (terrainSpeedMult < 1.0) {
+                        let hillCapS = targetSpeedPortion * terrainSpeedMult;
+                        let hillCapP = targetPowerPortion * terrainSpeedMult;
+                        if (runner.currentSpeedPortion > hillCapS) runner.currentSpeedPortion -= (runner.currentSpeedPortion - hillCapS) * 0.1 * (physicsDt * 60);
+                        if (runner.currentPowerPortion > hillCapP) runner.currentPowerPortion -= (runner.currentPowerPortion - hillCapP) * 0.05 * (physicsDt * 60);
+                    }
 
-                if (isNaN(runner.currentSpeedPortion)) runner.currentSpeedPortion = 0;
-                if (isNaN(runner.currentPowerPortion)) runner.currentPowerPortion = 0;
+                    if (auraDebuff < 1.0) {
+                        let impact = 1.0 - auraDebuff; 
+                        runner.currentSpeedPortion *= (1.0 - impact * 0.15 * (physicsDt * 60)); 
+                        runner.currentPowerPortion *= (1.0 - impact * 0.05 * (physicsDt * 60)); 
+                    }
+                }
+
+                if (isNaN(runner.currentSpeedPortion) || runner.currentSpeedPortion < 0) runner.currentSpeedPortion = 0;
+                if (isNaN(runner.currentPowerPortion) || runner.currentPowerPortion < 0) runner.currentPowerPortion = 0;
 
                 runner.currentSpeed = runner.currentSpeedPortion + runner.currentPowerPortion;
-                if (runner.currentSpeed < 0) runner.currentSpeed = 0;
 
                 if (runner.speedBoost > 1.0) runner.speedBoost -= 0.015 * (physicsDt * 60); 
                 else { runner.speedBoost = 1.0; runner.isNormalSkillActive = false; }
