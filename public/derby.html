@@ -756,7 +756,7 @@
             runners.forEach(runner => {
                 if (runner.finished) return;
 
-                let ultStatMult = runner.isUltimateActive ? 1.4 : 1.0;
+                let ultStatMult = runner.isUltimateActive ? 1.25 : 1.0;
                 let effSpeed = runner.stats.speed * ultStatMult;
                 let effPower = runner.stats.power * ultStatMult;
                 let effGuts  = runner.stats.guts  * ultStatMult;
