@@ -390,21 +390,31 @@
             }
         }
 
-        // 💡 [패치] 시차 오류를 원천 차단한 프론트엔드 자체 시간 계산 로직
+        // 💡 [패치] 시간 필터링의 모든 과정을 추적하는 디버깅 모드
         window.applyTimeFilter = function() {
             const useTimeCutoff = document.getElementById('timeCutoffToggle').checked;
             
+            console.log("====== 🔍 [프론트엔드] 시간 필터링 검증 시작 ======");
+            console.log("1. 시간컷 체크박스 켜짐?:", useTimeCutoff);
+
             let timeFiltered = [];
+            
             if (useTimeCutoff && fpTimeCutoff && fpTimeCutoff.selectedDates.length > 0) {
-                // 설정한 기준 시간 (밀리초)
                 const cutoffTime = fpTimeCutoff.selectedDates[0].getTime();
+                console.log("2. 설정된 기준 시간(컷오프):", new Date(cutoffTime).toLocaleString(), `(ms: ${cutoffTime})`);
+                console.log("--- 🏃‍♂️ 개별 주자 시간 비교 ---");
                 
                 timeFiltered = rawParticipants.filter(p => {
-                    if (!p.reg_date) return true; 
+                    if (!p.reg_date) {
+                        console.log(`[${p.name}] ⚠️ 날짜 데이터 없음 - 무조건 통과`);
+                        return true; 
+                    }
                     
-                    // 디시 날짜 "YYYY.MM.DD HH:MM:SS" 에서 숫자만 추출
                     let parts = p.reg_date.match(/\d+/g);
-                    if (!parts || parts.length < 5) return true; 
+                    if (!parts || parts.length < 5) {
+                        console.log(`[${p.name}] ⚠️ 날짜 포맷 이상 (${p.reg_date}) - 무조건 통과`);
+                        return true; 
+                    }
                     
                     let year = parts[0].length === 2 ? "20" + parts[0] : parts[0];
                     let month = parts[1] - 1; 
@@ -413,16 +423,25 @@
                     let min = parts[4];
                     let sec = parts.length > 5 ? parts[5] : 0;
                     
-                    // 기획자님 컴퓨터(한국) 기준으로 정확하게 변환
                     let cmtTime = new Date(year, month, day, hour, min, sec).getTime();
                     
-                    if (isNaN(cmtTime)) return true;
-                    // 작성 시간과 컷오프 시간을 비교
-                    return cmtTime <= cutoffTime;
+                    if (isNaN(cmtTime)) {
+                        console.log(`[${p.name}] ⚠️ 시간 변환 실패 (${p.reg_date}) - 무조건 통과`);
+                        return true;
+                    }
+
+                    let isPass = cmtTime <= cutoffTime;
+                    console.log(`[${p.name}] 댓글 시간: ${new Date(cmtTime).toLocaleString()} | 컷오프 통과? -> ${isPass ? "✅통과" : "❌탈락"}`);
+                    
+                    return isPass;
                 });
             } else {
+                console.log("2. 시간컷 설정 안됨 - 전원 통과");
                 timeFiltered = rawParticipants;
             }
+
+            console.log(`3. 필터링 완료: 원본 ${rawParticipants.length}명 -> 생존 ${timeFiltered.length}명`);
+            console.log("====== 🔍 검증 종료 ======");
 
             let allValidNames = timeFiltered.map(p => p.name);
             currentExtractedList = allValidNames.filter(name => !excludedNames.has(name));
