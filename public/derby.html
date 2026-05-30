@@ -220,6 +220,33 @@
         let chatRef = null; 
 
         // ==============================================
+        // 🎵 [오디오 엔진 & 효과음 세팅]
+        // ==============================================
+        let globalBgmAudio = null;
+        const sfx = {
+            run: new Audio('run.mp3'),
+            skill: new Audio('skill.mp3'),
+            fight: new Audio('fight.mp3'),
+            eat: new Audio('eat.mp3'),
+            trap: new Audio('trap.mp3'),
+            ultimate: new Audio('ultimate.mp3'),
+            whistle: new Audio('whistle.mp3'),
+            winner: new Audio('winner.mp3')
+        };
+        // 연속 재생용 오디오 루프 설정
+        sfx.run.loop = true;
+        sfx.fight.loop = true;
+        sfx.run.volume = 0; // 초기 볼륨 0 (레이스 시작 시 조절)
+        sfx.fight.volume = 0;
+
+        // 효과음 다중 재생 함수 (사운드 씹힘 방지)
+        function playSfx(audioName, vol = 1.0) {
+            let sound = sfx[audioName].cloneNode();
+            sound.volume = vol;
+            sound.play().catch(e => {});
+        }
+
+        // ==============================================
         // 🛠️ [기획자 설정 변수]
         // ==============================================
         let TRACK_LENGTH = 10000;    
@@ -485,7 +512,7 @@
                         participants: currentExtractedList,
                         scheduled_time: scheduledTimestamp,
                         map_type: document.getElementById('mapSelect').value,
-                        bgm: document.getElementById('bgmSelect').value // 💡 BGM 파일명 전송
+                        bgm: document.getElementById('bgmSelect').value
                     })
                 });
                 const data = await response.json();
@@ -638,6 +665,14 @@
             }
 
             isPaused = true;
+            
+            // 💡 [궁극기 발동 효과음 및 BGM 더킹(Ducking) - Attack]
+            playSfx('ultimate', 0.8);
+            if (globalBgmAudio) globalBgmAudio.volume = 0; // 즉각적으로 볼륨 하강
+            
+            sfx.run.pause();
+            sfx.fight.pause();
+
             const cutin = document.getElementById('ult-cutin');
             document.getElementById('ult-user').innerText = runner.name;
             cutin.style.display = 'flex';
@@ -653,6 +688,25 @@
                 focusRunner = runner;
                 focusEndTime = gameTime + 3.0; 
                 lastRealTime = Date.now(); 
+                
+                // 루프 사운드 재개
+                sfx.run.play().catch(e=>{});
+                sfx.fight.play().catch(e=>{});
+                
+                // 💡 [BGM 더킹 복구 - Release] 자연스러운 페이드인
+                if (globalBgmAudio) {
+                    let duckVol = 0;
+                    let releaseTimer = setInterval(() => {
+                        duckVol += 0.02; // 곡선을 부드럽게 복구
+                        if (duckVol >= 0.4) {
+                            globalBgmAudio.volume = 0.4;
+                            clearInterval(releaseTimer);
+                        } else {
+                            globalBgmAudio.volume = duckVol;
+                        }
+                    }, 50);
+                }
+
                 requestAnimationFrame(gameLoop); 
             }, 2000); 
         }
@@ -713,9 +767,8 @@
                 const sprite = document.createElement('div');
                 sprite.className = 'runner-sprite';
                 
-                // 💡 커스텀 스킨 리스트 설정
                 const skinList = ['cho.png', 'nin.png', 'shal.png', 'ti.png', 'vic.png', 'skin01.png', 'skin02.png', 'skin03.png', 'skin04.png', 'skin05.png', 'skin06.png', 'skin07.png', 'skin08.png']; 
-                let isDefaultSkin = seededRandom() < 0.50; // 50% 기본 스킨
+                let isDefaultSkin = seededRandom() < 0.50; 
                 let randomHue = 0;
 
                 if (isDefaultSkin || skinList.length === 0) {
@@ -785,19 +838,26 @@
             lastRealTime = Date.now();
             showCommentary("🏁 레이스 시작! 갸샤욘들의 숨막히는 대결이 펼쳐집니다.");
             
-            // 💡 [패치] 선택한 내장 MP3 오디오 안전 재생 및 클릭 우회 트랩
-            if (!isFastForwarding && roomData.bgm && roomData.bgm !== 'none') {
-                let bgmAudio = new Audio(roomData.bgm);
-                bgmAudio.loop = true;
-                bgmAudio.volume = 0.4;
-                
-                let playPromise = bgmAudio.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        showCommentary("🔇 브라우저가 소리를 막았습니다. 화면을 한 번 클릭하면 BGM이 재생됩니다!");
-                        document.body.addEventListener('click', () => { bgmAudio.play(); }, { once: true });
-                    });
+            if (!isFastForwarding) {
+                // 💡 내장 BGM 재생 트리거
+                if (roomData.bgm && roomData.bgm !== 'none') {
+                    globalBgmAudio = new Audio(roomData.bgm);
+                    globalBgmAudio.loop = true;
+                    globalBgmAudio.volume = 0.4;
+                    let playPromise = globalBgmAudio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            showCommentary("🔇 브라우저가 소리를 막았습니다. 화면을 한 번 클릭하면 재생됩니다!");
+                            document.body.addEventListener('click', () => { globalBgmAudio.play(); }, { once: true });
+                        });
+                    }
                 }
+                
+                // 💡 뛰는 소리 및 싸움 소리 루프 시작
+                sfx.run.volume = 0.3;
+                sfx.run.play().catch(e=>{});
+                sfx.fight.volume = 0;
+                sfx.fight.play().catch(e=>{});
             }
 
             requestAnimationFrame(gameLoop);
@@ -918,7 +978,11 @@
                                 if (runner.currentStamina > runner.maxStamina) runner.currentStamina = runner.maxStamina;
                                 if (runner.isExhausted && runner.currentStamina >= runner.maxStamina / 3) runner.isExhausted = false;
                                 
-                                if(!isFastForwarding) showCommentary(`🍔 뇸뇸! [${runner.name}] 버거 획득! 체력을 30% 회복합니다!`);
+                                // 💡 [먹방 효과음]
+                                if(!isFastForwarding) {
+                                    playSfx('eat', 0.6);
+                                    showCommentary(`🍔 뇸뇸! [${runner.name}] 버거 획득! 체력을 30% 회복합니다!`);
+                                }
                             }
                         }
                     });
@@ -1026,6 +1090,9 @@
                                 if(stunDur < 0.3) stunDur = 0.3;
                                 runner.stunnedUntil = gameTime + stunDur;
                                 runner.immuneUntil = runner.stunnedUntil + 1.5; 
+                                
+                                // 💡 [덫 효과음]
+                                if(!isFastForwarding) playSfx('trap', 0.8);
                                 if(runner === currentLeader) showCommentary(`🚨 선두 ${runner.name}, 덫에 걸려 넘어졌습니다!!`);
                             }
                         }
@@ -1048,6 +1115,9 @@
                     lastSkillTime = gameTime;
                     runner.speedBoost = 2.5; 
                     runner.isNormalSkillActive = true;
+                    
+                    // 💡 [스킬 발동 효과음]
+                    if(!isFastForwarding) playSfx('skill', 0.6);
                     showCommentary(`💡 [스킬] ${runner.name} 선수가 가속합니다!`);
                 }
 
@@ -1142,9 +1212,16 @@
                     showCommentary(`🏆 우승 쟁취! [${runner.name}] 결승선을 가장 먼저 통과합니다!!`);
                     
                     if (!isFastForwarding) {
+                        // 💡 [결승선 호루라기 효과음 및 사운드 오프]
+                        playSfx('whistle', 0.8);
+                        sfx.run.pause();
+                        sfx.fight.pause();
+                        
                         setTimeout(() => {
                             document.getElementById('victory-name').innerText = runner.name;
                             document.getElementById('victory-overlay').style.display = 'flex';
+                            // 💡 [환호 효과음]
+                            playSfx('winner', 0.9);
                         }, 1500);
                     }
                 }
@@ -1153,6 +1230,16 @@
 
         function renderFrame() {
             if (isFastForwarding) return; 
+
+            // 💡 [동적 오디오 제어] 싸움(투쟁) 소리 볼륨 실시간 조절
+            if (!raceEnded && !isPaused) {
+                let isAnyoneFighting = runners.some(r => r.isStruggling || r.isOverpacing);
+                if (isAnyoneFighting) {
+                    if (sfx.fight.volume < 0.4) sfx.fight.volume += 0.05;
+                } else {
+                    if (sfx.fight.volume > 0) sfx.fight.volume = Math.max(0, sfx.fight.volume - 0.05);
+                }
+            }
 
             const gameWin = document.getElementById('game-window');
             let isCloseRace = false;
