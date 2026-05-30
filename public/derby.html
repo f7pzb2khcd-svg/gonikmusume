@@ -263,7 +263,7 @@
         const BASE_STAMINA_DRAIN = 0.015;   
         const ACCEL_MULT = 0.5;             
         
-        const ULT_ROCKET_BOOST = 1.2;       
+        const ULT_ROCKET_BOOST = 1.5;       
         
         const SUPPLY_START = 17000; 
         const SUPPLY_END = 19000;
@@ -666,6 +666,12 @@
             if (isFastForwarding) {
                 runner.speedBoost = ULT_ROCKET_BOOST; 
                 runner.isUltimateActive = true;
+                
+                // 💡 [빠른 감기 모드] 스태미나 40% 즉시 회복
+                runner.isExhausted = false; 
+                runner.currentStamina += runner.maxStamina * 0.4;
+                if (runner.currentStamina > runner.maxStamina) runner.currentStamina = runner.maxStamina;
+                
                 return;
             }
 
@@ -689,6 +695,13 @@
                 
                 runner.speedBoost = ULT_ROCKET_BOOST; 
                 runner.isUltimateActive = true;
+
+                // 💡 [패치] 궁극기 발동 시 스태미나 즉시 회복 (세컨드 윈드)
+                runner.isExhausted = false; // 퍼짐 상태 즉시 해제
+                runner.currentStamina += runner.maxStamina * 0.4; // 스태미나 40% 강제 충전
+                if (runner.currentStamina > runner.maxStamina) {
+                    runner.currentStamina = runner.maxStamina;
+                }
 
                 focusRunner = runner;
                 focusEndTime = gameTime + 3.0; 
@@ -963,7 +976,7 @@
             runners.forEach(runner => {
                 if (runner.finished) return;
 
-                let ultStatMult = runner.isUltimateActive ? 1.25 : 1.0;
+                let ultStatMult = runner.isUltimateActive ? 1.3 : 1.0;
                 let effSpeed = runner.stats.speed * ultStatMult;
                 let effPower = runner.stats.power * ultStatMult;
                 let effGuts  = runner.stats.guts  * ultStatMult;
@@ -1139,7 +1152,9 @@
                 }
 
                 if (runner.isExhausted) {
-                    let baseRecovery = 2.5; 
+                    let staminaPenalty = Math.max(1.0, Math.pow(runner.stats.stamina / 40, 1.6)); 
+                    let baseRecovery = 2.5 / staminaPenalty; 
+                    
                     if (runner.excitedPenalty) baseRecovery *= 0.5; 
                     runner.currentStamina += baseRecovery * (physicsDt * 60);
 
