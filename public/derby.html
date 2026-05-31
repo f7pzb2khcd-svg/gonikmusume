@@ -888,7 +888,7 @@
             lastRealTime = now;
             accumulator += frameTime;
 
-            while (accumulator >= TICK_MS && !raceEnded) {
+            while (accumulator >= TICK_MS && !raceEnded && !isPaused) {
                 updatePhysics(TICK_DT);
                 accumulator -= TICK_MS;
                 gameTime += TICK_DT;
