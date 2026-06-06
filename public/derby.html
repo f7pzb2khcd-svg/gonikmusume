@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>왁마갤 무스메 : 갸샤욘 레이싱 (도쿄 2.5D 완전판)</title>
+    <title>왁마갤 무스메 : 갸샤욘 레이싱 (디렉터스 컷)</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
@@ -18,38 +18,36 @@
         
         #filter-box { display: none; background: #1e272e; padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 250px; overflow-y: auto; text-align: left; border: 1px solid #718093; }
         .filter-badge { display: inline-block; background: #3498db; color: white; padding: 5px 10px; margin: 4px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .filter-badge:hover { background: #2980b9; transform: scale(1.05); }
-        .filter-badge::after { content: " ✕"; font-size: 10px; margin-left: 5px; color: #ffbd9b; }
         .filter-badge.excluded { background: #95a5a6; text-decoration: line-through; opacity: 0.8; }
-        .filter-badge.excluded:hover { background: #7f8c8d; }
-        .filter-badge.excluded::after { content: " ↺"; color: #fff; }
         
         .option-group { margin: 15px 0; background: #1e272e; padding: 10px; border-radius: 5px; text-align: left;}
         .option-group label { display: inline-flex; align-items: center; cursor: pointer; font-weight: bold; color: #ffeb3b; }
         .option-group input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; accent-color: #e84118; cursor: pointer; }
         
-        #game-ui { width: 900px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; }
+        #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; }
         #header-area { display: flex; flex-direction: column; gap: 5px; background: #2f3640; padding: 10px; border-radius: 8px; }
         #timer-box { display: flex; justify-content: space-between; align-items: center; color: #fbc531; font-weight: bold; font-size: 18px; }
         
         #minimap-container { width: 100%; height: 30px; background-color: rgba(0,0,0,0.8); border: 2px solid #718093; border-radius: 15px; position: relative; overflow: hidden; }
         .minimap-dot { position: absolute; width: 12px; height: 12px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; margin-top: 7px; transform: translateX(-50%); }
         
-        /* 💡 2.5D 카메라 공간 설정 */
-        #screen-container { width: 100%; height: 450px; background: radial-gradient(circle at top, #2f3640 0%, #000000 100%); overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); perspective: 1200px; }
-        
-        /* 💡 카메라의 앵커 포인트를 화면 중앙-아래쪽으로 설정하여 안정적인 드론 뷰 제공 */
+        /* 💡 2.5D 카메라 캔버스 (크기 확대) */
+        #screen-container { width: 100%; height: 500px; background: radial-gradient(circle at top, #2f3640 0%, #000000 100%); overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.9); perspective: 1500px; }
         #world { position: absolute; left: 50%; top: 75%; width: 0; height: 0; transform-style: preserve-3d; }
         
+        /* 💡 캐릭터 DOM 구조 개선 (좌우 반전 래퍼 추가) */
         .runner-base { position: absolute; width: 60px; height: 60px; transform-style: preserve-3d; z-index: 5; margin-left: -30px; margin-top: -60px; }
         .sprite-wrapper { position: absolute; bottom: 0; left: 0; width: 60px; height: 60px; transform-origin: bottom center; will-change: transform; }
-        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transform-origin: bottom center; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5)); transition: transform 0.1s; }
+        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; } /* 💡 AI가 통제할 좌우 반전 전용 래퍼 */
+        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transform-origin: bottom center; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5)); }
         
+        /* 통통 튀는 달리기 모션 */
         @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-6px) rotateZ(5deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-6px) rotateZ(-5deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         .running { animation: runCycle 0.35s infinite linear; }
         .exhausted { transform: translateY(5px) rotateZ(-15deg); filter: grayscale(100%) brightness(0.6) !important; }
         
-        @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.2) translateY(-20px) rotateZ(10deg); filter: brightness(1.5); } 100% { transform: scale(1) translateY(0); } }
+        /* 패닉 모션 */
+        @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.2) translateY(-25px) rotateZ(10deg); filter: brightness(1.5); } 100% { transform: scale(1) translateY(0); } }
         .startled .sprite-anim { animation: startleJump 0.4s ease-out; }
         .panic-mark { position: absolute; top: -50px; left: 15px; font-size: 25px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 1px 1px 2px black; transform-origin: bottom center; }
         .startled .panic-mark { opacity: 1; animation: floatUpChat 0.5s forwards; }
@@ -66,6 +64,7 @@
         .aura-spurt { filter: drop-shadow(0 0 15px #ff3f34) brightness(1.3) !important; }
         .aura-kakari { filter: drop-shadow(0 0 15px #d63031) brightness(1.2) hue-rotate(280deg) !important; }
         
+        /* 관객석 및 채팅 UI */
         #commentary-board { background: #fff; color: #000; border-radius: 8px; padding: 10px 15px; height: 25px; overflow: hidden; font-weight: bold; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); display: flex; align-items: center; }
         .msg-line { font-size: 16px; color: #e53935; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
@@ -110,7 +109,7 @@
             </div>
 
             <div style="margin: 10px 0; padding: 10px; background: #1e272e; border-radius: 5px; color: #0be881; font-weight: bold;">
-                🗼 맵: 도쿄 경기장 (2,000m) 타원형 코스 자동 적용
+                🗼 맵: 도쿄 경기장 (2,000m) 고정
             </div>
             
             <select id="bgmSelect">
@@ -135,7 +134,7 @@
     <div id="game-ui">
         <div id="header-area">
             <div id="timer-box">
-                <span style="color: #dcdde1; font-size: 14px;">방장 설정 뷰 : 시네마틱 2.5D 카메라</span>
+                <span id="camera-status" style="color: #0be881; font-size: 14px;">🎥 하이앵글 드론 뷰 (프리쇼)</span>
                 <div style="font-size: 22px;">⏳ <span id="main-timer">대기 중</span></div>
             </div>
             <div id="minimap-container"></div>
@@ -143,7 +142,8 @@
 
         <div id="screen-container">
             <div id="world">
-                </div>
+                <!-- 동적 트랙 캔버스가 들어가는 곳 -->
+            </div>
             <div id="ult-cutin">
                 <div id="ult-cutin-bg">
                     <div style="font-size: 30px; font-weight: bold; color: white;">🔥 [라스트 스퍼트!] 🔥</div>
@@ -178,7 +178,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
-        // 🚨 기획자님의 새 Render.com 주소로 변경해주세요!
+        // 🚨 1. 새로운 백엔드 주소 완벽 적용[cite: 3] 🚨
         const API_BASE = "https://gonik-musume-test.onrender.com/api"; 
         
         const firebaseConfig = { databaseURL: "https://wak-derby-chat-default-rtdb.firebaseio.com/" };
@@ -197,15 +197,14 @@
         let maxFrames = 0;
         const DT = 1 / 15.0; 
 
-        // 💡 2.5D 엔진 코어 설정
-        // VISUAL_SCALE을 8로 두어 2000m의 트랙이 실제 16000px의 거대한 공간으로 매핑됩니다 (밀집 현상 해결)
-        const VISUAL_SCALE = 8;  
-        const LANE_SCALE = 150;   // 레인 간격(폭) 확장
-        const CX = 7500;          // 거대한 트랙의 가상 중심점 X
-        const CY = 3500;          // 거대한 트랙의 가상 중심점 Y
+        // 💡 2. 맵 크기 초거대화 (스케일업)
+        const VISUAL_SCALE = 10;   // 트랙 길이 10배 뻥튀기 (2000m -> 20000px)
+        const LANE_SCALE = 180;    // 레인 1폭의 넓이 (캐릭터 60px의 3배 공간 확보)
+        const CX = 12000;          // 거대 캔버스 중심 X
+        const CY = 4000;           // 거대 캔버스 중심 Y
 
-        let currentCam = { x: CX, y: CY, rotX: 60, rotZ: 0, zoom: 0.5 }; 
-        let targetCam  = { x: CX, y: CY, rotX: 60, rotZ: 0, zoom: 0.5 };
+        let currentCam = { x: CX, y: CY, rotX: 40, rotZ: 0, zoom: 0.4 }; 
+        let targetCam  = { x: CX, y: CY, rotX: 40, rotZ: 0, zoom: 0.4 };
         
         let spurtPlayed = new Set();
         let rawParticipants = [];
@@ -266,17 +265,13 @@
 
         function toggleTimeCutoff() {
             const container = document.getElementById('timeCutoffContainer');
-            if (document.getElementById('timeCutoffToggle').checked) {
-                container.style.display = 'block'; fpTimeCutoff.setDate(new Date()); 
-            } else {
-                container.style.display = 'none'; fpTimeCutoff.clear(); applyTimeFilter();
-            }
+            if (document.getElementById('timeCutoffToggle').checked) { container.style.display = 'block'; fpTimeCutoff.setDate(new Date()); } 
+            else { container.style.display = 'none'; fpTimeCutoff.clear(); applyTimeFilter(); }
         }
 
         function applyTimeFilter() {
             const useTimeCutoff = document.getElementById('timeCutoffToggle').checked;
             let timeFiltered = [];
-            
             if (useTimeCutoff && fpTimeCutoff.selectedDates[0]) {
                 const cutoffTime = fpTimeCutoff.selectedDates[0].getTime();
                 timeFiltered = rawParticipants.filter(p => {
@@ -286,8 +281,7 @@
                     let cmtTime = new Date(dateStr).getTime();
                     return !isNaN(cmtTime) && cmtTime <= cutoffTime;
                 });
-            } else { timeFiltered = rawParticipants; }
-
+            } else timeFiltered = rawParticipants;
             let allValidNames = timeFiltered.map(p => p.name);
             currentExtractedList = allValidNames.filter(name => !excludedNames.has(name));
             renderFilterBadges(allValidNames); 
@@ -298,17 +292,15 @@
             let includedHTML = `<p style="margin:0 0 5px 0; font-size:13px; color:#bdc3c7;">💡 <b>[참가 명단]</b> 클릭 시 제외 (${currentExtractedList.length}명)</p><div>`;
             let excludedHTML = `<p style="margin:15px 0 5px 0; font-size:13px; color:#e53935;">🗑️ <b>[제외된 명단]</b> 클릭 시 복구</p><div>`;
             let excludedCount = 0;
-
             allValidNames.forEach(name => {
                 if (excludedNames.has(name)) { excludedHTML += `<span class="filter-badge excluded" onclick="toggleExclude('${name}')">${name}</span>`; excludedCount++; } 
-                else { includedHTML += `<span class="filter-badge" onclick="toggleExclude('${name}')">${name}</span>`; }
+                else includedHTML += `<span class="filter-badge" onclick="toggleExclude('${name}')">${name}</span>`; 
             });
             box.innerHTML = includedHTML + "</div>" + (excludedCount > 0 ? excludedHTML + "</div>" : "");
         }
 
         function toggleExclude(name) {
-            if (excludedNames.has(name)) excludedNames.delete(name); 
-            else excludedNames.add(name); 
+            if (excludedNames.has(name)) excludedNames.delete(name); else excludedNames.add(name); 
             applyTimeFilter(); 
         }
 
@@ -328,21 +320,14 @@
                 const res = await fetch(`${API_BASE}/create_room_final`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        url: document.getElementById('dcUrl').value,
-                        participants: currentExtractedList, 
-                        scheduled_time: scheduled,
-                        bgm: chosenBgm,
-                        allow_custom_chat: document.getElementById('allowCustomChat').checked
+                        url: document.getElementById('dcUrl').value, participants: currentExtractedList, 
+                        scheduled_time: scheduled, bgm: chosenBgm, allow_custom_chat: document.getElementById('allowCustomChat').checked
                     })
                 });
                 const data = await res.json();
                 if(data.success) {
                     const roomUrl = window.location.origin + window.location.pathname + '?room=' + data.room_id;
-                    document.getElementById('lobby-panel').innerHTML = `
-                        <h2>🎉 방 생성 완료!</h2>
-                        <input type="text" value="${roomUrl}" readonly style="width:100%;">
-                        <button onclick="window.location.href='${roomUrl}'">입장하기</button>
-                    `;
+                    document.getElementById('lobby-panel').innerHTML = `<h2>🎉 방 생성 완료!</h2><input type="text" value="${roomUrl}" readonly style="width:100%;"><button onclick="window.location.href='${roomUrl}'">입장하기</button>`;
                 } else alert(data.message);
             } catch(e) { alert("생성 실패"); }
         }
@@ -375,7 +360,6 @@
                     spawnChatBubble(snap.val().message);
                 });
 
-                // 트랙 캔버스 그리기 및 주자 DOM 생성
                 drawTrackCanvas();
                 initPreShowDOM(); 
                 
@@ -384,28 +368,24 @@
                     isPreShow = true;
                     requestAnimationFrame(preShowLoop);
                     startCountdown();
-                } else {
-                    startGame(); 
-                }
+                } else startGame(); 
 
             } catch(e) { alert("데이터 로딩 실패! (API_BASE 주소를 확인해주세요)"); }
         };
 
-        // 💡 거대한 2000m 트랙 캔버스 생성
+        // 💡 거대 캔버스 그리기
         function drawTrackCanvas() {
             const canvas = document.createElement('canvas');
-            canvas.width = 9000;
-            canvas.height = 4000;
-            canvas.style.position = 'absolute';
-            canvas.style.left = '0px';
-            canvas.style.top = '0px';
-            canvas.style.transform = 'translateZ(-1px)'; // 주자들 밑에 깔림
+            canvas.width = 24000;
+            canvas.height = 10000;
+            canvas.style.position = 'absolute'; canvas.style.left = '0px'; canvas.style.top = '0px';
+            canvas.style.transform = 'translateZ(-1px)'; 
             const ctx = canvas.getContext('2d');
             
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             
-            // 바깥 잔디 라인
-            ctx.lineWidth = 140 * (VISUAL_SCALE/3); 
+            // 바깥선
+            ctx.lineWidth = LANE_SCALE * 2.0; 
             ctx.strokeStyle = '#2d3436';
             ctx.beginPath();
             for(let i=0; i<=2000; i+=10) {
@@ -415,76 +395,60 @@
             }
             ctx.stroke();
 
-            // 트랙 표면 (페이즈별 색상)
-            ctx.lineWidth = 55 * (VISUAL_SCALE/3); 
+            // 내부 트랙
+            ctx.lineWidth = LANE_SCALE * 1.6; 
             for(let i=0; i<=2000; i+=10) {
                 let p = getTrackCoordinates(i);
                 ctx.beginPath();
                 if(i===0) ctx.moveTo(p.x*VISUAL_SCALE + CX, p.y*VISUAL_SCALE + CY);
-                else {
-                    let prev = getTrackCoordinates(i-10);
-                    ctx.moveTo(prev.x*VISUAL_SCALE + CX, prev.y*VISUAL_SCALE + CY);
-                }
+                else { let prev = getTrackCoordinates(i-10); ctx.moveTo(prev.x*VISUAL_SCALE + CX, prev.y*VISUAL_SCALE + CY); }
                 ctx.lineTo(p.x*VISUAL_SCALE + CX, p.y*VISUAL_SCALE + CY);
-                
-                if(i<333) ctx.strokeStyle = '#05c46b';
-                else if(i<1333) ctx.strokeStyle = '#10ac84';
-                else ctx.strokeStyle = '#ffb8b8';
+                if(i<333) ctx.strokeStyle = '#05c46b'; else if(i<1333) ctx.strokeStyle = '#10ac84'; else ctx.strokeStyle = '#ffb8b8';
                 ctx.stroke();
             }
 
-            // 시작선 그리기
+            // 시작/결승선
             let startP = getTrackCoordinates(0);
             let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (0 * LANE_SCALE);
             let sInY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (0 * LANE_SCALE);
             let sOutX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
             let sOutY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
-            ctx.beginPath(); ctx.moveTo(sInX, sInY); ctx.lineTo(sOutX, sOutY);
-            ctx.lineWidth = 15; ctx.strokeStyle = 'white'; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sInX, sInY); ctx.lineTo(sOutX, sOutY); ctx.lineWidth = 20; ctx.strokeStyle = 'white'; ctx.stroke();
 
-            // 결승선 그리기
             let goalP = getTrackCoordinates(2000);
             let gInX = (goalP.x*VISUAL_SCALE + CX) + Math.cos(goalP.angle + Math.PI/2) * (0 * LANE_SCALE);
             let gInY = (goalP.y*VISUAL_SCALE + CY) + Math.sin(goalP.angle + Math.PI/2) * (0 * LANE_SCALE);
             let gOutX = (goalP.x*VISUAL_SCALE + CX) + Math.cos(goalP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
             let gOutY = (goalP.y*VISUAL_SCALE + CY) + Math.sin(goalP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
-            ctx.beginPath(); ctx.moveTo(gInX, gInY); ctx.lineTo(gOutX, gOutY);
-            ctx.lineWidth = 30; ctx.strokeStyle = '#2d3436'; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(gInX, gInY); ctx.lineTo(gOutX, gOutY); ctx.lineWidth = 40; ctx.strokeStyle = '#2d3436'; ctx.stroke();
 
             document.getElementById('world').appendChild(canvas);
         }
 
-        // 💡 주자 DOM 생성 및 시작 위치(타원 좌표계 0m) 매핑
+        // 💡 프리쇼 DOM 및 AI 구조 개선 (flip-wrapper 추가)
         function initPreShowDOM() {
             const skinList = ['cho.png', 'nin.png', 'shal.png', 'skin01.png', 'skin02.png', 'skin03.png']; 
-            
-            // 0m 지점의 절대 좌표와 앵글
             let startPos = getTrackCoordinates(0);
             
-            // 대화 구역 (스타트 라인 살짝 뒤쪽)
             const chatZones = [
-                {x: startPos.x*VISUAL_SCALE+CX - 150, y: startPos.y*VISUAL_SCALE+CY - 200},
-                {x: startPos.x*VISUAL_SCALE+CX - 250, y: startPos.y*VISUAL_SCALE+CY + 100},
-                {x: startPos.x*VISUAL_SCALE+CX + 100, y: startPos.y*VISUAL_SCALE+CY - 300}
+                {x: startPos.x*VISUAL_SCALE+CX - 200, y: startPos.y*VISUAL_SCALE+CY - 250},
+                {x: startPos.x*VISUAL_SCALE+CX - 400, y: startPos.y*VISUAL_SCALE+CY + 150},
+                {x: startPos.x*VISUAL_SCALE+CX + 150, y: startPos.y*VISUAL_SCALE+CY - 400}
             ]; 
             
             roomData.participants.forEach((p, idx) => {
-                let startLane = (idx % 8) * 0.2; // 0.0 ~ 1.4 범위로 분산
-                
-                // 타원 곡선 위에서의 절대 픽셀 좌표 역산
+                let startLane = (idx % 8) * 0.2; 
                 let finalWorldX = startPos.x*VISUAL_SCALE + CX + Math.cos(startPos.angle + Math.PI/2) * (startLane * LANE_SCALE);
                 let finalWorldY = startPos.y*VISUAL_SCALE + CY + Math.sin(startPos.angle + Math.PI/2) * (startLane * LANE_SCALE);
                 
-                let behavior = 'ready'; 
-                let r = Math.random();
-                if (r < 0.3) behavior = 'wander'; 
-                else if (r < 0.6) behavior = 'chat'; 
+                let behavior = 'ready'; let r = Math.random();
+                if (r < 0.3) behavior = 'wander'; else if (r < 0.6) behavior = 'chat'; 
                 
                 preShowRunners.push({
                     id: p.id,
                     finalX: finalWorldX, finalY: finalWorldY,
-                    currX: behavior === 'ready' ? finalWorldX : finalWorldX - 300 - Math.random() * 200, 
-                    currY: behavior === 'ready' ? finalWorldY : finalWorldY + 100,
+                    currX: behavior === 'ready' ? finalWorldX : finalWorldX - 1000 - Math.random() * 800, // 💡 멀리서 걸어오게
+                    currY: behavior === 'ready' ? finalWorldY : finalWorldY + 300,
                     targetX: finalWorldX, targetY: finalWorldY,
                     behavior: behavior, chatZone: chatZones[Math.floor(Math.random() * chatZones.length)], timer: 0, panicked: false
                 });
@@ -498,7 +462,9 @@
                 rBase.innerHTML = `
                     <div class="sprite-wrapper">
                         <div class="panic-mark">!</div>
-                        <div class="sprite-anim" style="background-image: url('${randomSkin}'); filter: hue-rotate(${randomHue}deg);"></div>
+                        <div class="flip-wrapper">
+                            <div class="sprite-anim" style="background-image: url('${randomSkin}'); filter: hue-rotate(${randomHue}deg);"></div>
+                        </div>
                         <div class="name-tag">${p.name}</div>
                         <div class="status-badge"></div>
                     </div>
@@ -513,49 +479,32 @@
         }
 
         // --- 채팅 시스템 ---
-        function sendChat(msg) {
-            if(!chatRef) return;
-            chatRef.push({ message: msg, timestamp: firebase.database.ServerValue.TIMESTAMP });
-        }
-        function sendCustomChat() {
-            const input = document.getElementById('customChatInput');
-            if(input.value.trim() !== "") { sendChat(input.value); input.value = ""; }
-        }
-        document.getElementById('customChatInput')?.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') sendCustomChat();
-        });
+        function sendChat(msg) { if(chatRef) chatRef.push({ message: msg, timestamp: firebase.database.ServerValue.TIMESTAMP }); }
+        function sendCustomChat() { const input = document.getElementById('customChatInput'); if(input.value.trim() !== "") { sendChat(input.value); input.value = ""; } }
+        document.getElementById('customChatInput')?.addEventListener('keypress', function (e) { if (e.key === 'Enter') sendCustomChat(); });
         function spawnChatBubble(msg) {
-            const bubble = document.createElement('div');
-            bubble.className = 'chat-bubble'; bubble.innerText = msg;
+            const bubble = document.createElement('div'); bubble.className = 'chat-bubble'; bubble.innerText = msg;
             bubble.style.left = `${10 + Math.random() * 80}%`;
             document.getElementById('spectator-area').appendChild(bubble);
             setTimeout(() => { if(bubble.parentNode) bubble.remove(); }, 2500);
         }
-        function showCommentary(text) {
-            document.getElementById('commentary-text').innerText = `▶ ${text}`;
-        }
+        function showCommentary(text) { document.getElementById('commentary-text').innerText = `▶ ${text}`; }
 
-        // --- 카운트다운 ---
         function startCountdown() {
             let timer = setInterval(() => {
                 const nowUnix = Math.floor(Date.now() / 1000);
                 let diff = roomData.scheduled_time - nowUnix;
-                
-                if (diff <= 0) {
-                    clearInterval(timer);
-                    startGame();
-                } else {
-                    let m = Math.floor(diff / 60).toString().padStart(2, '0');
-                    let s = (diff % 60).toString().padStart(2, '0');
+                if (diff <= 0) { clearInterval(timer); startGame(); } 
+                else {
+                    let m = Math.floor(diff / 60).toString().padStart(2, '0'); let s = (diff % 60).toString().padStart(2, '0');
                     document.getElementById('main-timer').innerText = `T - ${m}:${s}`;
-                    
                     if (diff === 60) showCommentary("주자들이 경기장으로 속속 입장하고 있습니다.");
                     if (diff === 10) showCommentary("경기 시작 10초 전! 지각한 주자들이 황급히 위치로 이동합니다!");
                 }
             }, 1000);
         }
 
-        // --- 프리쇼 루프 ---
+        // 💡 프리쇼 렌더링 로직 (하이앵글 드론 뷰 + 좌우 반전 로직 추가)
         function preShowLoop(timestamp) {
             if (!lastTimestamp) lastTimestamp = timestamp;
             let delta = (timestamp - lastTimestamp) / 1000;
@@ -569,32 +518,26 @@
                     preShowRunners.forEach(r => {
                         let dom = document.getElementById(`runner-${r.id}`);
                         let wrapper = dom.querySelector('.sprite-wrapper');
+                        let flipWrap = dom.querySelector('.flip-wrapper');
                         let sprite = dom.querySelector('.sprite-anim');
                         let speed = 40; 
 
                         if (timeLeft <= 10 && !r.panicked && r.behavior !== 'ready') {
-                            r.panicked = true; r.targetX = r.finalX; r.targetY = r.finalY;
-                            dom.classList.add('startled'); 
+                            r.panicked = true; r.targetX = r.finalX; r.targetY = r.finalY; dom.classList.add('startled'); 
                         }
-
-                        if (r.panicked) speed = 200; 
+                        if (r.panicked) speed = 250; 
 
                         if (!r.panicked && timeLeft > 10) {
                             if (r.behavior === 'wander') {
                                 r.timer -= delta;
                                 if (r.timer <= 0) {
-                                    r.targetX = r.finalX - 200 + Math.random() * 150; r.targetY = r.finalY - 100 + Math.random() * 300;
+                                    r.targetX = r.finalX - 300 + Math.random() * 200; r.targetY = r.finalY - 200 + Math.random() * 400;
                                     r.timer = 2 + Math.random() * 4; 
                                 }
                             } else if (r.behavior === 'chat') {
-                                r.targetX = r.chatZone.x + (Math.random() * 40 - 20); r.targetY = r.chatZone.y + (Math.random() * 40 - 20);
-                                if (Math.random() < 0.01) {
-                                    sprite.style.transform = 'translateY(-15px)';
-                                    setTimeout(() => { sprite.style.transform = 'none'; }, 200);
-                                }
-                            } else if (r.behavior === 'ready') {
-                                r.targetX = r.finalX; r.targetY = r.finalY;
-                            }
+                                r.targetX = r.chatZone.x + (Math.random() * 60 - 30); r.targetY = r.chatZone.y + (Math.random() * 60 - 30);
+                                if (Math.random() < 0.01) { sprite.style.transform = 'translateY(-15px)'; setTimeout(() => { sprite.style.transform = 'none'; }, 200); }
+                            } else if (r.behavior === 'ready') { r.targetX = r.finalX; r.targetY = r.finalY; }
                         }
 
                         let dx = r.targetX - r.currX; let dy = r.targetY - r.currY;
@@ -602,11 +545,15 @@
                         
                         if (dist > 2) {
                             r.currX += (dx / dist) * speed * delta; r.currY += (dy / dist) * speed * delta;
-                            if (r.panicked) sprite.classList.add('running'); 
-                            else sprite.classList.remove('running');
+                            if (r.panicked) sprite.classList.add('running'); else sprite.classList.remove('running');
+                            // 💡 이동 방향에 따른 좌우 반전
+                            flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
                         } else {
                             sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
                             if(r.panicked) dom.classList.remove('startled'); 
+                            
+                            // 💡 잡담 중일 때 멈춰있으면, 중심 구역을 바라보도록 반전 유지
+                            if(r.behavior === 'chat') flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
                         }
 
                         dom.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
@@ -614,13 +561,13 @@
                     });
                 }
 
-                // 시작 지점을 안정적으로 바라보도록 카메라 위치 고정
+                // 💡 프리쇼 카메라: 하늘에서 넓게 바라보는 드론 뷰 (안정감)
                 let startPos = getTrackCoordinates(0);
                 targetCam.x = -(startPos.x*VISUAL_SCALE + CX);
-                targetCam.y = -(startPos.y*VISUAL_SCALE + CY) - 100;
-                targetCam.rotX = 55;
+                targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + 500;
+                targetCam.rotX = 50; 
                 targetCam.rotZ = (-startPos.angle - Math.PI/2) * (180/Math.PI);
-                targetCam.zoom = 1.0;
+                targetCam.zoom = 0.5;
 
                 currentCam.x += (targetCam.x - currentCam.x) * 0.05; 
                 currentCam.y += (targetCam.y - currentCam.y) * 0.05;
@@ -636,11 +583,15 @@
         // --- 본 게임 시작 ---
         function startGame() {
             isPreShow = false; 
+            document.getElementById('camera-status').innerText = "🎥 로우앵글 방송 카메라 (본 레이스)";
+            document.getElementById('camera-status').style.color = "#ff4757";
             
             preShowRunners.forEach(r => {
                 let dom = document.getElementById(`runner-${r.id}`);
+                let flipWrap = dom.querySelector('.flip-wrapper');
                 dom.classList.remove('startled'); 
                 dom.style.transform = `translate3d(${r.finalX}px, ${r.finalY}px, 0)`;
+                flipWrap.style.transform = 'scaleX(1)'; // 출발 시에는 모두 정방향
             });
 
             if (roomData.bgm && roomData.bgm !== 'none') {
@@ -653,13 +604,12 @@
                     });
                 }
             }
-            
             showCommentary("게이트가 열렸습니다! 레이스 스타트!");
             isPlaying = true;
             requestAnimationFrame(renderLoop);
         }
 
-        // 💡 2. 본 게임 루프 (2.5D 타원형 좌표 적용)
+        // 💡 2. 본 게임 루프 (지면 바짝 붙은 역동적인 줌 카메라 연출)
         function renderFrameAtTime(timeTarget) {
             let frameIdx = Math.floor(timeTarget / DT);
             if (frameIdx >= maxFrames) frameIdx = maxFrames - 1;
@@ -672,29 +622,18 @@
             let leaderWorldX = 0, leaderWorldY = 0, leaderAngle = 0;
 
             frameData.r.forEach(rData => {
-                let [id, dist, lane, speed, hp, states] = rData; // x 대신 dist(0~2000m) 
-                
-                // 💡 백엔드의 0~2000m 거리를 -> 타원형 x, y 좌표로 변환!
+                let [id, dist, lane, speed, hp, states] = rData; 
                 let pos = getTrackCoordinates(dist);
-                let laneOffset = lane * LANE_SCALE; // 레인을 시각적으로 넓게 증폭
-                
-                // 💡 월드 상의 최종 픽셀 좌표 도출
+                let laneOffset = lane * LANE_SCALE; 
                 let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                 let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
-                if (dist > leaderX) { 
-                    leaderX = dist; 
-                    leaderWorldX = worldX; 
-                    leaderWorldY = worldY; 
-                    leaderAngle = pos.angle; // 💡 카메라 회전을 위해 선두의 진행 각도 저장
-                }
-                
-                if (states.includes("Spurt")) focusRunner = { worldX, worldY, id };
+                if (dist > leaderX) { leaderX = dist; leaderWorldX = worldX; leaderWorldY = worldY; leaderAngle = pos.angle; }
+                if (states.includes("Spurt")) focusRunner = { worldX, worldY, angle: pos.angle, id };
 
                 let dom = document.getElementById(`runner-${id}`);
                 let dot = document.getElementById(`dot-${id}`);
                 
-                // 캐릭터 이동
                 dom.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`;
                 dot.style.left = `${(dist / 2000) * 100}%`;
                 
@@ -702,55 +641,40 @@
                 let sprite = dom.querySelector('.sprite-anim');
                 let badge = dom.querySelector('.status-badge');
 
-                // 💡 [핵심] 카메라가 트랙을 돌 때 캐릭터는 화면을 향하도록 역회전
                 wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
                 
                 if(speed > 1.0 && !states.includes("Exhaust")) sprite.className = 'sprite-anim running';
                 else sprite.className = 'sprite-anim';
 
-                if (states.includes("Exhaust")) {
-                    sprite.classList.add('exhausted'); dom.querySelector('.hp-fill').style.background = '#ff4757';
-                } else if (states.includes("Spurt")) {
+                if (states.includes("Exhaust")) { sprite.classList.add('exhausted'); dom.querySelector('.hp-fill').style.background = '#ff4757'; } 
+                else if (states.includes("Spurt")) {
                     sprite.classList.add('aura-spurt'); badge.className = 'status-badge b-spurt show-badge'; badge.innerText = '🔥 스퍼트';
-                    if (!spurtPlayed.has(id)) {
-                        spurtPlayed.add(id); showCommentary(`💥 폭발적인 스퍼트! [${roomData.participants[id].name}] 가속합니다!`);
-                    }
-                } else if (states.includes("Kakari")) {
-                    sprite.classList.add('aura-kakari'); badge.className = 'status-badge b-kakari show-badge'; badge.innerText = '💢 흥분';
-                } else if (states.includes("PaceDown")) {
-                    badge.className = 'status-badge b-pk show-badge'; badge.innerText = '🛡️ 킵';
-                } else badge.className = 'status-badge';
+                    if (!spurtPlayed.has(id)) { spurtPlayed.add(id); showCommentary(`💥 폭발적인 스퍼트! [${roomData.participants[id].name}] 가속합니다!`); }
+                } else if (states.includes("Kakari")) { sprite.classList.add('aura-kakari'); badge.className = 'status-badge b-kakari show-badge'; badge.innerText = '💢 흥분'; } 
+                else if (states.includes("PaceDown")) { badge.className = 'status-badge b-pk show-badge'; badge.innerText = '🛡️ 킵'; } 
+                else badge.className = 'status-badge';
             });
 
-            // 💡 3D 다이내믹 카메라 연출 (트랙 곡선에 따라 회전)
-            // 화면 중심에 주자가 오도록 좌표의 음수(-) 값을 타겟으로 설정합니다.
-            if (focusRunner) {
-                targetCam.x = -focusRunner.worldX; 
-                targetCam.y = -focusRunner.worldY; 
-                targetCam.rotX = 75; 
-                targetCam.rotZ = (-leaderAngle - Math.PI/2) * (180/Math.PI); // 트랙 방향으로 회전!
-                targetCam.zoom = 1.4;
-            } else {
-                targetCam.x = -leaderWorldX; 
-                targetCam.y = -leaderWorldY + 100; // 살짝 여백 주기
-                targetCam.rotX = 60; 
-                targetCam.rotZ = (-leaderAngle - Math.PI/2) * (180/Math.PI); // 트랙 방향으로 회전!
-                targetCam.zoom = 0.8;
-            }
+            // 💡 방송 카메라 연출 (기획자님 ㅇㅇ.jpg 지시사항 반영)
+            // 지면(rotX 82도)에 바짝 붙어서, 피사체보다 훨씬 바깥쪽(멀리 떨어진 곳)에서 줌(1.4)을 당겨 대각선으로 추적합니다.
+            let camTargetObj = focusRunner ? focusRunner : { worldX: leaderWorldX, worldY: leaderWorldY, angle: leaderAngle };
+            
+            // 트랙의 진향 방향에서 대각선(-120도)으로 꺾어 측면을 바라봄
+            targetCam.rotZ = (-camTargetObj.angle * 180 / Math.PI) - 120; 
+            targetCam.rotX = 82; // 완전히 바닥에 붙음
+            targetCam.zoom = 1.4; // 망원 렌즈로 당긴 효과
+            
+            // 카메라는 항상 주자의 약간 앞쪽(대각선 앞)을 비춤
+            targetCam.x = -(camTargetObj.worldX + Math.cos(camTargetObj.angle) * 800); 
+            targetCam.y = -(camTargetObj.worldY + Math.sin(camTargetObj.angle) * 800);
 
-            // 카메라 스무딩 (Lerp)
-            currentCam.x += (targetCam.x - currentCam.x) * 0.05; 
-            currentCam.y += (targetCam.y - currentCam.y) * 0.05;
-            currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; 
-            currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
+            currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
+            currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
             currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
             
-            // 월드 Transform (트랙 굽이치기)
             document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
 
-            if (leaderX >= 2000 && isPlaying) {
-                isPlaying = false; showCommentary(`🏆 레이스 종료!!`);
-            }
+            if (leaderX >= 2000 && isPlaying) { isPlaying = false; showCommentary(`🏆 레이스 종료!!`); }
         }
 
         function renderLoop(timestamp) {
