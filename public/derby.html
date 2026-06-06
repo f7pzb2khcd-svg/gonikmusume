@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>왁마갤 무스메 : 갸샤욘 레이싱 (디렉터스 컷)</title>
+    <title>왁마갤 무스메 : 갸샤욘 레이싱 (한국 도심 스타일)</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
@@ -18,7 +18,11 @@
         
         #filter-box { display: none; background: #1e272e; padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 250px; overflow-y: auto; text-align: left; border: 1px solid #718093; }
         .filter-badge { display: inline-block; background: #3498db; color: white; padding: 5px 10px; margin: 4px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .filter-badge:hover { background: #2980b9; transform: scale(1.05); }
+        .filter-badge::after { content: " ✕"; font-size: 10px; margin-left: 5px; color: #ffbd9b; }
         .filter-badge.excluded { background: #95a5a6; text-decoration: line-through; opacity: 0.8; }
+        .filter-badge.excluded:hover { background: #7f8c8d; }
+        .filter-badge.excluded::after { content: " ↺"; color: #fff; }
         
         .option-group { margin: 15px 0; background: #1e272e; padding: 10px; border-radius: 5px; text-align: left;}
         .option-group label { display: inline-flex; align-items: center; cursor: pointer; font-weight: bold; color: #ffeb3b; }
@@ -31,22 +35,18 @@
         #minimap-container { width: 100%; height: 30px; background-color: rgba(0,0,0,0.8); border: 2px solid #718093; border-radius: 15px; position: relative; overflow: hidden; }
         .minimap-dot { position: absolute; width: 12px; height: 12px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; margin-top: 7px; transform: translateX(-50%); }
         
-        /* 💡 2.5D 카메라 캔버스 (크기 확대) */
-        #screen-container { width: 100%; height: 500px; background: radial-gradient(circle at top, #2f3640 0%, #000000 100%); overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.9); perspective: 1500px; }
+        #screen-container { width: 100%; height: 500px; background: #87CEEB; /* 맑은 하늘색 배경 */ overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 1500px; }
         #world { position: absolute; left: 50%; top: 75%; width: 0; height: 0; transform-style: preserve-3d; }
         
-        /* 💡 캐릭터 DOM 구조 개선 (좌우 반전 래퍼 추가) */
         .runner-base { position: absolute; width: 60px; height: 60px; transform-style: preserve-3d; z-index: 5; margin-left: -30px; margin-top: -60px; }
         .sprite-wrapper { position: absolute; bottom: 0; left: 0; width: 60px; height: 60px; transform-origin: bottom center; will-change: transform; }
-        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; } /* 💡 AI가 통제할 좌우 반전 전용 래퍼 */
+        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; } 
         .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transform-origin: bottom center; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5)); }
         
-        /* 통통 튀는 달리기 모션 */
         @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-6px) rotateZ(5deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-6px) rotateZ(-5deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         .running { animation: runCycle 0.35s infinite linear; }
         .exhausted { transform: translateY(5px) rotateZ(-15deg); filter: grayscale(100%) brightness(0.6) !important; }
         
-        /* 패닉 모션 */
         @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.2) translateY(-25px) rotateZ(10deg); filter: brightness(1.5); } 100% { transform: scale(1) translateY(0); } }
         .startled .sprite-anim { animation: startleJump 0.4s ease-out; }
         .panic-mark { position: absolute; top: -50px; left: 15px; font-size: 25px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 1px 1px 2px black; transform-origin: bottom center; }
@@ -64,7 +64,6 @@
         .aura-spurt { filter: drop-shadow(0 0 15px #ff3f34) brightness(1.3) !important; }
         .aura-kakari { filter: drop-shadow(0 0 15px #d63031) brightness(1.2) hue-rotate(280deg) !important; }
         
-        /* 관객석 및 채팅 UI */
         #commentary-board { background: #fff; color: #000; border-radius: 8px; padding: 10px 15px; height: 25px; overflow: hidden; font-weight: bold; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); display: flex; align-items: center; }
         .msg-line { font-size: 16px; color: #e53935; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
@@ -87,7 +86,7 @@
 </head>
 <body>
 
-    <h1>🏁 왁마갤 무스메 <span style="font-size: 16px; color:#dcdde1; font-weight:normal;">- 도쿄 2000m -</span></h1>
+    <h1>🏁 왁마갤 무스메 <span style="font-size: 16px; color:#dcdde1; font-weight:normal;">- 도쿄 2000m 도심 컨셉 -</span></h1>
     
     <div id="lobby-panel">
         <h2>대회 방 생성</h2>
@@ -134,7 +133,7 @@
     <div id="game-ui">
         <div id="header-area">
             <div id="timer-box">
-                <span id="camera-status" style="color: #0be881; font-size: 14px;">🎥 하이앵글 드론 뷰 (프리쇼)</span>
+                <span id="camera-status" style="color: #0be881; font-size: 14px;">🎥 시작선 줌 드론 뷰 (프리쇼)</span>
                 <div style="font-size: 22px;">⏳ <span id="main-timer">대기 중</span></div>
             </div>
             <div id="minimap-container"></div>
@@ -178,7 +177,6 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
-        // 🚨 1. 새로운 백엔드 주소 완벽 적용[cite: 3] 🚨
         const API_BASE = "https://gonik-musume-test.onrender.com/api"; 
         
         const firebaseConfig = { databaseURL: "https://wak-derby-chat-default-rtdb.firebaseio.com/" };
@@ -197,11 +195,11 @@
         let maxFrames = 0;
         const DT = 1 / 15.0; 
 
-        // 💡 2. 맵 크기 초거대화 (스케일업)
-        const VISUAL_SCALE = 10;   // 트랙 길이 10배 뻥튀기 (2000m -> 20000px)
-        const LANE_SCALE = 180;    // 레인 1폭의 넓이 (캐릭터 60px의 3배 공간 확보)
-        const CX = 12000;          // 거대 캔버스 중심 X
-        const CY = 4000;           // 거대 캔버스 중심 Y
+        // 💡 2. 맵 크기 초거대화 및 레인 확장
+        const VISUAL_SCALE = 12;   // 트랙 길이 비율
+        const LANE_SCALE = 180;    // 레인 폭 (캐릭터가 넉넉히 들어가는 크기)
+        const CX = 14000;          // 캔버스 중심 X
+        const CY = 6000;           // 캔버스 중심 Y
 
         let currentCam = { x: CX, y: CY, rotX: 40, rotZ: 0, zoom: 0.4 }; 
         let targetCam  = { x: CX, y: CY, rotX: 40, rotZ: 0, zoom: 0.4 };
@@ -373,67 +371,101 @@
             } catch(e) { alert("데이터 로딩 실패! (API_BASE 주소를 확인해주세요)"); }
         };
 
-        // 💡 거대 캔버스 그리기
+        // 💡 거대 캔버스 그리기 (한국 도심 스타일 텍스처 적용)
         function drawTrackCanvas() {
             const canvas = document.createElement('canvas');
-            canvas.width = 24000;
-            canvas.height = 10000;
+            canvas.width = 28000;
+            canvas.height = 14000;
             canvas.style.position = 'absolute'; canvas.style.left = '0px'; canvas.style.top = '0px';
             canvas.style.transform = 'translateZ(-1px)'; 
             const ctx = canvas.getContext('2d');
             
-            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            // 1. 코스 밖 바닥 (비주행 구역 - 밝은 타일 #C8C8C8)
+            ctx.fillStyle = '#C8C8C8';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // 바깥선
-            ctx.lineWidth = LANE_SCALE * 2.0; 
-            ctx.strokeStyle = '#2d3436';
+            // 타일 눈금 그리기
+            ctx.strokeStyle = '#BDBDBD';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            for(let i = 0; i < canvas.width; i += 200) { ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); }
+            for(let i = 0; i < canvas.height; i += 200) { ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); }
+            ctx.stroke();
+            
+            ctx.lineCap = 'butt'; 
+            ctx.lineJoin = 'round';
+            
+            // 2. 도로 노란색/흰색 테두리
+            ctx.lineWidth = LANE_SCALE * 2.2; 
+            ctx.strokeStyle = '#f1c40f'; // 노란선
             ctx.beginPath();
             for(let i=0; i<=2000; i+=10) {
                 let p = getTrackCoordinates(i);
-                if(i===0) ctx.moveTo(p.x*VISUAL_SCALE + CX, p.y*VISUAL_SCALE + CY);
-                else ctx.lineTo(p.x*VISUAL_SCALE + CX, p.y*VISUAL_SCALE + CY);
+                // 주행 구역의 중앙을 맞추기 위한 보정 (레인 0~1.5의 중앙인 0.75 기준)
+                let centerX = p.x*VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                let centerY = p.y*VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                if(i===0) ctx.moveTo(centerX, centerY);
+                else ctx.lineTo(centerX, centerY);
             }
             ctx.stroke();
 
-            // 내부 트랙
-            ctx.lineWidth = LANE_SCALE * 1.6; 
+            // 3. 코스 (주행 구역 - 어두운 아스팔트 #30343A)
+            ctx.lineWidth = LANE_SCALE * 2.0; 
+            ctx.strokeStyle = '#30343A';
+            ctx.beginPath();
             for(let i=0; i<=2000; i+=10) {
                 let p = getTrackCoordinates(i);
-                ctx.beginPath();
-                if(i===0) ctx.moveTo(p.x*VISUAL_SCALE + CX, p.y*VISUAL_SCALE + CY);
-                else { let prev = getTrackCoordinates(i-10); ctx.moveTo(prev.x*VISUAL_SCALE + CX, prev.y*VISUAL_SCALE + CY); }
-                ctx.lineTo(p.x*VISUAL_SCALE + CX, p.y*VISUAL_SCALE + CY);
-                if(i<333) ctx.strokeStyle = '#05c46b'; else if(i<1333) ctx.strokeStyle = '#10ac84'; else ctx.strokeStyle = '#ffb8b8';
-                ctx.stroke();
+                let centerX = p.x*VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                let centerY = p.y*VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                if(i===0) ctx.moveTo(centerX, centerY);
+                else ctx.lineTo(centerX, centerY);
             }
+            ctx.stroke();
+            
+            // 4. 중앙 차선 (흰색 점선)
+            ctx.lineWidth = 12;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.setLineDash([60, 60]);
+            ctx.beginPath();
+            for(let i=0; i<=2000; i+=10) {
+                let p = getTrackCoordinates(i);
+                let centerX = p.x*VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                let centerY = p.y*VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                if(i===0) ctx.moveTo(centerX, centerY);
+                else ctx.lineTo(centerX, centerY);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
 
             // 시작/결승선
             let startP = getTrackCoordinates(0);
-            let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (0 * LANE_SCALE);
-            let sInY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (0 * LANE_SCALE);
-            let sOutX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
-            let sOutY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
+            let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
+            let sInY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
+            let sOutX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
+            let sOutY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
             ctx.beginPath(); ctx.moveTo(sInX, sInY); ctx.lineTo(sOutX, sOutY); ctx.lineWidth = 20; ctx.strokeStyle = 'white'; ctx.stroke();
 
             let goalP = getTrackCoordinates(2000);
-            let gInX = (goalP.x*VISUAL_SCALE + CX) + Math.cos(goalP.angle + Math.PI/2) * (0 * LANE_SCALE);
-            let gInY = (goalP.y*VISUAL_SCALE + CY) + Math.sin(goalP.angle + Math.PI/2) * (0 * LANE_SCALE);
-            let gOutX = (goalP.x*VISUAL_SCALE + CX) + Math.cos(goalP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
-            let gOutY = (goalP.y*VISUAL_SCALE + CY) + Math.sin(goalP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
-            ctx.beginPath(); ctx.moveTo(gInX, gInY); ctx.lineTo(gOutX, gOutY); ctx.lineWidth = 40; ctx.strokeStyle = '#2d3436'; ctx.stroke();
+            let gInX = (goalP.x*VISUAL_SCALE + CX) + Math.cos(goalP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
+            let gInY = (goalP.y*VISUAL_SCALE + CY) + Math.sin(goalP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
+            let gOutX = (goalP.x*VISUAL_SCALE + CX) + Math.cos(goalP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
+            let gOutY = (goalP.y*VISUAL_SCALE + CY) + Math.sin(goalP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
+            ctx.beginPath(); ctx.moveTo(gInX, gInY); ctx.lineTo(gOutX, gOutY); ctx.lineWidth = 50; ctx.strokeStyle = '#fff'; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(gInX, gInY); ctx.lineTo(gOutX, gOutY); ctx.lineWidth = 25; ctx.strokeStyle = '#000'; ctx.setLineDash([25, 25]); ctx.stroke();
+            ctx.setLineDash([]);
 
             document.getElementById('world').appendChild(canvas);
         }
 
-        // 💡 프리쇼 DOM 및 AI 구조 개선 (flip-wrapper 추가)
+        // 💡 프리쇼 화면 구석 등장 및 로직 강화
         function initPreShowDOM() {
             const skinList = ['cho.png', 'nin.png', 'shal.png', 'skin01.png', 'skin02.png', 'skin03.png']; 
             let startPos = getTrackCoordinates(0);
             
             const chatZones = [
-                {x: startPos.x*VISUAL_SCALE+CX - 200, y: startPos.y*VISUAL_SCALE+CY - 250},
-                {x: startPos.x*VISUAL_SCALE+CX - 400, y: startPos.y*VISUAL_SCALE+CY + 150},
-                {x: startPos.x*VISUAL_SCALE+CX + 150, y: startPos.y*VISUAL_SCALE+CY - 400}
+                {x: startPos.x*VISUAL_SCALE+CX + 100, y: startPos.y*VISUAL_SCALE+CY - 300},
+                {x: startPos.x*VISUAL_SCALE+CX - 150, y: startPos.y*VISUAL_SCALE+CY + 200},
+                {x: startPos.x*VISUAL_SCALE+CX + 300, y: startPos.y*VISUAL_SCALE+CY - 500}
             ]; 
             
             roomData.participants.forEach((p, idx) => {
@@ -444,11 +476,15 @@
                 let behavior = 'ready'; let r = Math.random();
                 if (r < 0.3) behavior = 'wander'; else if (r < 0.6) behavior = 'chat'; 
                 
+                // 화면 바깥(구석)에서 스폰 (진입 방향 설정)
+                let spawnDist = 1500 + Math.random() * 1000;
+                let spawnX = finalWorldX - spawnDist;
+                let spawnY = finalWorldY + spawnDist;
+                
                 preShowRunners.push({
                     id: p.id,
                     finalX: finalWorldX, finalY: finalWorldY,
-                    currX: behavior === 'ready' ? finalWorldX : finalWorldX - 1000 - Math.random() * 800, // 💡 멀리서 걸어오게
-                    currY: behavior === 'ready' ? finalWorldY : finalWorldY + 300,
+                    currX: spawnX, currY: spawnY,
                     targetX: finalWorldX, targetY: finalWorldY,
                     behavior: behavior, chatZone: chatZones[Math.floor(Math.random() * chatZones.length)], timer: 0, panicked: false
                 });
@@ -504,7 +540,7 @@
             }, 1000);
         }
 
-        // 💡 프리쇼 렌더링 로직 (하이앵글 드론 뷰 + 좌우 반전 로직 추가)
+        // 💡 프리쇼 카메라 및 등장 애니메이션
         function preShowLoop(timestamp) {
             if (!lastTimestamp) lastTimestamp = timestamp;
             let delta = (timestamp - lastTimestamp) / 1000;
@@ -520,7 +556,7 @@
                         let wrapper = dom.querySelector('.sprite-wrapper');
                         let flipWrap = dom.querySelector('.flip-wrapper');
                         let sprite = dom.querySelector('.sprite-anim');
-                        let speed = 40; 
+                        let speed = 60; 
 
                         if (timeLeft <= 10 && !r.panicked && r.behavior !== 'ready') {
                             r.panicked = true; r.targetX = r.finalX; r.targetY = r.finalY; dom.classList.add('startled'); 
@@ -531,11 +567,11 @@
                             if (r.behavior === 'wander') {
                                 r.timer -= delta;
                                 if (r.timer <= 0) {
-                                    r.targetX = r.finalX - 300 + Math.random() * 200; r.targetY = r.finalY - 200 + Math.random() * 400;
+                                    r.targetX = r.finalX - 300 + Math.random() * 600; r.targetY = r.finalY - 300 + Math.random() * 600;
                                     r.timer = 2 + Math.random() * 4; 
                                 }
                             } else if (r.behavior === 'chat') {
-                                r.targetX = r.chatZone.x + (Math.random() * 60 - 30); r.targetY = r.chatZone.y + (Math.random() * 60 - 30);
+                                r.targetX = r.chatZone.x + (Math.random() * 80 - 40); r.targetY = r.chatZone.y + (Math.random() * 80 - 40);
                                 if (Math.random() < 0.01) { sprite.style.transform = 'translateY(-15px)'; setTimeout(() => { sprite.style.transform = 'none'; }, 200); }
                             } else if (r.behavior === 'ready') { r.targetX = r.finalX; r.targetY = r.finalY; }
                         }
@@ -543,16 +579,13 @@
                         let dx = r.targetX - r.currX; let dy = r.targetY - r.currY;
                         let dist = Math.sqrt(dx*dx + dy*dy);
                         
-                        if (dist > 2) {
+                        if (dist > 5) {
                             r.currX += (dx / dist) * speed * delta; r.currY += (dy / dist) * speed * delta;
                             if (r.panicked) sprite.classList.add('running'); else sprite.classList.remove('running');
-                            // 💡 이동 방향에 따른 좌우 반전
                             flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
                         } else {
                             sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
                             if(r.panicked) dom.classList.remove('startled'); 
-                            
-                            // 💡 잡담 중일 때 멈춰있으면, 중심 구역을 바라보도록 반전 유지
                             if(r.behavior === 'chat') flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
                         }
 
@@ -561,13 +594,13 @@
                     });
                 }
 
-                // 💡 프리쇼 카메라: 하늘에서 넓게 바라보는 드론 뷰 (안정감)
+                // 💡 시작 지점 확대 드론 뷰 (살짝 기울어짐)
                 let startPos = getTrackCoordinates(0);
                 targetCam.x = -(startPos.x*VISUAL_SCALE + CX);
-                targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + 500;
-                targetCam.rotX = 50; 
+                targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + 150; // 시작선을 화면 하단에 배치
+                targetCam.rotX = 55; // 살짝 기울어진 뷰
                 targetCam.rotZ = (-startPos.angle - Math.PI/2) * (180/Math.PI);
-                targetCam.zoom = 0.5;
+                targetCam.zoom = 1.0; // 확대 샷
 
                 currentCam.x += (targetCam.x - currentCam.x) * 0.05; 
                 currentCam.y += (targetCam.y - currentCam.y) * 0.05;
@@ -591,7 +624,7 @@
                 let flipWrap = dom.querySelector('.flip-wrapper');
                 dom.classList.remove('startled'); 
                 dom.style.transform = `translate3d(${r.finalX}px, ${r.finalY}px, 0)`;
-                flipWrap.style.transform = 'scaleX(1)'; // 출발 시에는 모두 정방향
+                flipWrap.style.transform = 'scaleX(1)'; 
             });
 
             if (roomData.bgm && roomData.bgm !== 'none') {
@@ -609,7 +642,7 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // 💡 2. 본 게임 루프 (지면 바짝 붙은 역동적인 줌 카메라 연출)
+        // 💡 2. 본 게임 루프 (지면 밀착 & 줌아웃 망원렌즈 카메라 개선)
         function renderFrameAtTime(timeTarget) {
             let frameIdx = Math.floor(timeTarget / DT);
             if (frameIdx >= maxFrames) frameIdx = maxFrames - 1;
@@ -625,6 +658,7 @@
                 let [id, dist, lane, speed, hp, states] = rData; 
                 let pos = getTrackCoordinates(dist);
                 let laneOffset = lane * LANE_SCALE; 
+                
                 let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                 let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
@@ -655,18 +689,16 @@
                 else badge.className = 'status-badge';
             });
 
-            // 💡 방송 카메라 연출 (기획자님 ㅇㅇ.jpg 지시사항 반영)
-            // 지면(rotX 82도)에 바짝 붙어서, 피사체보다 훨씬 바깥쪽(멀리 떨어진 곳)에서 줌(1.4)을 당겨 대각선으로 추적합니다.
+            // 💡 방송용 카메라 (바닥에 바짝 붙어서 대각선으로 추적)
             let camTargetObj = focusRunner ? focusRunner : { worldX: leaderWorldX, worldY: leaderWorldY, angle: leaderAngle };
             
-            // 트랙의 진향 방향에서 대각선(-120도)으로 꺾어 측면을 바라봄
-            targetCam.rotZ = (-camTargetObj.angle * 180 / Math.PI) - 120; 
-            targetCam.rotX = 82; // 완전히 바닥에 붙음
-            targetCam.zoom = 1.4; // 망원 렌즈로 당긴 효과
+            targetCam.rotZ = (-camTargetObj.angle * 180 / Math.PI) - 75; // 트랙 진행 방향에서 약간 측면을 비춤
+            targetCam.rotX = 70; // 너무 극단적이지 않고 안정적인 로우앵글
+            targetCam.zoom = 0.9; 
             
-            // 카메라는 항상 주자의 약간 앞쪽(대각선 앞)을 비춤
-            targetCam.x = -(camTargetObj.worldX + Math.cos(camTargetObj.angle) * 800); 
-            targetCam.y = -(camTargetObj.worldY + Math.sin(camTargetObj.angle) * 800);
+            // 💡 카메라가 주자들의 "약간 앞쪽, 그리고 화면 아래쪽"에 주자를 배치하도록 보정
+            targetCam.x = -camTargetObj.worldX; 
+            targetCam.y = -camTargetObj.worldY + 400; // Y값을 더해서 3D 공간을 위로 밀어올림 (주자가 카메라 앵글 중앙에 오도록)
 
             currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
             currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
