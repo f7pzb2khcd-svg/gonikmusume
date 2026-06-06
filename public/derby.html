@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>왁마갤 무스메 : 갸샤욘 레이싱 (라이브 프리쇼)</title>
+    <title>왁마갤 무스메 : 갸샤욘 레이싱</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
@@ -16,7 +16,17 @@
         #lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; }
         button { padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #00a8ff; color: white; border: none; border-radius: 8px; transition: 0.2s; }
         button:hover { background-color: #0097e6; }
-        .option-group { margin: 15px 0; background: #1e272e; padding: 10px; border-radius: 5px; }
+        
+        /* 💡 필터 및 옵션 그룹 (복구됨) */
+        #filter-box { display: none; background: #1e272e; padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 250px; overflow-y: auto; text-align: left; border: 1px solid #718093; }
+        .filter-badge { display: inline-block; background: #3498db; color: white; padding: 5px 10px; margin: 4px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .filter-badge:hover { background: #2980b9; transform: scale(1.05); }
+        .filter-badge::after { content: " ✕"; font-size: 10px; margin-left: 5px; color: #ffbd9b; }
+        .filter-badge.excluded { background: #95a5a6; text-decoration: line-through; opacity: 0.8; }
+        .filter-badge.excluded:hover { background: #7f8c8d; }
+        .filter-badge.excluded::after { content: " ↺"; color: #fff; }
+
+        .option-group { margin: 15px 0; background: #1e272e; padding: 10px; border-radius: 5px; text-align: left;}
         .option-group label { display: inline-flex; align-items: center; cursor: pointer; font-weight: bold; color: #ffeb3b; }
         .option-group input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; accent-color: #e84118; cursor: pointer; }
 
@@ -33,7 +43,7 @@
         #screen-container { width: 100%; height: 450px; background: radial-gradient(circle at top, #2f3640 0%, #000000 100%); overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); perspective: 1000px; }
         #world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-style: preserve-3d; }
         
-        /* 트랙 (스타트 라인 표시 추가) */
+        /* 트랙 */
         #track { position: absolute; left: 0; top: 0; height: 500px; background-color: #44bd32; border-top: 10px solid white; border-bottom: 10px solid white; background-image: repeating-linear-gradient(90deg, transparent, transparent 200px, rgba(255,255,255,0.2) 200px, rgba(255,255,255,0.2) 220px); transform-style: preserve-3d; }
         .start-line { position: absolute; left: 0; top: 0; bottom: 0; width: 15px; background: repeating-linear-gradient(to bottom, white, white 15px, transparent 15px, transparent 30px); z-index: 1; border-right: 2px solid white;}
         .gate-number { position: absolute; left: 20px; font-size: 20px; color: rgba(255,255,255,0.5); font-weight: bold; transform: rotateZ(90deg); }
@@ -47,7 +57,6 @@
         .running { animation: runCycle 0.35s infinite linear; }
         .exhausted { transform: translateY(5px) rotateZ(-15deg); filter: grayscale(100%) brightness(0.6) !important; }
         
-        /* 💡 화들짝 놀라는 애니메이션 (10초 전 집합 시) */
         @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.2) translateY(-20px) rotateZ(10deg); filter: brightness(1.5); } 100% { transform: scale(1) translateY(0); } }
         .startled .sprite-anim { animation: startleJump 0.4s ease-out; }
         .panic-mark { position: absolute; top: -50px; left: 15px; font-size: 25px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 1px 1px 2px black; transform-origin: bottom center; }
@@ -99,15 +108,40 @@
         <button onclick="extractParticipants()">참가자 추출</button>
         <div id="lobby-status" style="margin-top: 10px; color: #fbc531; font-weight: bold;"></div>
         
+        <!-- 💡 필터 영역 복구 -->
+        <div id="filter-box"></div>
+        
         <div id="setup-box" style="display:none; margin-top:20px;">
+            <!-- 💡 시간컷 필터 복구 -->
+            <div class="option-group" style="border-bottom: 2px dashed #718093; padding-bottom: 15px;">
+                <label>
+                    <input type="checkbox" id="timeCutoffToggle" onchange="toggleTimeCutoff()"> ⏱️ 댓글 시간컷 필터링 (선택)
+                </label>
+                <div id="timeCutoffContainer" style="display: none; margin-top: 8px;">
+                    <input type="text" id="timeCutoffInput" placeholder="클릭하여 기준 시간 선택/입력" style="width: 70%; padding: 10px; background: #2f3640;">
+                    <button onclick="applyTimeFilter()" style="margin-top: 10px; font-size: 14px; background: #e53935;">시간 필터 적용</button>
+                </div>
+            </div>
+
+            <!-- 💡 맵 복구 (도쿄 2000m 추가) -->
             <select id="mapSelect">
+                <option value="tokyo_2000">🗼 도쿄 경기장 (2,000m)</option>
                 <option value="short">🏁 단거리 레이스 (8,000m)</option>
                 <option value="long">🏆 그랜드 더비 (20,000m)</option>
             </select>
+            
+            <!-- 💡 BGM 리스트 복구 -->
             <select id="bgmSelect">
                 <option value="none">🔇 BGM 없음</option>
+                <option value="random">🔀 랜덤 BGM</option>
                 <option value="SKY HiGH Remix.mp3">SKY HiGH Remix</option>
+                <option value="CIDER BANG! Remix.mp3">CIDER BANG! Remix</option>
+                <option value="우주미아 Remix.mp3">우주미아 Remix</option>
+                <option value="Ballin Remix.mp3">Ballin Remix</option>
+                <option value="종천지모 Megamix.mp3">종천지모</option>
+                <option value="왁스라다 리믹스.mp3">왁스라다</option>
             </select>
+            
             <div class="option-group">
                 <label><input type="checkbox" id="allowCustomChat">💬 관객석 커스텀(자유) 채팅 허용</label>
             </div>
@@ -118,7 +152,6 @@
 
     <!-- 💡 게임 UI 메인 래퍼 -->
     <div id="game-ui">
-        
         <div id="header-area">
             <div id="timer-box">
                 <span style="color: #dcdde1; font-size: 14px;">방장 설정 뷰 : 시네마틱 카메라</span>
@@ -160,7 +193,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -168,7 +200,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
-        const API_BASE = "https://gonik-musume-test.onrender.com/api"; 
+        const API_BASE = "https://gonik-musume.onrender.com/api"; 
         
         const firebaseConfig = { databaseURL: "https://wak-derby-chat-default-rtdb.firebaseio.com/" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -178,26 +210,28 @@
         let globalBgmAudio = null;
         let roomData = null;
         
-        // 상태 제어 플래그
         let isPreShow = false;
         let isPlaying = false;
         
         let currentPlaybackTime = 0.0;
         let lastTimestamp = 0;
         let maxFrames = 0;
-        let trackLen = 8000;
+        let trackLen = 2000;
         const DT = 1 / 15.0; 
 
-        let currentCam = { x: -100, y: 150, rotX: 50, rotZ: 0, zoom: 0.9 }; // 프리쇼 카메라 초기 위치
+        let currentCam = { x: -100, y: 150, rotX: 50, rotZ: 0, zoom: 0.9 }; 
         let targetCam  = { x: -100, y: 150, rotX: 50, rotZ: 0, zoom: 0.9 };
         
         let spurtPlayed = new Set();
         let rawParticipants = [];
-        let preShowRunners = []; // 프리쇼 상태 제어 배열
+        let currentExtractedList = [];
+        let excludedNames = new Set();
+        let preShowRunners = []; 
 
-        flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+        let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+        let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
 
-        // --- 로비 로직 (이전과 동일) ---
+        // --- 로비 로직 (필터링 복구) ---
         async function extractParticipants() {
             const urlInput = document.getElementById('dcUrl').value;
             const statusDiv = document.getElementById('lobby-status');
@@ -207,17 +241,86 @@
                 const res = await fetch(`${API_BASE}/extract_only`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: urlInput }) });
                 const data = await res.json();
                 if(data.success) {
-                    rawParticipants = data.participants.map(p => p.name);
-                    statusDiv.innerText = `${rawParticipants.length}명 추출 완료!`;
+                    rawParticipants = data.participants; // 전체 객체 보존
+                    excludedNames.clear();
+                    applyTimeFilter();
+                    
+                    // 💡 예약 시간 2분 뒤 자동 세팅 복구
+                    let d = new Date();
+                    d.setMinutes(d.getMinutes() + 2);
+                    fpDatetime.setDate(d);
+
+                    statusDiv.innerText = "추출 완료! 명단 필터링 및 설정을 진행하세요.";
+                    document.getElementById('filter-box').style.display = 'block';
                     document.getElementById('setup-box').style.display = 'block';
                 } else statusDiv.innerText = data.message;
             } catch(e) { statusDiv.innerText = "서버 통신 실패"; }
         }
 
+        function toggleTimeCutoff() {
+            const container = document.getElementById('timeCutoffContainer');
+            if (document.getElementById('timeCutoffToggle').checked) {
+                container.style.display = 'block'; fpTimeCutoff.setDate(new Date()); 
+            } else {
+                container.style.display = 'none'; fpTimeCutoff.clear(); applyTimeFilter();
+            }
+        }
+
+        function applyTimeFilter() {
+            const useTimeCutoff = document.getElementById('timeCutoffToggle').checked;
+            let timeFiltered = [];
+            
+            if (useTimeCutoff && fpTimeCutoff.selectedDates[0]) {
+                const cutoffTime = fpTimeCutoff.selectedDates[0].getTime();
+                timeFiltered = rawParticipants.filter(p => {
+                    if (!p.reg_date) return true; 
+                    let parts = p.reg_date.match(/\d+/g);
+                    if (!parts || parts.length < 5) return true; 
+                    let year = parts[0].length === 2 ? "20" + parts[0] : parts[0];
+                    let month = parts[1] - 1; let day = parts[2]; let hour = parts[3]; let min = parts[4]; let sec = parts.length > 5 ? parts[5] : 0;
+                    let cmtTime = new Date(year, month, day, hour, min, sec).getTime();
+                    return !isNaN(cmtTime) && cmtTime <= cutoffTime;
+                });
+            } else {
+                timeFiltered = rawParticipants;
+            }
+
+            let allValidNames = timeFiltered.map(p => p.name);
+            currentExtractedList = allValidNames.filter(name => !excludedNames.has(name));
+            renderFilterBadges(allValidNames); 
+        }
+
+        function renderFilterBadges(allValidNames) {
+            const box = document.getElementById('filter-box');
+            let includedHTML = `<p style="margin:0 0 5px 0; font-size:13px; color:#bdc3c7;">💡 <b>[참가 명단]</b> 클릭 시 제외 (${currentExtractedList.length}명)</p><div>`;
+            let excludedHTML = `<p style="margin:15px 0 5px 0; font-size:13px; color:#e53935;">🗑️ <b>[제외된 명단]</b> 클릭 시 복구</p><div>`;
+            let excludedCount = 0;
+
+            allValidNames.forEach(name => {
+                if (excludedNames.has(name)) { excludedHTML += `<span class="filter-badge excluded" onclick="toggleExclude('${name}')">${name}</span>`; excludedCount++; } 
+                else { includedHTML += `<span class="filter-badge" onclick="toggleExclude('${name}')">${name}</span>`; }
+            });
+            box.innerHTML = includedHTML + "</div>" + (excludedCount > 0 ? excludedHTML + "</div>" : "");
+        }
+
+        function toggleExclude(name) {
+            if (excludedNames.has(name)) excludedNames.delete(name); 
+            else excludedNames.add(name); 
+            applyTimeFilter(); 
+        }
+
         async function createRoomFinal() {
             const timeInput = document.getElementById('datetimeInput').value;
             if(!timeInput) { alert("시간을 예약하세요."); return; }
-            const scheduled = Math.floor(new Date(timeInput).getTime() / 1000);
+            
+            // 💡 날짜 파싱 오류(NaN) 방지 처리 복구
+            const scheduled = Math.floor(new Date(timeInput.replace(' ', 'T')).getTime() / 1000);
+            
+            let chosenBgm = document.getElementById('bgmSelect').value;
+            if (chosenBgm === 'random') {
+                const opts = Array.from(document.getElementById('bgmSelect').options).map(o=>o.value).filter(v=>v!=='none'&&v!=='random');
+                chosenBgm = opts[Math.floor(Math.random() * opts.length)];
+            }
             
             document.getElementById('lobby-status').innerText = "서버 엔진 연산 중...";
             try {
@@ -225,10 +328,10 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         url: document.getElementById('dcUrl').value,
-                        participants: rawParticipants,
+                        participants: currentExtractedList, // 필터링된 최종 명단
                         scheduled_time: scheduled,
                         map_type: document.getElementById('mapSelect').value,
-                        bgm: document.getElementById('bgmSelect').value,
+                        bgm: chosenBgm,
                         allow_custom_chat: document.getElementById('allowCustomChat').checked
                     })
                 });
@@ -251,7 +354,7 @@
             if (!roomId) return; 
 
             document.getElementById('lobby-panel').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'flex'; // 대기 중 어두운 화면 없이 바로 UI 활성화
+            document.getElementById('game-ui').style.display = 'flex'; 
 
             try {
                 const res = await fetch(`${API_BASE}/room/${roomId}`);
@@ -260,7 +363,12 @@
                 
                 roomData = data.data;
                 maxFrames = roomData.replay_data.length;
-                trackLen = roomData.map_type === 'short' ? 8000 : 20000;
+                
+                // 💡 맵 거리에 따른 처리
+                if(roomData.map_type === 'short') trackLen = 8000;
+                else if(roomData.map_type === 'long') trackLen = 20000;
+                else trackLen = 2000; // tokyo_2000
+
                 document.getElementById('track').style.width = `${trackLen}px`;
 
                 if(roomData.allow_custom_chat) document.getElementById('custom-chat-box').style.display = 'flex';
@@ -272,48 +380,40 @@
                     spawnChatBubble(snap.val().message);
                 });
 
-                initPreShowDOM(); // 프리쇼용 DOM 초기화
+                initPreShowDOM(); 
                 
-                // 루프 제어
                 const nowUnix = Math.floor(Date.now() / 1000);
                 if (roomData.scheduled_time - nowUnix > 0) {
                     isPreShow = true;
                     requestAnimationFrame(preShowLoop);
                     startCountdown();
                 } else {
-                    startGame(); // 이미 시간 지났으면 바로 시작
+                    startGame(); 
                 }
 
             } catch(e) { alert("데이터 로딩 실패"); }
         };
 
-        // 💡 프리쇼 DOM 및 AI 초기화
+        // 💡 프리쇼 DOM 
         function initPreShowDOM() {
             const skinList = ['cho.png', 'nin.png', 'shal.png', 'skin01.png', 'skin02.png', 'skin03.png']; 
-            const chatZones = [{x: -120, y: 150}, {x: -150, y: 300}, {x: -80, y: 400}]; // 삼삼오오 모이는 잡담 구역
+            const chatZones = [{x: -120, y: 150}, {x: -150, y: 300}, {x: -80, y: 400}]; 
             
             roomData.participants.forEach((p, idx) => {
-                let startLane = 4.0 + (idx % 8) * 1.5; // 백엔드 공식과 동일
-                let startY = 100 + (startLane * 20); // 프론트엔드 Y축 매핑 (0.0~28.8 말폭 기준 넓게 수정 필요 시 조절)
+                let startLane = 4.0 + (idx % 8) * 1.5; 
+                let startY = 100 + (startLane * 20); 
                 
-                // 행동 패턴 부여
-                let behavior = 'ready'; // 시작 지점에 서있음
+                let behavior = 'ready'; 
                 let r = Math.random();
-                if (r < 0.3) behavior = 'wander'; // 혼자 돌아다님
-                else if (r < 0.6) behavior = 'chat'; // 삼삼오오 모여 잡담
+                if (r < 0.3) behavior = 'wander'; 
+                else if (r < 0.6) behavior = 'chat'; 
                 
                 preShowRunners.push({
                     id: p.id,
-                    finalX: 0, // 스타트 라인
-                    finalY: startY,
-                    currX: behavior === 'ready' ? 0 : -300 - Math.random() * 200, // 대기조 제외하면 카메라 밖에서 걸어옴
-                    currY: startY,
-                    targetX: 0,
-                    targetY: startY,
-                    behavior: behavior,
-                    chatZone: chatZones[Math.floor(Math.random() * chatZones.length)],
-                    timer: 0,
-                    panicked: false
+                    finalX: 0, finalY: startY,
+                    currX: behavior === 'ready' ? 0 : -300 - Math.random() * 200, currY: startY,
+                    targetX: 0, targetY: startY,
+                    behavior: behavior, chatZone: chatZones[Math.floor(Math.random() * chatZones.length)], timer: 0, panicked: false
                 });
 
                 let randomSkin = skinList[Math.floor(Math.random() * skinList.length)];
@@ -333,16 +433,12 @@
                 `;
                 document.getElementById('track').appendChild(rBase);
 
-                // 게이트 번호판 바닥에 그리기
                 const gateNum = document.createElement('div');
-                gateNum.className = 'gate-number';
-                gateNum.innerText = `[${idx+1}]`;
-                gateNum.style.top = `${startY}px`;
+                gateNum.className = 'gate-number'; gateNum.innerText = `[${idx+1}]`; gateNum.style.top = `${startY}px`;
                 document.getElementById('track').appendChild(gateNum);
 
                 const dot = document.createElement('div');
-                dot.className = 'minimap-dot';
-                dot.id = `dot-${p.id}`;
+                dot.className = 'minimap-dot'; dot.id = `dot-${p.id}`;
                 document.getElementById('minimap-container').appendChild(dot);
             });
         }
@@ -361,8 +457,7 @@
         });
         function spawnChatBubble(msg) {
             const bubble = document.createElement('div');
-            bubble.className = 'chat-bubble';
-            bubble.innerText = msg;
+            bubble.className = 'chat-bubble'; bubble.innerText = msg;
             bubble.style.left = `${10 + Math.random() * 80}%`;
             document.getElementById('spectator-area').appendChild(bubble);
             setTimeout(() => { if(bubble.parentNode) bubble.remove(); }, 2500);
@@ -371,7 +466,7 @@
             document.getElementById('commentary-text').innerText = `▶ ${text}`;
         }
 
-        // --- 카운트다운 로직 ---
+        // --- 카운트다운 ---
         function startCountdown() {
             let timer = setInterval(() => {
                 const nowUnix = Math.floor(Date.now() / 1000);
@@ -391,7 +486,7 @@
             }, 1000);
         }
 
-        // 💡 1. 프리쇼 렌더링 루프 (대기열 애니메이션)
+        // 💡 1. 프리쇼 루프
         function preShowLoop(timestamp) {
             if (!lastTimestamp) lastTimestamp = timestamp;
             let delta = (timestamp - lastTimestamp) / 1000;
@@ -401,99 +496,83 @@
             let timeLeft = roomData.scheduled_time - nowUnix;
 
             if (isPreShow) {
-                // 1분 전부터 활동 개시
                 if (timeLeft <= 60) {
                     preShowRunners.forEach(r => {
                         let dom = document.getElementById(`runner-${r.id}`);
                         let wrapper = dom.querySelector('.sprite-wrapper');
                         let sprite = dom.querySelector('.sprite-anim');
-                        let speed = 40; // 걷는 속도
+                        let speed = 40; 
 
-                        // 💡 10초 전 지각생들 패닉 로직
                         if (timeLeft <= 10 && !r.panicked && r.behavior !== 'ready') {
-                            r.panicked = true;
-                            r.targetX = r.finalX;
-                            r.targetY = r.finalY;
-                            dom.classList.add('startled'); // 느낌표 뿅!
+                            r.panicked = true; r.targetX = r.finalX; r.targetY = r.finalY;
+                            dom.classList.add('startled'); 
                         }
 
-                        if (r.panicked) speed = 200; // 패닉하면 엄청 빨리 뜀
+                        if (r.panicked) speed = 200; 
 
-                        // AI 행동 업데이트 (10초 전이 아닐 때만)
                         if (!r.panicked && timeLeft > 10) {
                             if (r.behavior === 'wander') {
                                 r.timer -= delta;
                                 if (r.timer <= 0) {
-                                    r.targetX = -200 + Math.random() * 150;
-                                    r.targetY = 100 + Math.random() * 300;
-                                    r.timer = 2 + Math.random() * 4; // 2~6초마다 목적지 변경
+                                    r.targetX = -200 + Math.random() * 150; r.targetY = 100 + Math.random() * 300;
+                                    r.timer = 2 + Math.random() * 4; 
                                 }
                             } else if (r.behavior === 'chat') {
-                                r.targetX = r.chatZone.x + (Math.random() * 40 - 20);
-                                r.targetY = r.chatZone.y + (Math.random() * 40 - 20);
-                                // 가끔 위로 통통 튐 (대화)
+                                r.targetX = r.chatZone.x + (Math.random() * 40 - 20); r.targetY = r.chatZone.y + (Math.random() * 40 - 20);
                                 if (Math.random() < 0.01) {
                                     sprite.style.transform = 'translateY(-15px)';
                                     setTimeout(() => { sprite.style.transform = 'none'; }, 200);
                                 }
                             } else if (r.behavior === 'ready') {
-                                r.targetX = r.finalX;
-                                r.targetY = r.finalY;
+                                r.targetX = r.finalX; r.targetY = r.finalY;
                             }
                         }
 
-                        // 이동 (Lerp & 물리)
-                        let dx = r.targetX - r.currX;
-                        let dy = r.targetY - r.currY;
+                        let dx = r.targetX - r.currX; let dy = r.targetY - r.currY;
                         let dist = Math.sqrt(dx*dx + dy*dy);
                         
                         if (dist > 2) {
-                            r.currX += (dx / dist) * speed * delta;
-                            r.currY += (dy / dist) * speed * delta;
-                            if (r.panicked) sprite.classList.add('running'); // 패닉일때만 뛰는 모션
+                            r.currX += (dx / dist) * speed * delta; r.currY += (dy / dist) * speed * delta;
+                            if (r.panicked) sprite.classList.add('running'); 
                             else sprite.classList.remove('running');
                         } else {
-                            sprite.classList.remove('running');
-                            r.currX = r.targetX;
-                            r.currY = r.targetY;
-                            if(r.panicked) dom.classList.remove('startled'); // 도착하면 느낌표 끔
+                            sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
+                            if(r.panicked) dom.classList.remove('startled'); 
                         }
 
-                        // DOM 반영 및 빌보딩
-                        dom.style.left = `${r.currX}px`;
-                        dom.style.top = `${r.currY}px`;
+                        dom.style.left = `${r.currX}px`; dom.style.top = `${r.currY}px`;
                         wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
                     });
                 }
 
-                // 프리쇼 카메라 부드러운 스무딩
-                currentCam.x += (targetCam.x - currentCam.x) * 0.05;
-                currentCam.y += (targetCam.y - currentCam.y) * 0.05;
-                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05;
-                currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
+                currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
+                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
                 currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
-
                 document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${-currentCam.x}px) translateY(${-currentCam.y}px)`;
 
                 requestAnimationFrame(preShowLoop);
             }
         }
 
-        // --- 본 게임 시작 전환 ---
+        // --- 본 게임 시작 ---
         function startGame() {
-            isPreShow = false; // 프리쇼 종료
+            isPreShow = false; 
             
-            // 프리쇼의 흔적 청소 (모든 주자 확실히 0점 정렬)
             preShowRunners.forEach(r => {
                 let dom = document.getElementById(`runner-${r.id}`);
-                dom.classList.remove('startled');
-                dom.style.left = `0px`;
-                dom.style.top = `${r.finalY}px`;
+                dom.classList.remove('startled'); dom.style.left = `0px`; dom.style.top = `${r.finalY}px`;
             });
 
+            // 💡 자동 재생 에러 처리 (클릭 유도)
             if (roomData.bgm && roomData.bgm !== 'none') {
                 globalBgmAudio = new Audio(roomData.bgm); globalBgmAudio.loop = true; globalBgmAudio.volume = 0.4;
-                globalBgmAudio.play().catch(e=>console.log("BGM Error"));
+                let playPromise = globalBgmAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        showCommentary("🔇 브라우저가 소리를 막았습니다. 화면을 한 번 클릭하면 재생됩니다!");
+                        document.body.addEventListener('click', () => { globalBgmAudio.play(); }, { once: true });
+                    });
+                }
             }
             
             showCommentary("게이트가 열렸습니다! 레이스 스타트!");
@@ -501,7 +580,7 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // 💡 2. 본 게임 렌더링 루프
+        // 💡 2. 본 게임 루프
         function renderFrameAtTime(timeTarget) {
             let frameIdx = Math.floor(timeTarget / DT);
             if (frameIdx >= maxFrames) frameIdx = maxFrames - 1;
@@ -510,8 +589,7 @@
 
             document.getElementById('main-timer').innerText = `RACE - ${timeTarget.toFixed(1)}s`;
 
-            let leaderX = -1;
-            let focusRunner = null; 
+            let leaderX = -1; let focusRunner = null; 
 
             frameData.r.forEach(rData => {
                 let [id, x, y, speed, hp, states] = rData;
@@ -521,9 +599,7 @@
                 let dom = document.getElementById(`runner-${id}`);
                 let dot = document.getElementById(`dot-${id}`);
                 
-                dom.style.left = `${x}px`;
-                // Y좌표 픽셀 매핑
-                dom.style.top = `${100 + (y * 20)}px`; 
+                dom.style.left = `${x}px`; dom.style.top = `${100 + (y * 80)}px`; 
                 dot.style.left = `${(x / trackLen) * 100}%`;
                 
                 let wrapper = dom.querySelector('.sprite-wrapper');
@@ -532,50 +608,36 @@
 
                 wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
                 
-                // 뛰는 모션 제어
                 if(speed > 1.0 && !states.includes("Exhaust")) sprite.className = 'sprite-anim running';
                 else sprite.className = 'sprite-anim';
 
                 if (states.includes("Exhaust")) {
-                    sprite.classList.add('exhausted');
-                    dom.querySelector('.hp-fill').style.background = '#ff4757';
+                    sprite.classList.add('exhausted'); dom.querySelector('.hp-fill').style.background = '#ff4757';
                 } else if (states.includes("Spurt")) {
-                    sprite.classList.add('aura-spurt');
-                    badge.className = 'status-badge b-spurt show-badge'; badge.innerText = '🔥 스퍼트';
+                    sprite.classList.add('aura-spurt'); badge.className = 'status-badge b-spurt show-badge'; badge.innerText = '🔥 스퍼트';
                     if (!spurtPlayed.has(id)) {
-                        spurtPlayed.add(id);
-                        showCommentary(`💥 폭발적인 스퍼트! [${roomData.participants[id].name}] 가속합니다!`);
+                        spurtPlayed.add(id); showCommentary(`💥 폭발적인 스퍼트! [${roomData.participants[id].name}] 가속합니다!`);
                     }
                 } else if (states.includes("Kakari")) {
-                    sprite.classList.add('aura-kakari');
-                    badge.className = 'status-badge b-kakari show-badge'; badge.innerText = '💢 흥분';
+                    sprite.classList.add('aura-kakari'); badge.className = 'status-badge b-kakari show-badge'; badge.innerText = '💢 흥분';
                 } else if (states.includes("PaceDown")) {
                     badge.className = 'status-badge b-pk show-badge'; badge.innerText = '🛡️ 킵';
-                } else {
-                    badge.className = 'status-badge';
-                }
+                } else badge.className = 'status-badge';
             });
 
-            // 카메라 연출
             if (focusRunner) {
-                targetCam.x = focusRunner[1] - 150; targetCam.y = (focusRunner[2] * 20);
-                targetCam.rotX = 75; targetCam.rotZ = 5; targetCam.zoom = 1.4;
+                targetCam.x = focusRunner[1] - 150; targetCam.y = (focusRunner[2] * 80); targetCam.rotX = 75; targetCam.rotZ = 5; targetCam.zoom = 1.4;
             } else {
-                targetCam.x = leaderX - 300; targetCam.y = 150;
-                targetCam.rotX = 55; targetCam.rotZ = -5; targetCam.zoom = 0.8;
+                targetCam.x = leaderX - 300; targetCam.y = 150; targetCam.rotX = 55; targetCam.rotZ = -5; targetCam.zoom = 0.8;
             }
 
-            currentCam.x += (targetCam.x - currentCam.x) * 0.05;
-            currentCam.y += (targetCam.y - currentCam.y) * 0.05;
-            currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05;
-            currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
+            currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
+            currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
             currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
-
             document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${-currentCam.x}px) translateY(${-currentCam.y}px)`;
 
             if (leaderX >= trackLen && isPlaying) {
-                isPlaying = false;
-                showCommentary(`🏆 레이스 종료!!`);
+                isPlaying = false; showCommentary(`🏆 레이스 종료!!`);
             }
         }
 
@@ -583,11 +645,7 @@
             if (!lastTimestamp) lastTimestamp = timestamp;
             let delta = (timestamp - lastTimestamp) / 1000;
             lastTimestamp = timestamp;
-
-            if (isPlaying) {
-                currentPlaybackTime += delta;
-                renderFrameAtTime(currentPlaybackTime);
-            }
+            if (isPlaying) { currentPlaybackTime += delta; renderFrameAtTime(currentPlaybackTime); }
             if (isPlaying) requestAnimationFrame(renderLoop);
         }
     </script>
