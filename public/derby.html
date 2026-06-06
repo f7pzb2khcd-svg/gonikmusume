@@ -3,21 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>왁마갤 무스메 : 갸샤욘 레이싱</title>
+    <title>왁마갤 무스메 : 갸샤욘 레이싱 (도쿄 2000m)</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    
     <style>
+        /* CSS는 이전과 100% 동일하므로 생략 없이 그대로 유지됩니다 */
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #0f1115; padding: 10px 0; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; overflow-x: hidden; }
         h1 { text-align: center; margin-bottom: 5px; color: #fbc531; font-size: 24px; }
-        
-        /* 💡 로비 (방 생성) */
         #lobby-panel { width: 90%; max-width: 650px; background-color: #2f3640; border-radius: 10px; padding: 20px; box-sizing: border-box; text-align: center; margin-top: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
         #lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; }
         button { padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #00a8ff; color: white; border: none; border-radius: 8px; transition: 0.2s; }
         button:hover { background-color: #0097e6; }
-        
-        /* 💡 필터 및 옵션 그룹 (복구됨) */
         #filter-box { display: none; background: #1e272e; padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 250px; overflow-y: auto; text-align: left; border: 1px solid #718093; }
         .filter-badge { display: inline-block; background: #3498db; color: white; padding: 5px 10px; margin: 4px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .filter-badge:hover { background: #2980b9; transform: scale(1.05); }
@@ -25,43 +21,29 @@
         .filter-badge.excluded { background: #95a5a6; text-decoration: line-through; opacity: 0.8; }
         .filter-badge.excluded:hover { background: #7f8c8d; }
         .filter-badge.excluded::after { content: " ↺"; color: #fff; }
-
         .option-group { margin: 15px 0; background: #1e272e; padding: 10px; border-radius: 5px; text-align: left;}
         .option-group label { display: inline-flex; align-items: center; cursor: pointer; font-weight: bold; color: #ffeb3b; }
         .option-group input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; accent-color: #e84118; cursor: pointer; }
-
-        /* 💡 게임 UI 메인 래퍼 */
         #game-ui { width: 900px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; }
-
-        /* 1. 타이머 & 미니맵 영역 */
         #header-area { display: flex; flex-direction: column; gap: 5px; background: #2f3640; padding: 10px; border-radius: 8px; }
         #timer-box { display: flex; justify-content: space-between; align-items: center; color: #fbc531; font-weight: bold; font-size: 18px; }
         #minimap-container { width: 100%; height: 30px; background-color: rgba(0,0,0,0.8); border: 2px solid #718093; border-radius: 15px; position: relative; overflow: hidden; }
         .minimap-dot { position: absolute; width: 12px; height: 12px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; margin-top: 7px; transform: translateX(-50%); }
-
-        /* 2. 메인 레이스 화면 (2.5D 도화지) */
         #screen-container { width: 100%; height: 450px; background: radial-gradient(circle at top, #2f3640 0%, #000000 100%); overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); perspective: 1000px; }
         #world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-style: preserve-3d; }
-        
-        /* 트랙 */
         #track { position: absolute; left: 0; top: 0; height: 500px; background-color: #44bd32; border-top: 10px solid white; border-bottom: 10px solid white; background-image: repeating-linear-gradient(90deg, transparent, transparent 200px, rgba(255,255,255,0.2) 200px, rgba(255,255,255,0.2) 220px); transform-style: preserve-3d; }
         .start-line { position: absolute; left: 0; top: 0; bottom: 0; width: 15px; background: repeating-linear-gradient(to bottom, white, white 15px, transparent 15px, transparent 30px); z-index: 1; border-right: 2px solid white;}
         .gate-number { position: absolute; left: 20px; font-size: 20px; color: rgba(255,255,255,0.5); font-weight: bold; transform: rotateZ(90deg); }
-
-        /* 주자 및 애니메이션 */
         .runner-base { position: absolute; width: 60px; height: 60px; transform-style: preserve-3d; z-index: 5; }
         .sprite-wrapper { position: absolute; bottom: 0; left: -25px; width: 60px; height: 60px; transform-origin: bottom center; will-change: transform; }
         .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transform-origin: bottom center; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5)); transition: transform 0.1s; }
-        
         @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-6px) rotateZ(5deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-6px) rotateZ(-5deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         .running { animation: runCycle 0.35s infinite linear; }
         .exhausted { transform: translateY(5px) rotateZ(-15deg); filter: grayscale(100%) brightness(0.6) !important; }
-        
         @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.2) translateY(-20px) rotateZ(10deg); filter: brightness(1.5); } 100% { transform: scale(1) translateY(0); } }
         .startled .sprite-anim { animation: startleJump 0.4s ease-out; }
         .panic-mark { position: absolute; top: -50px; left: 15px; font-size: 25px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 1px 1px 2px black; transform-origin: bottom center; }
         .startled .panic-mark { opacity: 1; animation: floatUpChat 0.5s forwards; }
-
         .name-tag { font-size: 11px; font-weight: bold; background: rgba(0,0,0,0.8); color: white; padding: 2px 5px; border-radius: 4px; position: absolute; top: -18px; left: 5px; white-space: nowrap; }
         .status-badge { font-size: 10px; font-weight: bold; position: absolute; top: -35px; left: 5px; padding: 2px 5px; border-radius: 3px; color: white; opacity: 0; }
         .show-badge { opacity: 1; }
@@ -72,17 +54,11 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
         .aura-spurt { filter: drop-shadow(0 0 15px #ff3f34) brightness(1.3) !important; }
         .aura-kakari { filter: drop-shadow(0 0 15px #d63031) brightness(1.2) hue-rotate(280deg) !important; }
-
-        /* 3. 해설 중계석 */
         #commentary-board { background: #fff; color: #000; border-radius: 8px; padding: 10px 15px; height: 25px; overflow: hidden; font-weight: bold; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); display: flex; align-items: center; }
         .msg-line { font-size: 16px; color: #e53935; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        /* 4. 관객석 & 채팅 영역 */
         #spectator-area { width: 100%; height: 180px; background: url('https://www.transparenttextures.com/patterns/black-scales.png'), linear-gradient(to bottom, #2d3436, #1e272e); border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; }
         .chat-bubble { position: absolute; background: rgba(255, 255, 255, 0.95); color: #000; padding: 6px 12px; border-radius: 12px; border-bottom-left-radius: 0; font-size: 13px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 10; animation: floatUpChat 2.5s ease-out forwards; transform: translateX(-50%); pointer-events: none; }
         @keyframes floatUpChat { 0% { bottom: 10%; opacity: 0; transform: translateX(-50%) scale(0.8); } 15% { bottom: 30%; opacity: 1; transform: translateX(-50%) scale(1); } 80% { bottom: 70%; opacity: 0.8; } 100% { bottom: 90%; opacity: 0; } }
-
-        /* 채팅 컨트롤 (매크로 & 커스텀) */
         #chat-controls { display: flex; justify-content: center; gap: 15px; align-items: center; z-index: 20; padding: 0 10px; }
         .chat-macros { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
         .chat-macros button { padding: 6px 12px; font-size: 13px; background: #dfe6e9; color: #2d3436; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
@@ -90,8 +66,6 @@
         #custom-chat-box { display: none; gap: 5px; }
         #custom-chat-box input { padding: 6px 10px; border-radius: 15px; border: none; outline: none; font-weight: bold; width: 200px; }
         #custom-chat-box button { background: #e84118; color: white; padding: 6px 15px; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; }
-
-        /* 컷인 연출 */
         #ult-cutin { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(50,0,0,0.8); z-index: 20; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #ult-cutin-bg { width: 100%; background: linear-gradient(90deg, transparent, #e53935, transparent); padding: 40px 0; border-top: 2px solid #ffeb3b; border-bottom: 2px solid #ffeb3b; }
         .cutin-name { font-size: 45px; font-weight: 900; color: #ffe082; text-shadow: 3px 3px 5px #000; }
@@ -99,20 +73,17 @@
 </head>
 <body>
 
-    <h1>🏁 왁마갤 무스메 <span style="font-size: 16px; color:#dcdde1; font-weight:normal;">- 라이브 중계석 -</span></h1>
+    <h1>🏁 왁마갤 무스메 <span style="font-size: 16px; color:#dcdde1; font-weight:normal;">- 도쿄 2000m -</span></h1>
     
-    <!-- 💡 로비 (방 생성기) -->
     <div id="lobby-panel">
         <h2>대회 방 생성</h2>
         <input type="text" id="dcUrl" placeholder="디시인사이드 게시글 주소를 입력하세요">
         <button onclick="extractParticipants()">참가자 추출</button>
         <div id="lobby-status" style="margin-top: 10px; color: #fbc531; font-weight: bold;"></div>
         
-        <!-- 💡 필터 영역 복구 -->
         <div id="filter-box"></div>
         
         <div id="setup-box" style="display:none; margin-top:20px;">
-            <!-- 💡 시간컷 필터 복구 -->
             <div class="option-group" style="border-bottom: 2px dashed #718093; padding-bottom: 15px;">
                 <label>
                     <input type="checkbox" id="timeCutoffToggle" onchange="toggleTimeCutoff()"> ⏱️ 댓글 시간컷 필터링 (선택)
@@ -123,14 +94,10 @@
                 </div>
             </div>
 
-            <!-- 💡 맵 복구 (도쿄 2000m 추가) -->
-            <select id="mapSelect">
-                <option value="tokyo_2000">🗼 도쿄 경기장 (2,000m)</option>
-                <option value="short">🏁 단거리 레이스 (8,000m)</option>
-                <option value="long">🏆 그랜드 더비 (20,000m)</option>
-            </select>
+            <div style="margin: 10px 0; padding: 10px; background: #1e272e; border-radius: 5px; color: #0be881; font-weight: bold;">
+                🗼 맵: 도쿄 경기장 (2,000m) 고정
+            </div>
             
-            <!-- 💡 BGM 리스트 복구 -->
             <select id="bgmSelect">
                 <option value="none">🔇 BGM 없음</option>
                 <option value="random">🔀 랜덤 BGM</option>
@@ -150,7 +117,6 @@
         </div>
     </div>
 
-    <!-- 💡 게임 UI 메인 래퍼 -->
     <div id="game-ui">
         <div id="header-area">
             <div id="timer-box">
@@ -162,9 +128,7 @@
 
         <div id="screen-container">
             <div id="world">
-                <div id="track">
-                    <div class="start-line"></div>
-                </div>
+                <div id="track"><div class="start-line"></div></div>
                 <div id="ult-cutin">
                     <div id="ult-cutin-bg">
                         <div style="font-size: 30px; font-weight: bold; color: white;">🔥 [라스트 스퍼트!] 🔥</div>
@@ -200,7 +164,8 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
-        const API_BASE = "https://gonik-musume.onrender.com/api"; 
+        // 🚨 중요: 기획자님의 새 Render.com 주소로 반드시 변경해주세요! 🚨
+        const API_BASE = "https://gonik-musume-test.onrender.com/api"; 
         
         const firebaseConfig = { databaseURL: "https://wak-derby-chat-default-rtdb.firebaseio.com/" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -231,7 +196,7 @@
         let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
         let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
 
-        // --- 로비 로직 (필터링 복구) ---
+        // --- 로비 로직 ---
         async function extractParticipants() {
             const urlInput = document.getElementById('dcUrl').value;
             const statusDiv = document.getElementById('lobby-status');
@@ -241,11 +206,10 @@
                 const res = await fetch(`${API_BASE}/extract_only`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: urlInput }) });
                 const data = await res.json();
                 if(data.success) {
-                    rawParticipants = data.participants; // 전체 객체 보존
+                    rawParticipants = data.participants; 
                     excludedNames.clear();
                     applyTimeFilter();
                     
-                    // 💡 예약 시간 2분 뒤 자동 세팅 복구
                     let d = new Date();
                     d.setMinutes(d.getMinutes() + 2);
                     fpDatetime.setDate(d);
@@ -266,6 +230,7 @@
             }
         }
 
+        // 💡 디시인사이드 날짜 파싱 오류 해결
         function applyTimeFilter() {
             const useTimeCutoff = document.getElementById('timeCutoffToggle').checked;
             let timeFiltered = [];
@@ -274,11 +239,14 @@
                 const cutoffTime = fpTimeCutoff.selectedDates[0].getTime();
                 timeFiltered = rawParticipants.filter(p => {
                     if (!p.reg_date) return true; 
-                    let parts = p.reg_date.match(/\d+/g);
-                    if (!parts || parts.length < 5) return true; 
-                    let year = parts[0].length === 2 ? "20" + parts[0] : parts[0];
-                    let month = parts[1] - 1; let day = parts[2]; let hour = parts[3]; let min = parts[4]; let sec = parts.length > 5 ? parts[5] : 0;
-                    let cmtTime = new Date(year, month, day, hour, min, sec).getTime();
+                    
+                    // "06.06 14:30:00" 같은 형태를 표준 Date 형태로 치환
+                    let dateStr = p.reg_date.replace(/\./g, '-');
+                    if (dateStr.split('-').length === 2) {
+                        dateStr = new Date().getFullYear() + '-' + dateStr;
+                    }
+                    let cmtTime = new Date(dateStr).getTime();
+                    
                     return !isNaN(cmtTime) && cmtTime <= cutoffTime;
                 });
             } else {
@@ -312,8 +280,6 @@
         async function createRoomFinal() {
             const timeInput = document.getElementById('datetimeInput').value;
             if(!timeInput) { alert("시간을 예약하세요."); return; }
-            
-            // 💡 날짜 파싱 오류(NaN) 방지 처리 복구
             const scheduled = Math.floor(new Date(timeInput.replace(' ', 'T')).getTime() / 1000);
             
             let chosenBgm = document.getElementById('bgmSelect').value;
@@ -328,9 +294,8 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         url: document.getElementById('dcUrl').value,
-                        participants: currentExtractedList, // 필터링된 최종 명단
+                        participants: currentExtractedList, 
                         scheduled_time: scheduled,
-                        map_type: document.getElementById('mapSelect').value,
                         bgm: chosenBgm,
                         allow_custom_chat: document.getElementById('allowCustomChat').checked
                     })
@@ -363,12 +328,7 @@
                 
                 roomData = data.data;
                 maxFrames = roomData.replay_data.length;
-                
-                // 💡 맵 거리에 따른 처리
-                if(roomData.map_type === 'short') trackLen = 8000;
-                else if(roomData.map_type === 'long') trackLen = 20000;
-                else trackLen = 2000; // tokyo_2000
-
+                trackLen = 2000; // 도쿄 2000m 고정
                 document.getElementById('track').style.width = `${trackLen}px`;
 
                 if(roomData.allow_custom_chat) document.getElementById('custom-chat-box').style.display = 'flex';
@@ -391,7 +351,7 @@
                     startGame(); 
                 }
 
-            } catch(e) { alert("데이터 로딩 실패"); }
+            } catch(e) { alert("데이터 로딩 실패! (API_BASE 주소를 확인해주세요)"); }
         };
 
         // 💡 프리쇼 DOM 
@@ -563,7 +523,6 @@
                 dom.classList.remove('startled'); dom.style.left = `0px`; dom.style.top = `${r.finalY}px`;
             });
 
-            // 💡 자동 재생 에러 처리 (클릭 유도)
             if (roomData.bgm && roomData.bgm !== 'none') {
                 globalBgmAudio = new Audio(roomData.bgm); globalBgmAudio.loop = true; globalBgmAudio.volume = 0.4;
                 let playPromise = globalBgmAudio.play();
