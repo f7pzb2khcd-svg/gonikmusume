@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>왁마갤 무스메 : 갸샤욘 레이싱 (도쿄 2000m)</title>
+    <title>왁마갤 무스메 : 갸샤욘 레이싱 (도쿄 2.5D 완전판)</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
     <style>
-        /* CSS는 이전과 100% 동일하므로 생략 없이 그대로 유지됩니다 */
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #0f1115; padding: 10px 0; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; overflow-x: hidden; }
         h1 { text-align: center; margin-bottom: 5px; color: #fbc531; font-size: 24px; }
+        
         #lobby-panel { width: 90%; max-width: 650px; background-color: #2f3640; border-radius: 10px; padding: 20px; box-sizing: border-box; text-align: center; margin-top: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
         #lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; }
         button { padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #00a8ff; color: white; border: none; border-radius: 8px; transition: 0.2s; }
         button:hover { background-color: #0097e6; }
+        
         #filter-box { display: none; background: #1e272e; padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 250px; overflow-y: auto; text-align: left; border: 1px solid #718093; }
         .filter-badge { display: inline-block; background: #3498db; color: white; padding: 5px 10px; margin: 4px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .filter-badge:hover { background: #2980b9; transform: scale(1.05); }
@@ -21,44 +23,56 @@
         .filter-badge.excluded { background: #95a5a6; text-decoration: line-through; opacity: 0.8; }
         .filter-badge.excluded:hover { background: #7f8c8d; }
         .filter-badge.excluded::after { content: " ↺"; color: #fff; }
+        
         .option-group { margin: 15px 0; background: #1e272e; padding: 10px; border-radius: 5px; text-align: left;}
         .option-group label { display: inline-flex; align-items: center; cursor: pointer; font-weight: bold; color: #ffeb3b; }
         .option-group input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; accent-color: #e84118; cursor: pointer; }
+        
         #game-ui { width: 900px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; }
         #header-area { display: flex; flex-direction: column; gap: 5px; background: #2f3640; padding: 10px; border-radius: 8px; }
         #timer-box { display: flex; justify-content: space-between; align-items: center; color: #fbc531; font-weight: bold; font-size: 18px; }
+        
         #minimap-container { width: 100%; height: 30px; background-color: rgba(0,0,0,0.8); border: 2px solid #718093; border-radius: 15px; position: relative; overflow: hidden; }
         .minimap-dot { position: absolute; width: 12px; height: 12px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; margin-top: 7px; transform: translateX(-50%); }
-        #screen-container { width: 100%; height: 450px; background: radial-gradient(circle at top, #2f3640 0%, #000000 100%); overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); perspective: 1000px; }
-        #world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-style: preserve-3d; }
-        #track { position: absolute; left: 0; top: 0; height: 500px; background-color: #44bd32; border-top: 10px solid white; border-bottom: 10px solid white; background-image: repeating-linear-gradient(90deg, transparent, transparent 200px, rgba(255,255,255,0.2) 200px, rgba(255,255,255,0.2) 220px); transform-style: preserve-3d; }
-        .start-line { position: absolute; left: 0; top: 0; bottom: 0; width: 15px; background: repeating-linear-gradient(to bottom, white, white 15px, transparent 15px, transparent 30px); z-index: 1; border-right: 2px solid white;}
-        .gate-number { position: absolute; left: 20px; font-size: 20px; color: rgba(255,255,255,0.5); font-weight: bold; transform: rotateZ(90deg); }
-        .runner-base { position: absolute; width: 60px; height: 60px; transform-style: preserve-3d; z-index: 5; }
-        .sprite-wrapper { position: absolute; bottom: 0; left: -25px; width: 60px; height: 60px; transform-origin: bottom center; will-change: transform; }
+        
+        /* 💡 2.5D 카메라 공간 설정 */
+        #screen-container { width: 100%; height: 450px; background: radial-gradient(circle at top, #2f3640 0%, #000000 100%); overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); perspective: 1200px; }
+        
+        /* 💡 카메라의 앵커 포인트를 화면 중앙-아래쪽으로 설정하여 안정적인 드론 뷰 제공 */
+        #world { position: absolute; left: 50%; top: 75%; width: 0; height: 0; transform-style: preserve-3d; }
+        
+        .runner-base { position: absolute; width: 60px; height: 60px; transform-style: preserve-3d; z-index: 5; margin-left: -30px; margin-top: -60px; }
+        .sprite-wrapper { position: absolute; bottom: 0; left: 0; width: 60px; height: 60px; transform-origin: bottom center; will-change: transform; }
         .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transform-origin: bottom center; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5)); transition: transform 0.1s; }
+        
         @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-6px) rotateZ(5deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-6px) rotateZ(-5deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         .running { animation: runCycle 0.35s infinite linear; }
         .exhausted { transform: translateY(5px) rotateZ(-15deg); filter: grayscale(100%) brightness(0.6) !important; }
+        
         @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.2) translateY(-20px) rotateZ(10deg); filter: brightness(1.5); } 100% { transform: scale(1) translateY(0); } }
         .startled .sprite-anim { animation: startleJump 0.4s ease-out; }
         .panic-mark { position: absolute; top: -50px; left: 15px; font-size: 25px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 1px 1px 2px black; transform-origin: bottom center; }
         .startled .panic-mark { opacity: 1; animation: floatUpChat 0.5s forwards; }
+        
         .name-tag { font-size: 11px; font-weight: bold; background: rgba(0,0,0,0.8); color: white; padding: 2px 5px; border-radius: 4px; position: absolute; top: -18px; left: 5px; white-space: nowrap; }
         .status-badge { font-size: 10px; font-weight: bold; position: absolute; top: -35px; left: 5px; padding: 2px 5px; border-radius: 3px; color: white; opacity: 0; }
         .show-badge { opacity: 1; }
         .b-spurt { background: #e84118; animation: pulse 0.5s infinite alternate; }
         .b-kakari { background: #d63031; animation: shake 0.3s infinite; }
         .b-pk { background: #8e44ad; }
+        
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
         .aura-spurt { filter: drop-shadow(0 0 15px #ff3f34) brightness(1.3) !important; }
         .aura-kakari { filter: drop-shadow(0 0 15px #d63031) brightness(1.2) hue-rotate(280deg) !important; }
+        
         #commentary-board { background: #fff; color: #000; border-radius: 8px; padding: 10px 15px; height: 25px; overflow: hidden; font-weight: bold; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); display: flex; align-items: center; }
         .msg-line { font-size: 16px; color: #e53935; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
         #spectator-area { width: 100%; height: 180px; background: url('https://www.transparenttextures.com/patterns/black-scales.png'), linear-gradient(to bottom, #2d3436, #1e272e); border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; }
         .chat-bubble { position: absolute; background: rgba(255, 255, 255, 0.95); color: #000; padding: 6px 12px; border-radius: 12px; border-bottom-left-radius: 0; font-size: 13px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 10; animation: floatUpChat 2.5s ease-out forwards; transform: translateX(-50%); pointer-events: none; }
         @keyframes floatUpChat { 0% { bottom: 10%; opacity: 0; transform: translateX(-50%) scale(0.8); } 15% { bottom: 30%; opacity: 1; transform: translateX(-50%) scale(1); } 80% { bottom: 70%; opacity: 0.8; } 100% { bottom: 90%; opacity: 0; } }
+        
         #chat-controls { display: flex; justify-content: center; gap: 15px; align-items: center; z-index: 20; padding: 0 10px; }
         .chat-macros { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
         .chat-macros button { padding: 6px 12px; font-size: 13px; background: #dfe6e9; color: #2d3436; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
@@ -66,6 +80,7 @@
         #custom-chat-box { display: none; gap: 5px; }
         #custom-chat-box input { padding: 6px 10px; border-radius: 15px; border: none; outline: none; font-weight: bold; width: 200px; }
         #custom-chat-box button { background: #e84118; color: white; padding: 6px 15px; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; }
+        
         #ult-cutin { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(50,0,0,0.8); z-index: 20; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #ult-cutin-bg { width: 100%; background: linear-gradient(90deg, transparent, #e53935, transparent); padding: 40px 0; border-top: 2px solid #ffeb3b; border-bottom: 2px solid #ffeb3b; }
         .cutin-name { font-size: 45px; font-weight: 900; color: #ffe082; text-shadow: 3px 3px 5px #000; }
@@ -95,7 +110,7 @@
             </div>
 
             <div style="margin: 10px 0; padding: 10px; background: #1e272e; border-radius: 5px; color: #0be881; font-weight: bold;">
-                🗼 맵: 도쿄 경기장 (2,000m) 고정
+                🗼 맵: 도쿄 경기장 (2,000m) 타원형 코스 자동 적용
             </div>
             
             <select id="bgmSelect">
@@ -120,7 +135,7 @@
     <div id="game-ui">
         <div id="header-area">
             <div id="timer-box">
-                <span style="color: #dcdde1; font-size: 14px;">방장 설정 뷰 : 시네마틱 카메라</span>
+                <span style="color: #dcdde1; font-size: 14px;">방장 설정 뷰 : 시네마틱 2.5D 카메라</span>
                 <div style="font-size: 22px;">⏳ <span id="main-timer">대기 중</span></div>
             </div>
             <div id="minimap-container"></div>
@@ -128,12 +143,11 @@
 
         <div id="screen-container">
             <div id="world">
-                <div id="track"><div class="start-line"></div></div>
-                <div id="ult-cutin">
-                    <div id="ult-cutin-bg">
-                        <div style="font-size: 30px; font-weight: bold; color: white;">🔥 [라스트 스퍼트!] 🔥</div>
-                        <div id="ult-user" class="cutin-name">닉네임</div>
-                    </div>
+                </div>
+            <div id="ult-cutin">
+                <div id="ult-cutin-bg">
+                    <div style="font-size: 30px; font-weight: bold; color: white;">🔥 [라스트 스퍼트!] 🔥</div>
+                    <div id="ult-user" class="cutin-name">닉네임</div>
                 </div>
             </div>
         </div>
@@ -164,7 +178,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
-        // 🚨 중요: 기획자님의 새 Render.com 주소로 반드시 변경해주세요! 🚨
+        // 🚨 기획자님의 새 Render.com 주소로 변경해주세요!
         const API_BASE = "https://gonik-musume-test.onrender.com/api"; 
         
         const firebaseConfig = { databaseURL: "https://wak-derby-chat-default-rtdb.firebaseio.com/" };
@@ -181,11 +195,17 @@
         let currentPlaybackTime = 0.0;
         let lastTimestamp = 0;
         let maxFrames = 0;
-        let trackLen = 2000;
         const DT = 1 / 15.0; 
 
-        let currentCam = { x: -100, y: 150, rotX: 50, rotZ: 0, zoom: 0.9 }; 
-        let targetCam  = { x: -100, y: 150, rotX: 50, rotZ: 0, zoom: 0.9 };
+        // 💡 2.5D 엔진 코어 설정
+        // VISUAL_SCALE을 8로 두어 2000m의 트랙이 실제 16000px의 거대한 공간으로 매핑됩니다 (밀집 현상 해결)
+        const VISUAL_SCALE = 8;  
+        const LANE_SCALE = 150;   // 레인 간격(폭) 확장
+        const CX = 7500;          // 거대한 트랙의 가상 중심점 X
+        const CY = 3500;          // 거대한 트랙의 가상 중심점 Y
+
+        let currentCam = { x: CX, y: CY, rotX: 60, rotZ: 0, zoom: 0.5 }; 
+        let targetCam  = { x: CX, y: CY, rotX: 60, rotZ: 0, zoom: 0.5 };
         
         let spurtPlayed = new Set();
         let rawParticipants = [];
@@ -196,7 +216,31 @@
         let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
         let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
 
-        // --- 로비 로직 ---
+        // ===============================================
+        // 🏁 [도쿄 2000m 타원 좌표계 엔진]
+        // ===============================================
+        function getTrackCoordinates(d) {
+            let x = 0, y = 0, angle = -Math.PI/2; 
+            let R2 = 200 / (Math.PI / 2); 
+            let R3 = 275 / (Math.PI / 2); 
+            let R4 = 250 / (Math.PI / 2); 
+            
+            if (d <= 200) return { x: x, y: y - d, angle: angle };
+            y -= 200;
+            if (d <= 400) { let t = d - 200; let cAngle = 0 - t / R2; return { x: (x - R2) + R2 * Math.cos(cAngle), y: y + R2 * Math.sin(cAngle), angle: cAngle - Math.PI/2 }; }
+            x -= R2; y -= R2;
+            if (d <= 950) { let t = d - 400; return { x: x - t, y: y, angle: -Math.PI }; }
+            x -= 550;
+            if (d <= 1225) { let t = d - 950; let cAngle = -Math.PI/2 - t / R3; return { x: x + R3 * Math.cos(cAngle), y: (y + R3) + R3 * Math.sin(cAngle), angle: cAngle - Math.PI/2 }; }
+            x -= R3; y += R3;
+            if (d <= 1475) { let t = d - 1225; let cAngle = -Math.PI - t / R4; return { x: (x + R4) + R4 * Math.cos(cAngle), y: y + R4 * Math.sin(cAngle), angle: cAngle - Math.PI/2 }; }
+            x += R4; y += R4;
+            let t = d - 1475; return { x: x + t, y: y, angle: 0 };
+        }
+
+        // ===============================================
+        // 로비 및 API 기능
+        // ===============================================
         async function extractParticipants() {
             const urlInput = document.getElementById('dcUrl').value;
             const statusDiv = document.getElementById('lobby-status');
@@ -210,8 +254,7 @@
                     excludedNames.clear();
                     applyTimeFilter();
                     
-                    let d = new Date();
-                    d.setMinutes(d.getMinutes() + 2);
+                    let d = new Date(); d.setMinutes(d.getMinutes() + 2);
                     fpDatetime.setDate(d);
 
                     statusDiv.innerText = "추출 완료! 명단 필터링 및 설정을 진행하세요.";
@@ -230,7 +273,6 @@
             }
         }
 
-        // 💡 디시인사이드 날짜 파싱 오류 해결
         function applyTimeFilter() {
             const useTimeCutoff = document.getElementById('timeCutoffToggle').checked;
             let timeFiltered = [];
@@ -239,19 +281,12 @@
                 const cutoffTime = fpTimeCutoff.selectedDates[0].getTime();
                 timeFiltered = rawParticipants.filter(p => {
                     if (!p.reg_date) return true; 
-                    
-                    // "06.06 14:30:00" 같은 형태를 표준 Date 형태로 치환
                     let dateStr = p.reg_date.replace(/\./g, '-');
-                    if (dateStr.split('-').length === 2) {
-                        dateStr = new Date().getFullYear() + '-' + dateStr;
-                    }
+                    if (dateStr.split('-').length === 2) dateStr = new Date().getFullYear() + '-' + dateStr;
                     let cmtTime = new Date(dateStr).getTime();
-                    
                     return !isNaN(cmtTime) && cmtTime <= cutoffTime;
                 });
-            } else {
-                timeFiltered = rawParticipants;
-            }
+            } else { timeFiltered = rawParticipants; }
 
             let allValidNames = timeFiltered.map(p => p.name);
             currentExtractedList = allValidNames.filter(name => !excludedNames.has(name));
@@ -312,7 +347,9 @@
             } catch(e) { alert("생성 실패"); }
         }
 
-        // --- 방 입장 및 프리쇼 초기화 ---
+        // ===============================================
+        // 방 입장 및 게임 초기화
+        // ===============================================
         window.onload = async function() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomId = urlParams.get('room');
@@ -328,8 +365,6 @@
                 
                 roomData = data.data;
                 maxFrames = roomData.replay_data.length;
-                trackLen = 2000; // 도쿄 2000m 고정
-                document.getElementById('track').style.width = `${trackLen}px`;
 
                 if(roomData.allow_custom_chat) document.getElementById('custom-chat-box').style.display = 'flex';
 
@@ -340,6 +375,8 @@
                     spawnChatBubble(snap.val().message);
                 });
 
+                // 트랙 캔버스 그리기 및 주자 DOM 생성
+                drawTrackCanvas();
                 initPreShowDOM(); 
                 
                 const nowUnix = Math.floor(Date.now() / 1000);
@@ -354,14 +391,89 @@
             } catch(e) { alert("데이터 로딩 실패! (API_BASE 주소를 확인해주세요)"); }
         };
 
-        // 💡 프리쇼 DOM 
+        // 💡 거대한 2000m 트랙 캔버스 생성
+        function drawTrackCanvas() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 9000;
+            canvas.height = 4000;
+            canvas.style.position = 'absolute';
+            canvas.style.left = '0px';
+            canvas.style.top = '0px';
+            canvas.style.transform = 'translateZ(-1px)'; // 주자들 밑에 깔림
+            const ctx = canvas.getContext('2d');
+            
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            
+            // 바깥 잔디 라인
+            ctx.lineWidth = 140 * (VISUAL_SCALE/3); 
+            ctx.strokeStyle = '#2d3436';
+            ctx.beginPath();
+            for(let i=0; i<=2000; i+=10) {
+                let p = getTrackCoordinates(i);
+                if(i===0) ctx.moveTo(p.x*VISUAL_SCALE + CX, p.y*VISUAL_SCALE + CY);
+                else ctx.lineTo(p.x*VISUAL_SCALE + CX, p.y*VISUAL_SCALE + CY);
+            }
+            ctx.stroke();
+
+            // 트랙 표면 (페이즈별 색상)
+            ctx.lineWidth = 55 * (VISUAL_SCALE/3); 
+            for(let i=0; i<=2000; i+=10) {
+                let p = getTrackCoordinates(i);
+                ctx.beginPath();
+                if(i===0) ctx.moveTo(p.x*VISUAL_SCALE + CX, p.y*VISUAL_SCALE + CY);
+                else {
+                    let prev = getTrackCoordinates(i-10);
+                    ctx.moveTo(prev.x*VISUAL_SCALE + CX, prev.y*VISUAL_SCALE + CY);
+                }
+                ctx.lineTo(p.x*VISUAL_SCALE + CX, p.y*VISUAL_SCALE + CY);
+                
+                if(i<333) ctx.strokeStyle = '#05c46b';
+                else if(i<1333) ctx.strokeStyle = '#10ac84';
+                else ctx.strokeStyle = '#ffb8b8';
+                ctx.stroke();
+            }
+
+            // 시작선 그리기
+            let startP = getTrackCoordinates(0);
+            let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (0 * LANE_SCALE);
+            let sInY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (0 * LANE_SCALE);
+            let sOutX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
+            let sOutY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
+            ctx.beginPath(); ctx.moveTo(sInX, sInY); ctx.lineTo(sOutX, sOutY);
+            ctx.lineWidth = 15; ctx.strokeStyle = 'white'; ctx.stroke();
+
+            // 결승선 그리기
+            let goalP = getTrackCoordinates(2000);
+            let gInX = (goalP.x*VISUAL_SCALE + CX) + Math.cos(goalP.angle + Math.PI/2) * (0 * LANE_SCALE);
+            let gInY = (goalP.y*VISUAL_SCALE + CY) + Math.sin(goalP.angle + Math.PI/2) * (0 * LANE_SCALE);
+            let gOutX = (goalP.x*VISUAL_SCALE + CX) + Math.cos(goalP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
+            let gOutY = (goalP.y*VISUAL_SCALE + CY) + Math.sin(goalP.angle + Math.PI/2) * (1.5 * LANE_SCALE);
+            ctx.beginPath(); ctx.moveTo(gInX, gInY); ctx.lineTo(gOutX, gOutY);
+            ctx.lineWidth = 30; ctx.strokeStyle = '#2d3436'; ctx.stroke();
+
+            document.getElementById('world').appendChild(canvas);
+        }
+
+        // 💡 주자 DOM 생성 및 시작 위치(타원 좌표계 0m) 매핑
         function initPreShowDOM() {
             const skinList = ['cho.png', 'nin.png', 'shal.png', 'skin01.png', 'skin02.png', 'skin03.png']; 
-            const chatZones = [{x: -120, y: 150}, {x: -150, y: 300}, {x: -80, y: 400}]; 
+            
+            // 0m 지점의 절대 좌표와 앵글
+            let startPos = getTrackCoordinates(0);
+            
+            // 대화 구역 (스타트 라인 살짝 뒤쪽)
+            const chatZones = [
+                {x: startPos.x*VISUAL_SCALE+CX - 150, y: startPos.y*VISUAL_SCALE+CY - 200},
+                {x: startPos.x*VISUAL_SCALE+CX - 250, y: startPos.y*VISUAL_SCALE+CY + 100},
+                {x: startPos.x*VISUAL_SCALE+CX + 100, y: startPos.y*VISUAL_SCALE+CY - 300}
+            ]; 
             
             roomData.participants.forEach((p, idx) => {
-                let startLane = 4.0 + (idx % 8) * 1.5; 
-                let startY = 100 + (startLane * 20); 
+                let startLane = (idx % 8) * 0.2; // 0.0 ~ 1.4 범위로 분산
+                
+                // 타원 곡선 위에서의 절대 픽셀 좌표 역산
+                let finalWorldX = startPos.x*VISUAL_SCALE + CX + Math.cos(startPos.angle + Math.PI/2) * (startLane * LANE_SCALE);
+                let finalWorldY = startPos.y*VISUAL_SCALE + CY + Math.sin(startPos.angle + Math.PI/2) * (startLane * LANE_SCALE);
                 
                 let behavior = 'ready'; 
                 let r = Math.random();
@@ -370,9 +482,10 @@
                 
                 preShowRunners.push({
                     id: p.id,
-                    finalX: 0, finalY: startY,
-                    currX: behavior === 'ready' ? 0 : -300 - Math.random() * 200, currY: startY,
-                    targetX: 0, targetY: startY,
+                    finalX: finalWorldX, finalY: finalWorldY,
+                    currX: behavior === 'ready' ? finalWorldX : finalWorldX - 300 - Math.random() * 200, 
+                    currY: behavior === 'ready' ? finalWorldY : finalWorldY + 100,
+                    targetX: finalWorldX, targetY: finalWorldY,
                     behavior: behavior, chatZone: chatZones[Math.floor(Math.random() * chatZones.length)], timer: 0, panicked: false
                 });
 
@@ -391,11 +504,7 @@
                     </div>
                     <div class="hp-bar"><div class="hp-fill"></div></div>
                 `;
-                document.getElementById('track').appendChild(rBase);
-
-                const gateNum = document.createElement('div');
-                gateNum.className = 'gate-number'; gateNum.innerText = `[${idx+1}]`; gateNum.style.top = `${startY}px`;
-                document.getElementById('track').appendChild(gateNum);
+                document.getElementById('world').appendChild(rBase);
 
                 const dot = document.createElement('div');
                 dot.className = 'minimap-dot'; dot.id = `dot-${p.id}`;
@@ -446,7 +555,7 @@
             }, 1000);
         }
 
-        // 💡 1. 프리쇼 루프
+        // --- 프리쇼 루프 ---
         function preShowLoop(timestamp) {
             if (!lastTimestamp) lastTimestamp = timestamp;
             let delta = (timestamp - lastTimestamp) / 1000;
@@ -474,7 +583,7 @@
                             if (r.behavior === 'wander') {
                                 r.timer -= delta;
                                 if (r.timer <= 0) {
-                                    r.targetX = -200 + Math.random() * 150; r.targetY = 100 + Math.random() * 300;
+                                    r.targetX = r.finalX - 200 + Math.random() * 150; r.targetY = r.finalY - 100 + Math.random() * 300;
                                     r.timer = 2 + Math.random() * 4; 
                                 }
                             } else if (r.behavior === 'chat') {
@@ -500,15 +609,25 @@
                             if(r.panicked) dom.classList.remove('startled'); 
                         }
 
-                        dom.style.left = `${r.currX}px`; dom.style.top = `${r.currY}px`;
+                        dom.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
                         wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
                     });
                 }
 
-                currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
-                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
+                // 시작 지점을 안정적으로 바라보도록 카메라 위치 고정
+                let startPos = getTrackCoordinates(0);
+                targetCam.x = -(startPos.x*VISUAL_SCALE + CX);
+                targetCam.y = -(startPos.y*VISUAL_SCALE + CY) - 100;
+                targetCam.rotX = 55;
+                targetCam.rotZ = (-startPos.angle - Math.PI/2) * (180/Math.PI);
+                targetCam.zoom = 1.0;
+
+                currentCam.x += (targetCam.x - currentCam.x) * 0.05; 
+                currentCam.y += (targetCam.y - currentCam.y) * 0.05;
+                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; 
+                currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
                 currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
-                document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${-currentCam.x}px) translateY(${-currentCam.y}px)`;
+                document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
 
                 requestAnimationFrame(preShowLoop);
             }
@@ -520,7 +639,8 @@
             
             preShowRunners.forEach(r => {
                 let dom = document.getElementById(`runner-${r.id}`);
-                dom.classList.remove('startled'); dom.style.left = `0px`; dom.style.top = `${r.finalY}px`;
+                dom.classList.remove('startled'); 
+                dom.style.transform = `translate3d(${r.finalX}px, ${r.finalY}px, 0)`;
             });
 
             if (roomData.bgm && roomData.bgm !== 'none') {
@@ -539,7 +659,7 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // 💡 2. 본 게임 루프
+        // 💡 2. 본 게임 루프 (2.5D 타원형 좌표 적용)
         function renderFrameAtTime(timeTarget) {
             let frameIdx = Math.floor(timeTarget / DT);
             if (frameIdx >= maxFrames) frameIdx = maxFrames - 1;
@@ -549,22 +669,40 @@
             document.getElementById('main-timer').innerText = `RACE - ${timeTarget.toFixed(1)}s`;
 
             let leaderX = -1; let focusRunner = null; 
+            let leaderWorldX = 0, leaderWorldY = 0, leaderAngle = 0;
 
             frameData.r.forEach(rData => {
-                let [id, x, y, speed, hp, states] = rData;
-                if (x > leaderX) { leaderX = x; }
-                if (states.includes("Spurt")) focusRunner = rData;
+                let [id, dist, lane, speed, hp, states] = rData; // x 대신 dist(0~2000m) 
+                
+                // 💡 백엔드의 0~2000m 거리를 -> 타원형 x, y 좌표로 변환!
+                let pos = getTrackCoordinates(dist);
+                let laneOffset = lane * LANE_SCALE; // 레인을 시각적으로 넓게 증폭
+                
+                // 💡 월드 상의 최종 픽셀 좌표 도출
+                let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
+                let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
+
+                if (dist > leaderX) { 
+                    leaderX = dist; 
+                    leaderWorldX = worldX; 
+                    leaderWorldY = worldY; 
+                    leaderAngle = pos.angle; // 💡 카메라 회전을 위해 선두의 진행 각도 저장
+                }
+                
+                if (states.includes("Spurt")) focusRunner = { worldX, worldY, id };
 
                 let dom = document.getElementById(`runner-${id}`);
                 let dot = document.getElementById(`dot-${id}`);
                 
-                dom.style.left = `${x}px`; dom.style.top = `${100 + (y * 80)}px`; 
-                dot.style.left = `${(x / trackLen) * 100}%`;
+                // 캐릭터 이동
+                dom.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`;
+                dot.style.left = `${(dist / 2000) * 100}%`;
                 
                 let wrapper = dom.querySelector('.sprite-wrapper');
                 let sprite = dom.querySelector('.sprite-anim');
                 let badge = dom.querySelector('.status-badge');
 
+                // 💡 [핵심] 카메라가 트랙을 돌 때 캐릭터는 화면을 향하도록 역회전
                 wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
                 
                 if(speed > 1.0 && !states.includes("Exhaust")) sprite.className = 'sprite-anim running';
@@ -584,18 +722,33 @@
                 } else badge.className = 'status-badge';
             });
 
+            // 💡 3D 다이내믹 카메라 연출 (트랙 곡선에 따라 회전)
+            // 화면 중심에 주자가 오도록 좌표의 음수(-) 값을 타겟으로 설정합니다.
             if (focusRunner) {
-                targetCam.x = focusRunner[1] - 150; targetCam.y = (focusRunner[2] * 80); targetCam.rotX = 75; targetCam.rotZ = 5; targetCam.zoom = 1.4;
+                targetCam.x = -focusRunner.worldX; 
+                targetCam.y = -focusRunner.worldY; 
+                targetCam.rotX = 75; 
+                targetCam.rotZ = (-leaderAngle - Math.PI/2) * (180/Math.PI); // 트랙 방향으로 회전!
+                targetCam.zoom = 1.4;
             } else {
-                targetCam.x = leaderX - 300; targetCam.y = 150; targetCam.rotX = 55; targetCam.rotZ = -5; targetCam.zoom = 0.8;
+                targetCam.x = -leaderWorldX; 
+                targetCam.y = -leaderWorldY + 100; // 살짝 여백 주기
+                targetCam.rotX = 60; 
+                targetCam.rotZ = (-leaderAngle - Math.PI/2) * (180/Math.PI); // 트랙 방향으로 회전!
+                targetCam.zoom = 0.8;
             }
 
-            currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
-            currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
+            // 카메라 스무딩 (Lerp)
+            currentCam.x += (targetCam.x - currentCam.x) * 0.05; 
+            currentCam.y += (targetCam.y - currentCam.y) * 0.05;
+            currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; 
+            currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
             currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
-            document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${-currentCam.x}px) translateY(${-currentCam.y}px)`;
+            
+            // 월드 Transform (트랙 굽이치기)
+            document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
 
-            if (leaderX >= trackLen && isPlaying) {
+            if (leaderX >= 2000 && isPlaying) {
                 isPlaying = false; showCommentary(`🏆 레이스 종료!!`);
             }
         }
