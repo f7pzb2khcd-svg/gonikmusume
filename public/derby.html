@@ -118,8 +118,23 @@
                 <option value="CIDER BANG! Remix.mp3">CIDER BANG! Remix</option>
                 <option value="우주미아 Remix.mp3">우주미아 Remix</option>
                 <option value="Ballin Remix.mp3">Ballin Remix</option>
-                <option value="종천지모 Megamix.mp3">종천지모</option>
+                <option value="HEADLINE.mp3">HEADLINE</option>
+                <option value="We Ride.mp3">We Ride</option>
+                <option value="WAKTA!.mp3">WAKTA!</option>
+                <option value="스키!.mp3">스키!</option>
+                <option value="융터르.mp3">융터르</option>
+                <option value="FINISH LINE.mp3">FINISH LINE (아세토 고갯길배틀)</option>
+                <option value="Boosting Higher.mp3">Boosting Higher (아세토 고갯길배틀)</option>
+                <option value="데자부.mp3">데자부</option>
                 <option value="왁스라다 리믹스.mp3">왁스라다</option>
+                <option value="왁리오.mp3">왁리오</option>
+                <option value="Alzar Takkarsen.mp3">Alzar Takkarsen</option>
+                <option value="지구용사 우왁굳.mp3">지구용사 우왁굳</option>
+                <option value="PUNK.mp3">PUNK</option>
+                <option value="꾀꼬리.mp3">꾀꼬리가 나의 맘을 울려 꾀꼴하고</option>
+                <option value="멋쟁이 신사 쿤미옌.mp3">멋쟁이 신사 쿤미옌</option>
+                <option value="아니아니아닌데.mp3">아니아니아닌데</option>
+                <option value="종천지모 Megamix.mp3">종천지모 Megamix</option>
             </select>
             
             <div class="option-group">
@@ -371,45 +386,48 @@
             } catch(e) { alert("데이터 로딩 실패! (API_BASE 주소를 확인해주세요)"); }
         };
 
-        // 💡 거대 캔버스 그리기 (한국 도심 스타일 텍스처 적용)
+        // 💡 캔버스 해상도 초과(OOM) 방지 및 손떨림 방지 변수
+        let smoothedLeaderX = 0, smoothedLeaderY = 0, smoothedLeaderAngle = -Math.PI/2;
+
         function drawTrackCanvas() {
             const canvas = document.createElement('canvas');
-            canvas.width = 28000;
-            canvas.height = 14000;
-            canvas.style.position = 'absolute'; canvas.style.left = '0px'; canvas.style.top = '0px';
-            canvas.style.transform = 'translateZ(-1px)'; 
+            // 💡 실제 캔버스 픽셀을 1/4로 줄임 (브라우저 다운 방지)
+            canvas.width = 7000;
+            canvas.height = 3500;
+            canvas.style.position = 'absolute'; 
+            canvas.style.left = '0px'; 
+            canvas.style.top = '0px';
+            canvas.style.transformOrigin = 'top left';
+            canvas.style.transform = 'translateZ(-1px) scale(4)'; // 💡 CSS로 4배 확대
+            
             const ctx = canvas.getContext('2d');
+            ctx.scale(0.25, 0.25); // 💡 내부 좌표는 그대로 쓸 수 있게 스케일 축소
             
-            // 1. 코스 밖 바닥 (비주행 구역 - 밝은 타일 #C8C8C8)
+            // 1. 코스 밖 바닥
             ctx.fillStyle = '#C8C8C8';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, 28000, 14000); // 캔버스 내부 좌표 기준
             
-            // 타일 눈금 그리기
-            ctx.strokeStyle = '#BDBDBD';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            for(let i = 0; i < canvas.width; i += 200) { ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); }
-            for(let i = 0; i < canvas.height; i += 200) { ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); }
+            // 타일 눈금
+            ctx.strokeStyle = '#BDBDBD'; ctx.lineWidth = 4; ctx.beginPath();
+            for(let i = 0; i < 28000; i += 200) { ctx.moveTo(i, 0); ctx.lineTo(i, 14000); }
+            for(let i = 0; i < 14000; i += 200) { ctx.moveTo(0, i); ctx.lineTo(28000, i); }
             ctx.stroke();
             
-            ctx.lineCap = 'butt'; 
-            ctx.lineJoin = 'round';
+            ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
             
-            // 2. 도로 노란색/흰색 테두리
+            // 2. 도로 노란선 테두리
             ctx.lineWidth = LANE_SCALE * 2.2; 
-            ctx.strokeStyle = '#f1c40f'; // 노란선
+            ctx.strokeStyle = '#f1c40f';
             ctx.beginPath();
             for(let i=0; i<=2000; i+=10) {
                 let p = getTrackCoordinates(i);
-                // 주행 구역의 중앙을 맞추기 위한 보정 (레인 0~1.5의 중앙인 0.75 기준)
                 let centerX = p.x*VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
                 let centerY = p.y*VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                if(i===0) ctx.moveTo(centerX, centerY);
-                else ctx.lineTo(centerX, centerY);
+                if(i===0) ctx.moveTo(centerX, centerY); else ctx.lineTo(centerX, centerY);
             }
             ctx.stroke();
 
-            // 3. 코스 (주행 구역 - 어두운 아스팔트 #30343A)
+            // 3. 코스 아스팔트
             ctx.lineWidth = LANE_SCALE * 2.0; 
             ctx.strokeStyle = '#30343A';
             ctx.beginPath();
@@ -417,25 +435,20 @@
                 let p = getTrackCoordinates(i);
                 let centerX = p.x*VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
                 let centerY = p.y*VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                if(i===0) ctx.moveTo(centerX, centerY);
-                else ctx.lineTo(centerX, centerY);
+                if(i===0) ctx.moveTo(centerX, centerY); else ctx.lineTo(centerX, centerY);
             }
             ctx.stroke();
             
-            // 4. 중앙 차선 (흰색 점선)
-            ctx.lineWidth = 12;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.setLineDash([60, 60]);
+            // 4. 중앙 점선
+            ctx.lineWidth = 12; ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; ctx.setLineDash([60, 60]);
             ctx.beginPath();
             for(let i=0; i<=2000; i+=10) {
                 let p = getTrackCoordinates(i);
                 let centerX = p.x*VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
                 let centerY = p.y*VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                if(i===0) ctx.moveTo(centerX, centerY);
-                else ctx.lineTo(centerX, centerY);
+                if(i===0) ctx.moveTo(centerX, centerY); else ctx.lineTo(centerX, centerY);
             }
-            ctx.stroke();
-            ctx.setLineDash([]);
+            ctx.stroke(); ctx.setLineDash([]);
 
             // 시작/결승선
             let startP = getTrackCoordinates(0);
@@ -451,15 +464,14 @@
             let gOutX = (goalP.x*VISUAL_SCALE + CX) + Math.cos(goalP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
             let gOutY = (goalP.y*VISUAL_SCALE + CY) + Math.sin(goalP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
             ctx.beginPath(); ctx.moveTo(gInX, gInY); ctx.lineTo(gOutX, gOutY); ctx.lineWidth = 50; ctx.strokeStyle = '#fff'; ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(gInX, gInY); ctx.lineTo(gOutX, gOutY); ctx.lineWidth = 25; ctx.strokeStyle = '#000'; ctx.setLineDash([25, 25]); ctx.stroke();
-            ctx.setLineDash([]);
+            ctx.beginPath(); ctx.moveTo(gInX, gInY); ctx.lineTo(gOutX, gOutY); ctx.lineWidth = 25; ctx.strokeStyle = '#000'; ctx.setLineDash([25, 25]); ctx.stroke(); ctx.setLineDash([]);
 
             document.getElementById('world').appendChild(canvas);
         }
 
         // 💡 프리쇼 화면 구석 등장 및 로직 강화
         function initPreShowDOM() {
-            const skinList = ['cho.png', 'nin.png', 'shal.png', 'skin01.png', 'skin02.png', 'skin03.png']; 
+            const skinList = ['ti.png', 'nin.png', 'vic.png', 'cho.png', 'shal.png', 'skin01.png', 'skin02.png', 'skin03.png', 'skin04.png', 'skin05.png', 'skin06.png', 'skin07.png', 'skin08.png', 'skin21.png', 'skin22.png', 'skin23.png', 'skin24.png', 'skin25.png', 'skin31.png', 'skin32.png', 'skin33.png', 'skin34.png', 'skin35.png', 'skin36.png', 'skin41.png', 'skin42.png', 'skin43.png', 'skin51.png', 'skin52.png', 'skin53.png', 'skin54.png', 'skin55.png', 'skin61.png', 'skin62.png', 'skin63.png', 'skin64.png']; 
             let startPos = getTrackCoordinates(0);
             
             const chatZones = [
@@ -642,7 +654,6 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // 💡 2. 본 게임 루프 (지면 밀착 & 줌아웃 망원렌즈 카메라 개선)
         function renderFrameAtTime(timeTarget) {
             let frameIdx = Math.floor(timeTarget / DT);
             if (frameIdx >= maxFrames) frameIdx = maxFrames - 1;
@@ -689,19 +700,34 @@
                 else badge.className = 'status-badge';
             });
 
-            // 💡 방송용 카메라 (바닥에 바짝 붙어서 대각선으로 추적)
+            // 💡 [카메라 OIS (손떨림 방지)]
+            if (smoothedLeaderX === 0) { smoothedLeaderX = leaderWorldX; smoothedLeaderY = leaderWorldY; smoothedLeaderAngle = leaderAngle; }
+            
+            // 위치와 각도를 매우 부드럽게 따라가도록 이중 스무딩
             let camTargetObj = focusRunner ? focusRunner : { worldX: leaderWorldX, worldY: leaderWorldY, angle: leaderAngle };
             
-            targetCam.rotZ = (-camTargetObj.angle * 180 / Math.PI) - 75; // 트랙 진행 방향에서 약간 측면을 비춤
-            targetCam.rotX = 70; // 너무 극단적이지 않고 안정적인 로우앵글
+            smoothedLeaderX += (camTargetObj.worldX - smoothedLeaderX) * 0.02;
+            smoothedLeaderY += (camTargetObj.worldY - smoothedLeaderY) * 0.02;
+            
+            // 각도가 -PI 와 PI 사이를 튈 때의 오류를 방지하는 최단거리 회전 공식
+            let diffAngle = camTargetObj.angle - smoothedLeaderAngle;
+            while(diffAngle < -Math.PI) diffAngle += Math.PI*2;
+            while(diffAngle > Math.PI) diffAngle -= Math.PI*2;
+            smoothedLeaderAngle += diffAngle * 0.015; // 각도는 특히 더 천천히 돌림
+            
+            targetCam.rotZ = (-smoothedLeaderAngle * 180 / Math.PI) - 75; 
+            targetCam.rotX = 70; 
             targetCam.zoom = 0.9; 
             
-            // 💡 카메라가 주자들의 "약간 앞쪽, 그리고 화면 아래쪽"에 주자를 배치하도록 보정
-            targetCam.x = -camTargetObj.worldX; 
-            targetCam.y = -camTargetObj.worldY + 400; // Y값을 더해서 3D 공간을 위로 밀어올림 (주자가 카메라 앵글 중앙에 오도록)
+            // OIS 적용된 좌표를 타겟으로 함
+            targetCam.x = -smoothedLeaderX; 
+            targetCam.y = -smoothedLeaderY + 400; 
 
-            currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
-            currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
+            // 최종 카메라 Lerp 적용
+            currentCam.x += (targetCam.x - currentCam.x) * 0.05; 
+            currentCam.y += (targetCam.y - currentCam.y) * 0.05;
+            currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; 
+            currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
             currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
             
             document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
