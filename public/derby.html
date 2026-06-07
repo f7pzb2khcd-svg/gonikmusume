@@ -48,8 +48,6 @@
         .name-tag { font-size: 55px; font-weight: bold; background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 15px; position: absolute; top: -80px; left: 25px; white-space: nowrap; }
         .status-badge { font-size: 45px; font-weight: bold; position: absolute; top: -160px; left: 25px; padding: 10px 20px; border-radius: 12px; color: white; opacity: 0; }
         .show-badge { opacity: 1; }
-        
-        /* 💡 방해되던 HP 바 완전히 제거 */
         .hp-bar { display: none !important; }
         
         .b-spurt { background: #e84118; animation: pulse 0.5s infinite alternate; }
@@ -79,14 +77,12 @@
         #ult-cutin-bg { width: 100%; background: linear-gradient(90deg, transparent, #e53935, transparent); padding: 40px 0; border-top: 2px solid #ffeb3b; border-bottom: 2px solid #ffeb3b; }
         .cutin-name { font-size: 45px; font-weight: 900; color: #ffe082; text-shadow: 3px 3px 5px #000; }
 
-        /* 💡 확장된 통합 카메라 디버깅 패널 */
         #camera-debugger { position: fixed; top: 10px; right: 10px; width: 340px; background: rgba(20, 20, 20, 0.95); padding: 15px; border: 2px solid #00e5ff; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); color: white; z-index: 9999; display: none; text-align: left; font-size: 13px; }
         #camera-debugger h3 { margin: 0 0 10px 0; color: #00e5ff; font-size: 16px; border-bottom: 1px solid #555; padding-bottom: 5px; }
         .debug-row { margin-bottom: 10px; }
         .debug-row label { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; }
         .debug-row input[type="range"] { width: 100%; cursor: pointer; }
         #cam-select { width: 100%; padding: 5px; background: #353b48; color: white; border: 1px solid #718093; font-weight: bold; margin-bottom: 10px; }
-        #config-output { width: 100%; height: 60px; background: #111; color: #0be881; border: 1px solid #555; margin-top: 10px; font-size: 11px; padding: 5px; box-sizing: border-box; resize: none; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -106,21 +102,16 @@
             <option value="7">7. 최종 직선 뷰 (1475~1950m)</option>
             <option value="8">8. 결승선 픽스 뷰 (1950m~)</option>
         </select>
-        
         <div style="margin-bottom: 10px;">
             <label style="cursor: pointer; color: #ffeb3b; font-size: 14px; font-weight: bold;">
-                <input type="checkbox" id="enable-debug-cam" style="width: 15px; height: 15px;"> 현재 선택된 카메라로 뷰 강제 고정
+                <input type="checkbox" id="enable-debug-cam" style="width: 15px; height: 15px;"> 수동 뷰 고정 (Space: 일시정지)
             </label>
         </div>
-        
         <div class="debug-row"><label>X축 오프셋 <span id="val-x">0</span>px</label><input type="range" id="slider-x" min="-4000" max="4000" step="10" value="0"></div>
         <div class="debug-row"><label>Y축 오프셋 <span id="val-y">0</span>px</label><input type="range" id="slider-y" min="-4000" max="4000" step="10" value="0"></div>
         <div class="debug-row"><label>RotX (밀착) <span id="val-rotx">85</span>도</label><input type="range" id="slider-rotx" min="0" max="90" step="1" value="85"></div>
         <div class="debug-row"><label>RotZ (측면) <span id="val-rotz">0</span>도</label><input type="range" id="slider-rotz" min="-360" max="360" step="1" value="0"></div>
         <div class="debug-row"><label>Zoom <span id="val-zoom">4.0</span>배</label><input type="range" id="slider-zoom" min="0.1" max="6.0" step="0.05" value="4.0"></div>
-        
-        <div style="font-size: 11px; margin-top: 5px;">현재 카메라 JSON 데이터 (복사해서 알려주세요)</div>
-        <textarea id="config-output" readonly></textarea>
     </div>
 
     <div id="lobby-panel">
@@ -197,89 +188,66 @@
 
         let roomData = null;
         let isPreShow = false; let isPlaying = false;
+        let isPaused = false; // 💡 일시정지 상태 변수 추가
+        
         let currentPlaybackTime = 0.0; let lastTimestamp = 0; let maxFrames = 0;
         const DT = 1 / 15.0; 
-		
-		// 💡 일시정지 변수
-	let isPaused = false;
-	
-	// 💡 스페이스바 일시정지 단축키 이벤트
-	window.addEventListener('keydown', function(e) {
-		// 채팅창에 입력 중일 때는 작동하지 않도록 예외 처리
-		if (e.target.tagName === 'INPUT') return; 
-	
-		if (e.code === 'Space' && isPlaying) {
-			isPaused = !isPaused;
-			e.preventDefault(); // 스페이스바 누를 때 화면 스크롤 방지
-			showCommentary(isPaused ? "⏸️ [카메라 디버깅] 레이스 일시정지" : "▶️ 레이스 재개");
-    }
-});
 
         const VISUAL_SCALE = 12;   
         const LANE_SCALE = 120; 
         const CX = 14000;          
         const CY = 6000;           
 
-        let smoothCenterX = 0, smoothCenterY = 0;
-        let activeCamId = null; // 하드 컷(Hard Cut) 판별용 현재 활성화된 카메라 ID
+        let smoothCenterX = 0, smoothCenterY = 0, smoothCenterAngle = -Math.PI/2;
+        let activeCamId = null; 
+        let camStartTime = 0;
+        let forceCameraCut = false; 
         
         let currentCam = { x: CX, y: CY, rotX: 40, rotZ: 0, zoom: 0.4 }; 
         let targetCam  = { x: CX, y: CY, rotX: 40, rotZ: 0, zoom: 0.4 };
         
         let preShowRunners = []; let currentExtractedList = []; let excludedNames = []; let rawParticipants = [];
-        
-        let preShowFocusId = null;
-        let lastPreShowZoomTime = 0;
+        let preShowFocusId = null; let lastPreShowZoomTime = 0;
 
-        // 💡 [카메라 8-채널 통합 세팅 객체] 기획자님이 찾아낸 값들을 저장하는 곳
-        let CAM_SETTINGS = {
-            "1": { offsetX: -150, offsetY: -300, rotX: 45, rotZ: 62, zoom: 0.6 }, // 프리쇼 대기
-            "1.5": { offsetX: 0, offsetY: 500, rotX: 80, rotZ: -90, zoom: 3.5 }, // 프리쇼 30초 전 줌인 인터뷰
-            "2": { offsetX: 1000, offsetY: 0, rotX: 85, rotZ: -90, zoom: 3.5 },  // 출발 직선 (0~200m)
-            "3": { offsetX: 0, offsetY: 1000, rotX: 85, rotZ: 0, zoom: 3.5 },    // 1코너 (200~400m)
-            "4": { offsetX: -1000, offsetY: 0, rotX: 85, rotZ: 90, zoom: 3.5 },  // 백스트레치 (400~950m)
-            "5": { offsetX: 0, offsetY: -1000, rotX: 85, rotZ: 180, zoom: 3.5 }, // 3코너 (950~1225m)
-            "6": { offsetX: 1000, offsetY: 0, rotX: 85, rotZ: -90, zoom: 3.5 },  // 최종 코너 (1225~1475m)
-            "7": { offsetX: 1000, offsetY: 0, rotX: 85, rotZ: -90, zoom: 3.5 },  // 최종 직선 (1475~1950m)
-            "8": { offsetX: 500, offsetY: -1500, rotX: 85, rotZ: -180, zoom: 4.0 } // 결승선 고정 (1950m~)
+        // 💡 기획자님의 치밀한 시네마틱 스크립트 대본 (시간/프레임 기반 애니메이션 적용)
+        // 변화가 거의 없다가 뒤에 빨라지는 곡선 (Cubic Ease-In) 적용
+        const easeInCubic = (t) => t * t; 
+
+        const CAM_SCRIPT = {
+            "2": { duration: 8,  base: {offsetX: 0, offsetY: 150, rotX: 85, rotZ: -105, zoom: 3.5}, target: {rotZ: -75} },
+            "3": { duration: 8,  base: {offsetX: 150, offsetY: 0, rotX: 89, rotZ: -50, zoom: 3}, target: {offsetX: 100, rotZ: -20} },
+            "4": { duration: 24, base: {offsetX: 150, offsetY: 0, rotX: 85, rotZ: 15, zoom: 3.5}, target: {rotZ: 60} },
+            "5": { duration: 12, base: {offsetX: 0, offsetY: -100, rotX: 80, rotZ: 120, zoom: 2.6}, target: {rotZ: 180} },
+            "6": { duration: 10, base: {offsetX: -300, offsetY: 100, rotX: 80, rotZ: 120, zoom: 2.6}, target: {offsetX: -200, rotZ: 150} },
+            "7": { duration: 18, base: {offsetX: 0, offsetY: 50, rotX: 85, rotZ: 90, zoom: 3}, target: {offsetX: -50, offsetY: 100, rotX: 80, rotZ: 100} },
+            "8": { duration: 2,  base: {offsetX: -100, offsetY: 0, rotX: 87, rotZ: -200, zoom: 4}, target: {rotZ: -180} }
         };
 
-        // UI 슬라이더 및 드롭다운 연동 로직
-        const camSelect = document.getElementById('cam-select');
-        const configOutput = document.getElementById('config-output');
-        const sliders = {
-            x: document.getElementById('slider-x'), y: document.getElementById('slider-y'),
-            rotx: document.getElementById('slider-rotx'), rotz: document.getElementById('slider-rotz'),
-            zoom: document.getElementById('slider-zoom')
-        };
-
-        function updateSlidersFromConfig(camId) {
-            let conf = CAM_SETTINGS[camId];
-            sliders.x.value = conf.offsetX; document.getElementById('val-x').innerText = conf.offsetX;
-            sliders.y.value = conf.offsetY; document.getElementById('val-y').innerText = conf.offsetY;
-            sliders.rotx.value = conf.rotX; document.getElementById('val-rotx').innerText = conf.rotX;
-            sliders.rotz.value = conf.rotZ; document.getElementById('val-rotz').innerText = conf.rotZ;
-            sliders.zoom.value = conf.zoom; document.getElementById('val-zoom').innerText = conf.zoom;
-            configOutput.value = JSON.stringify(conf);
-        }
-
-        camSelect.addEventListener('change', (e) => { updateSlidersFromConfig(e.target.value); });
-        
-        Object.keys(sliders).forEach(key => {
-            sliders[key].addEventListener('input', (e) => {
-                document.getElementById('val-' + key).innerText = e.target.value;
-                let camId = camSelect.value;
-                CAM_SETTINGS[camId] = {
-                    offsetX: parseFloat(sliders.x.value), offsetY: parseFloat(sliders.y.value),
-                    rotX: parseFloat(sliders.rotx.value), rotZ: parseFloat(sliders.rotz.value),
-                    zoom: parseFloat(sliders.zoom.value)
-                };
-                configOutput.value = JSON.stringify(CAM_SETTINGS[camId]);
-            });
+        // 💡 일시정지 키보드 이벤트 연결
+        window.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT') return; 
+            if (e.code === 'Space' && isPlaying) {
+                isPaused = !isPaused;
+                e.preventDefault(); 
+                showCommentary(isPaused ? "⏸️ [카메라 디버깅] 레이스 일시정지" : "▶️ 레이스 재개");
+            }
         });
 
-        // 초기화 시 1번 카메라 설정 로드
-        updateSlidersFromConfig("1");
+        // 디버깅 UI 슬라이더 업데이트 함수
+        function updateSliders(camId) {
+            let conf = CAM_SCRIPT[camId];
+            if (!conf) return;
+            document.getElementById('slider-x').value = conf.base.offsetX; document.getElementById('val-x').innerText = conf.base.offsetX;
+            document.getElementById('slider-y').value = conf.base.offsetY; document.getElementById('val-y').innerText = conf.base.offsetY;
+            document.getElementById('slider-rotx').value = conf.base.rotX; document.getElementById('val-rotx').innerText = conf.base.rotX;
+            document.getElementById('slider-rotz').value = conf.base.rotZ; document.getElementById('val-rotz').innerText = conf.base.rotZ;
+            document.getElementById('slider-zoom').value = conf.base.zoom; document.getElementById('val-zoom').innerText = conf.base.zoom;
+        }
+
+        document.getElementById('cam-select').addEventListener('change', (e) => { updateSliders(e.target.value); });
+        document.querySelectorAll('#camera-debugger input[type=range]').forEach(inp => {
+            inp.addEventListener('input', (e) => { document.getElementById('val-' + e.target.id.split('-')[1]).innerText = e.target.value; });
+        });
 
         let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
         let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
@@ -454,7 +422,7 @@
             let sInY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
             let sOutX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
             let sOutY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
-            ctx.beginPath(); ctx.moveTo(sInX, sInY); ctx.lineTo(sOutX, sOutY); ctx.lineWidth = 20; ctx.strokeStyle = 'white'; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sInX, sInY); ctx.lineTo(sOutX, sOutY); ctx.lineWidth = 30; ctx.strokeStyle = 'white'; ctx.stroke();
             document.getElementById('world').appendChild(canvas);
         }
 
@@ -462,7 +430,6 @@
             const skinList = ['cho.png', 'nin.png', 'shal.png', 'skin01.png', 'skin02.png', 'skin03.png']; 
             let startPos = getTrackCoordinates(0);
             
-            // 💡 프리쇼 대기 구역: 스타트 라인 500~1000px 뒤쪽(위쪽)으로 밀어 넣음
             const chatZones = [
                 {x: startPos.x*VISUAL_SCALE+CX + 100, y: startPos.y*VISUAL_SCALE+CY + 600},
                 {x: startPos.x*VISUAL_SCALE+CX - 150, y: startPos.y*VISUAL_SCALE+CY + 800},
@@ -474,7 +441,7 @@
                 let finalWorldX = startPos.x*VISUAL_SCALE + CX + Math.cos(startPos.angle + Math.PI/2) * (startLane * LANE_SCALE);
                 let finalWorldY = startPos.y*VISUAL_SCALE + CY + Math.sin(startPos.angle + Math.PI/2) * (startLane * LANE_SCALE);
                 
-                let gatherY = finalWorldY + 400 + Math.random() * 500; // 스타트 라인 안 넘게 대기 위치 설정
+                let gatherY = finalWorldY + 400 + Math.random() * 500; 
                 
                 let behavior = 'ready'; let r = Math.random();
                 if (r < 0.3) behavior = 'wander'; else if (r < 0.6) behavior = 'chat'; 
@@ -492,7 +459,6 @@
                 let randomHue = Math.random() < 0.3 ? Math.floor(Math.random() * 360) : 0; 
                 
                 const rBase = document.createElement('div'); rBase.className = 'runner-base'; rBase.id = `runner-${p.id}`;
-                // 💡 고해상도 DOM을 scale(0.2)로 압축 렌더링
                 rBase.innerHTML = `
                     <div class="sprite-wrapper" style="transform: scale(0.2);">
                         <div class="panic-mark">!</div>
@@ -531,58 +497,6 @@
             }, 1000);
         }
 
-        // 💡 적용할 카메라를 세팅하고 부드러운 이동(Lerp) 여부를 결정하는 함수
-        function applyCamera(camId, instantCut = false) {
-            let conf = CAM_SETTINGS[camId];
-            if (!conf) return;
-            
-            let isDebug = document.getElementById('enable-debug-cam').checked;
-            if (isDebug) {
-                conf = CAM_SETTINGS[document.getElementById('cam-select').value];
-            }
-
-            if (camId === "1" || camId === "1.5" || isDebug) {
-                let startPos = getTrackCoordinates(0);
-                targetCam.rotZ = conf.rotZ; targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
-                
-                // 💡 30초 줌인 시 포커스된 주자의 위치를 정확히 따라갑니다.
-                if (camId === "1.5" && !isDebug && preShowFocusId) {
-                    let focusR = preShowRunners.find(r => r.id === preShowFocusId);
-                    if (focusR) {
-                        targetCam.x = -focusR.currX + conf.offsetX;
-                        targetCam.y = -focusR.currY + conf.offsetY;
-                    }
-                } else {
-                    targetCam.x = -(startPos.x*VISUAL_SCALE + CX) + conf.offsetX;
-                    targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + conf.offsetY;
-                }
-            } else {
-                targetCam.rotZ = conf.rotZ; targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
-                if (conf.fixed) {
-                    // 골인 지점 같은 고정 뷰
-                    let goalP = getTrackCoordinates(2000);
-                    targetCam.x = -(goalP.x*VISUAL_SCALE + CX) + conf.offsetX;
-                    targetCam.y = -(goalP.y*VISUAL_SCALE + CY) + conf.offsetY;
-                } else {
-                    // 주자 트래킹 뷰
-                    targetCam.x = -smoothCenterX + conf.offsetX;
-                    targetCam.y = -smoothCenterY + conf.offsetY;
-                }
-            }
-
-            // 💡 카메라 하드 컷(Hard Cut) 처리: 전환 시 순간이동!
-            if (instantCut) {
-                currentCam.x = targetCam.x; currentCam.y = targetCam.y;
-                currentCam.rotX = targetCam.rotX; currentCam.rotZ = targetCam.rotZ; currentCam.zoom = targetCam.zoom;
-            } else {
-                currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
-                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
-                currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
-            }
-            
-            document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
-        }
-
         function preShowLoop(timestamp) {
             if (!lastTimestamp) lastTimestamp = timestamp;
             let delta = (timestamp - lastTimestamp) / 1000;
@@ -591,63 +505,97 @@
 
             const nowUnix = Math.floor(Date.now() / 1000);
             let timeLeft = roomData.scheduled_time - nowUnix;
+            let startPos = getTrackCoordinates(0);
 
             if (isPreShow) {
-                if (timeLeft <= 60) {
-                    preShowRunners.forEach(r => {
-                        let dom = document.getElementById(`runner-${r.id}`); let wrapper = dom.querySelector('.sprite-wrapper'); let flipWrap = dom.querySelector('.flip-wrapper'); let sprite = dom.querySelector('.sprite-anim'); let speed = 100; 
-                        
-                        // 10초 전 라인 정렬
-                        if (timeLeft <= 10 && !r.panicked) { r.panicked = true; r.targetX = r.finalX; r.targetY = r.finalY; dom.classList.add('startled'); }
-                        if (r.panicked) speed = 350; 
+                if (!isPaused) {
+                    if (timeLeft <= 60) {
+                        preShowRunners.forEach(r => {
+                            let dom = document.getElementById(`runner-${r.id}`); let wrapper = dom.querySelector('.sprite-wrapper'); let flipWrap = dom.querySelector('.flip-wrapper'); let sprite = dom.querySelector('.sprite-anim'); let speed = 100; 
+                            
+                            if (timeLeft <= 10 && !r.panicked) { r.panicked = true; r.targetX = r.finalX; r.targetY = r.finalY; dom.classList.add('startled'); }
+                            if (r.panicked) speed = 350; 
 
-                        // 10초 이상 남았을 땐 대기 구역(gatherY) 주변에서 노닥거림
-                        if (!r.panicked && timeLeft > 10) {
-                            if (r.behavior === 'wander') {
-                                r.timer -= delta;
-                                if (r.timer <= 0) { r.targetX = r.finalX - 300 + Math.random() * 600; r.targetY = r.gatherY - 200 + Math.random() * 400; r.timer = 2 + Math.random() * 4; }
-                            } else if (r.behavior === 'chat') {
-                                r.targetX = r.chatZone.x + (Math.random() * 80 - 40); r.targetY = r.chatZone.y + (Math.random() * 80 - 40);
-                                if (Math.random() < 0.01) { sprite.style.transform = 'translateY(-30px)'; setTimeout(() => { sprite.style.transform = 'none'; }, 200); }
+                            if (!r.panicked && timeLeft > 10) {
+                                if (r.behavior === 'wander') {
+                                    r.timer -= delta;
+                                    if (r.timer <= 0) { r.targetX = r.finalX - 300 + Math.random() * 600; r.targetY = r.gatherY - 200 + Math.random() * 400; r.timer = 2 + Math.random() * 4; }
+                                } else if (r.behavior === 'chat') {
+                                    r.targetX = r.chatZone.x + (Math.random() * 80 - 40); r.targetY = r.chatZone.y + (Math.random() * 80 - 40);
+                                    if (Math.random() < 0.01) { sprite.style.transform = 'translateY(-30px)'; setTimeout(() => { sprite.style.transform = 'none'; }, 200); }
+                                }
                             }
-                        }
 
-                        let dx = r.targetX - r.currX; let dy = r.targetY - r.currY; let dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist > 5) {
-                            r.currX += (dx / dist) * speed * delta; r.currY += (dy / dist) * speed * delta;
-                            if (r.panicked) sprite.classList.add('running'); else sprite.classList.remove('running');
-                            flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
-                        } else {
-                            sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
-                            if(r.panicked) dom.classList.remove('startled'); 
-                            if(r.behavior === 'chat') flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
-                            if(timeLeft <= 10) flipWrap.style.transform = 'scaleX(-1)'; // 라인업 완료 시 트랙 주행 방향(앞쪽)을 보게 함
-                        }
-                        dom.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
-                        // 기울어짐 완벽 방지: 3D 월드의 역회전을 걸어 정면을 보게 만든 후 scale(0.2) 축소
-                        wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.2)`;
-                    });
+                            let dx = r.targetX - r.currX; let dy = r.targetY - r.currY; let dist = Math.sqrt(dx*dx + dy*dy);
+                            if (dist > 5) {
+                                r.currX += (dx / dist) * speed * delta; r.currY += (dy / dist) * speed * delta;
+                                if (r.panicked) sprite.classList.add('running'); else sprite.classList.remove('running');
+                                flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
+                            } else {
+                                sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
+                                if(r.panicked) dom.classList.remove('startled'); 
+                                if(r.behavior === 'chat') flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
+                                if(timeLeft <= 10) flipWrap.style.transform = 'scaleX(-1)'; 
+                            }
+                            dom.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
+                            wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.2)`;
+                        });
+                    }
                 }
 
-                // 💡 프리쇼 카메라 연출 및 하드 컷 판단
+                let isDebug = document.getElementById('enable-debug-cam').checked;
                 let newCamId = "1";
+
                 if (timeLeft <= 30 && timeLeft > 10) {
                     newCamId = "1.5";
-                    if (Date.now() - lastPreShowZoomTime > 4000) {
+                    if (!isPaused && Date.now() - lastPreShowZoomTime > 4000) {
                         preShowFocusId = preShowRunners[Math.floor(Math.random() * preShowRunners.length)].id;
                         lastPreShowZoomTime = Date.now();
-                        // 줌 대상이 바뀔 때 하드 컷
-                        activeCamId = null; 
+                        activeCamId = null; // 인터뷰 컷
                     }
-                    if(preShowFocusId) document.getElementById('camera-status').innerText = `🎥 [카메라 1.5] 선수 줌인 인터뷰 뷰`;
+                    if(preShowFocusId) document.getElementById('camera-status').innerText = `🎥 [카메라 1.5] 선수 줌인 뷰`;
+                } else if (timeLeft <= 10) {
+                    newCamId = "1";
+                    // 10초 남았을 때 값 덮어쓰기 (기획자님 설정값)
+                    CAM_SETTINGS["1"] = { offsetX: -150, offsetY: 0, rotX: 45, rotZ: 62, zoom: 1 };
+                    document.getElementById('camera-status').innerText = "🎥 [카메라 1] 스타트 라인 뷰";
                 } else {
                     document.getElementById('camera-status').innerText = "🎥 [카메라 1] 프리쇼 앵글";
                 }
 
-                let isCut = false;
-                if (activeCamId !== newCamId) { isCut = true; activeCamId = newCamId; }
+                if (isDebug) {
+                    targetCam.rotZ = parseFloat(document.getElementById('slider-rotz').value);
+                    targetCam.rotX = parseFloat(document.getElementById('slider-rotx').value);
+                    targetCam.zoom = parseFloat(document.getElementById('slider-zoom').value);
+                    targetCam.x = -(startPos.x*VISUAL_SCALE + CX) + parseFloat(document.getElementById('slider-x').value);
+                    targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + parseFloat(document.getElementById('slider-y').value);
+                } else {
+                    let isCut = false;
+                    if (activeCamId !== newCamId) { isCut = true; activeCamId = newCamId; }
+
+                    if (newCamId === "1.5" && preShowFocusId) {
+                        let focusR = preShowRunners.find(r => r.id === preShowFocusId);
+                        targetCam.rotX = CAM_SETTINGS["1.5"].rotX; targetCam.rotZ = CAM_SETTINGS["1.5"].rotZ; targetCam.zoom = CAM_SETTINGS["1.5"].zoom;
+                        targetCam.x = -focusR.currX + CAM_SETTINGS["1.5"].offsetX;
+                        targetCam.y = -focusR.currY + CAM_SETTINGS["1.5"].offsetY;
+                    } else {
+                        targetCam.rotX = CAM_SETTINGS["1"].rotX; targetCam.rotZ = (-startPos.angle * 180 / Math.PI) + CAM_SETTINGS["1"].rotZ; targetCam.zoom = CAM_SETTINGS["1"].zoom;
+                        targetCam.x = -(startPos.x*VISUAL_SCALE + CX) + CAM_SETTINGS["1"].offsetX;
+                        targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + CAM_SETTINGS["1"].offsetY;
+                    }
+
+                    if (isCut) {
+                        currentCam.x = targetCam.x; currentCam.y = targetCam.y;
+                        currentCam.rotX = targetCam.rotX; currentCam.rotZ = targetCam.rotZ; currentCam.zoom = targetCam.zoom;
+                    } else {
+                        currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
+                        currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
+                        currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
+                    }
+                }
                 
-                applyCamera(activeCamId, isCut);
+                document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
+
                 requestAnimationFrame(preShowLoop);
             }
         }
@@ -656,12 +604,13 @@
             isPreShow = false; 
             lastTimestamp = performance.now(); 
             activeCamId = "2"; 
+            forceCameraCut = true; 
             
             preShowRunners.forEach(r => {
                 let dom = document.getElementById(`runner-${r.id}`); let flipWrap = dom.querySelector('.flip-wrapper');
                 dom.classList.remove('startled'); 
                 dom.style.transform = `translate3d(${r.finalX}px, ${r.finalY}px, 0)`; 
-                flipWrap.style.transform = 'scaleX(-1)'; // 레이스 중 항상 앞을 보도록 강제 고정
+                flipWrap.style.transform = 'scaleX(-1)'; 
             });
 
             if (roomData.bgm && roomData.bgm !== 'none') {
@@ -695,7 +644,6 @@
                 let [id, dist, lane, speed, hp, states] = rData; 
                 let nextR = nextRDataMap.get(id);
 
-                // 💡 프레임 보간으로 끊김 없는 부드러운 움직임 보장
                 if (nextR) {
                     dist = dist + (nextR[1] - dist) * ratio;
                     lane = lane + (nextR[2] - lane) * ratio;
@@ -713,18 +661,19 @@
                 let wrapper = dom.querySelector('.sprite-wrapper'); let sprite = dom.querySelector('.sprite-anim'); let badge = dom.querySelector('.status-badge');
                 wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.2)`;
                 
-                if(speed > 1.0 && !states.includes("Exhaust")) sprite.className = 'sprite-anim running'; else sprite.className = 'sprite-anim';
-                if (states.includes("Exhaust")) { sprite.classList.add('exhausted'); } 
-                else if (states.includes("Spurt")) {
-                    sprite.classList.add('aura-spurt'); badge.className = 'status-badge b-spurt show-badge'; badge.innerText = '🔥 스퍼트';
-                } else if (states.includes("Kakari")) { sprite.classList.add('aura-kakari'); badge.className = 'status-badge b-kakari show-badge'; badge.innerText = '💢 흥분'; } 
-                else if (states.includes("PaceDown")) { badge.className = 'status-badge b-pk show-badge'; badge.innerText = '🛡️ 킵'; } 
-                else if (states.includes("PaceUp") || states.includes("PaceUpEx")) { badge.className = 'status-badge b-pk show-badge'; badge.innerText = '🔺 가속'; badge.style.background = '#0984e3'; }
-                else if (states.includes("Overtake")) { badge.className = 'status-badge b-pk show-badge'; badge.innerText = '⚡ 추월'; badge.style.background = '#d63031'; }
-                else badge.className = 'status-badge';
+                if (!isPaused) {
+                    if(speed > 1.0 && !states.includes("Exhaust")) sprite.className = 'sprite-anim running'; else sprite.className = 'sprite-anim';
+                    if (states.includes("Exhaust")) { sprite.classList.add('exhausted'); } 
+                    else if (states.includes("Spurt")) {
+                        sprite.classList.add('aura-spurt'); badge.className = 'status-badge b-spurt show-badge'; badge.innerText = '🔥 스퍼트';
+                    } else if (states.includes("Kakari")) { sprite.classList.add('aura-kakari'); badge.className = 'status-badge b-kakari show-badge'; badge.innerText = '💢 흥분'; } 
+                    else if (states.includes("PaceDown")) { badge.className = 'status-badge b-pk show-badge'; badge.innerText = '🛡️ 킵'; } 
+                    else if (states.includes("PaceUp") || states.includes("PaceUpEx")) { badge.className = 'status-badge b-pk show-badge'; badge.innerText = '🔺 가속'; badge.style.background = '#0984e3'; }
+                    else if (states.includes("Overtake")) { badge.className = 'status-badge b-pk show-badge'; badge.innerText = '⚡ 추월'; badge.style.background = '#d63031'; }
+                    else badge.className = 'status-badge';
+                }
             });
 
-            // 카메라가 덜덜 떨리지 않도록 선두 주자가 있는 '트랙 중앙선'만 부드럽게 추적
             let centerPos = getTrackCoordinates(leaderDist);
             let leaderWorldX = centerPos.x * VISUAL_SCALE + CX + Math.cos(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
             let leaderWorldY = centerPos.y * VISUAL_SCALE + CY + Math.sin(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
@@ -733,7 +682,6 @@
             smoothCenterX += (leaderWorldX - smoothCenterX) * 0.05; 
             smoothCenterY += (leaderWorldY - smoothCenterY) * 0.05;
             
-            // 💡 [6구간 카메라 하드 컷 판별 로직]
             let d = leaderDist; 
             let newCamId = "2";
             let statusText = "";
@@ -748,18 +696,67 @@
 
             document.getElementById('camera-status').innerText = statusText;
 
-            let isCut = false;
-            // 카메라 구간이 바뀌면 하드 컷 플래그를 세웁니다.
-            if (activeCamId !== newCamId) {
-                isCut = true;
-                activeCamId = newCamId;
-                // 디버거 드롭다운도 맞춰서 자동 변경해줌
-                document.getElementById('cam-select').value = newCamId;
-                updateSlidersFromConfig(newCamId);
+            let isDebug = document.getElementById('enable-debug-cam').checked;
+            
+            if (isDebug) {
+                targetCam.rotZ = parseFloat(document.getElementById('slider-rotz').value);
+                targetCam.rotX = parseFloat(document.getElementById('slider-rotx').value);
+                targetCam.zoom = parseFloat(document.getElementById('slider-zoom').value);
+                targetCam.x = -smoothCenterX + parseFloat(document.getElementById('slider-x').value);
+                targetCam.y = -smoothCenterY + parseFloat(document.getElementById('slider-y').value);
+            } else {
+                let isCut = false;
+                if (activeCamId !== newCamId) {
+                    isCut = true;
+                    activeCamId = newCamId;
+                    camStartTime = currentPlaybackTime;
+                    document.getElementById('cam-select').value = newCamId;
+                    updateSlidersFromConfig(newCamId);
+                }
+
+                let elapsed = currentPlaybackTime - camStartTime;
+                let camDef = CAM_SCRIPT[activeCamId];
+                let t = Math.max(0, Math.min(elapsed / camDef.duration, 1.0));
+                let e = easeInCubic(t);
+
+                let curOffsetX = camDef.base.offsetX + (camDef.target.offsetX !== undefined ? (camDef.target.offsetX - camDef.base.offsetX) * e : 0);
+                let curOffsetY = camDef.base.offsetY + (camDef.target.offsetY !== undefined ? (camDef.target.offsetY - camDef.base.offsetY) * e : 0);
+                let curRotX = camDef.base.rotX + (camDef.target.rotX !== undefined ? (camDef.target.rotX - camDef.base.rotX) * e : 0);
+                let curRotZ = camDef.base.rotZ + (camDef.target.rotZ !== undefined ? (camDef.target.rotZ - camDef.base.rotZ) * e : 0);
+                let curZoom = camDef.base.zoom + (camDef.target.zoom !== undefined ? (camDef.target.zoom - camDef.base.zoom) * e : 0);
+
+                targetCam.rotX = curRotX;
+                targetCam.rotZ = (-centerPos.angle * 180 / Math.PI) + curRotZ;
+                targetCam.zoom = curZoom;
+                
+                if (activeCamId === "8") {
+                    let finishPos = getTrackCoordinates(2000);
+                    let finishWorldX = finishPos.x * VISUAL_SCALE + CX;
+                    let finishWorldY = finishPos.y * VISUAL_SCALE + CY;
+                    targetCam.x = -finishWorldX + curOffsetX; 
+                    targetCam.y = -finishWorldY + curOffsetY;
+                } else {
+                    targetCam.x = -smoothCenterX + curOffsetX; 
+                    targetCam.y = -smoothCenterY + curOffsetY; 
+                }
+
+                if (isCut || forceCameraCut) {
+                    currentCam.x = targetCam.x; currentCam.y = targetCam.y;
+                    currentCam.rotX = targetCam.rotX; currentCam.rotZ = targetCam.rotZ; currentCam.zoom = targetCam.zoom;
+                    forceCameraCut = false;
+                }
             }
 
-            applyCamera(activeCamId, isCut);
-
+            // 카메라 위치 보간 (디버깅 모드이거나 하드 컷이 아닐 때)
+            if (isDebug || !forceCameraCut) {
+                currentCam.x += (targetCam.x - currentCam.x) * 0.05; 
+                currentCam.y += (targetCam.y - currentCam.y) * 0.05;
+                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; 
+                currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
+                currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
+            }
+            
+            document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
             if (leaderDist >= 2000 && isPlaying) { isPlaying = false; showCommentary(`🏆 레이스 종료!!`); }
         }
 
@@ -770,12 +767,7 @@
             if (delta > 0.1) delta = 0.1; 
             
             if (isPlaying) { 
-                // 💡 일시정지(isPaused)가 아닐 때만 시간이 흘러가게 합니다.
-                if (!isPaused) {
-                    currentPlaybackTime += delta; 
-                }
-                
-                // 💡 시간은 멈춰도 프레임 렌더링은 계속 돌려서 카메라 조작이 실시간으로 보이게 합니다.
+                if (!isPaused) currentPlaybackTime += delta; 
                 renderFrameAtTime(currentPlaybackTime); 
                 requestAnimationFrame(renderLoop);
             }
