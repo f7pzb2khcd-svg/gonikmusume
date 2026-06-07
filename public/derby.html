@@ -199,6 +199,21 @@
         let isPreShow = false; let isPlaying = false;
         let currentPlaybackTime = 0.0; let lastTimestamp = 0; let maxFrames = 0;
         const DT = 1 / 15.0; 
+		
+		// 💡 일시정지 변수
+	let isPaused = false;
+	
+	// 💡 스페이스바 일시정지 단축키 이벤트
+	window.addEventListener('keydown', function(e) {
+		// 채팅창에 입력 중일 때는 작동하지 않도록 예외 처리
+		if (e.target.tagName === 'INPUT') return; 
+	
+		if (e.code === 'Space' && isPlaying) {
+			isPaused = !isPaused;
+			e.preventDefault(); // 스페이스바 누를 때 화면 스크롤 방지
+			showCommentary(isPaused ? "⏸️ [카메라 디버깅] 레이스 일시정지" : "▶️ 레이스 재개");
+    }
+});
 
         const VISUAL_SCALE = 12;   
         const LANE_SCALE = 120; 
@@ -753,8 +768,17 @@
             let delta = (timestamp - lastTimestamp) / 1000;
             lastTimestamp = timestamp;
             if (delta > 0.1) delta = 0.1; 
-            if (isPlaying) { currentPlaybackTime += delta; renderFrameAtTime(currentPlaybackTime); }
-            if (isPlaying) requestAnimationFrame(renderLoop);
+            
+            if (isPlaying) { 
+                // 💡 일시정지(isPaused)가 아닐 때만 시간이 흘러가게 합니다.
+                if (!isPaused) {
+                    currentPlaybackTime += delta; 
+                }
+                
+                // 💡 시간은 멈춰도 프레임 렌더링은 계속 돌려서 카메라 조작이 실시간으로 보이게 합니다.
+                renderFrameAtTime(currentPlaybackTime); 
+                requestAnimationFrame(renderLoop);
+            }
         }
     </script>
 </body>
