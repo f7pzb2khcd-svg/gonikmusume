@@ -210,24 +210,30 @@
         let targetCam  = { x: CX, y: CY, rotX: 40, rotZ: 0, zoom: 0.4 };
         
         let preShowRunners = []; let currentExtractedList = []; let excludedNames = []; let rawParticipants = [];
-        let preShowFocusId = null; let lastPreShowZoomTime = 0;
+        
+        let preShowFocusId = null;
+        let lastPreShowZoomTime = 0;
 
-        // 💡 [기획자님 커스텀 셋팅 기준값] 초기 슬라이더 세팅용
+        // 💡 [기획자님 커스텀 셋팅 반영: 핀셋 수정판!]
         let CAM_SETTINGS = {
             "1": { offsetX: -150, offsetY: -300, rotX: 45, rotZ: 62, zoom: 0.6 },
             "1.5": { offsetX: 0, offsetY: 0, rotX: 80, rotZ: -90, zoom: 3.5 },
-            "2": { offsetX: 0, offsetY: 150, rotX: 85, rotZ: -105, zoom: 3.5 }, 
-            "3": { offsetX: 150, offsetY: 0, rotX: 89, rotZ: -50, zoom: 3 }, 
-            "4": { offsetX: 150, offsetY: 0, rotX: 85, rotZ: 15, zoom: 3.5 }, 
-            "5": { offsetX: 0, offsetY: -100, rotX: 80, rotZ: 120, zoom: 2.6 }, 
+            "2": { offsetX: 0, offsetY: 150, rotX: 85, rotZ: -105, zoom: 3.0 }, // 줌 3.0으로 변경
+            "3": { offsetX: 150, offsetY: 0, rotX: 89, rotZ: -50, zoom: 2.6 }, // 줌 2.6으로 변경
+            "4": { offsetX: 100, offsetY: 0, rotX: 85, rotZ: 15, zoom: 3.0 }, // offsetX 100, 줌 3.0으로 변경
+            "5": { offsetX: 0, offsetY: -100, rotX: 80, rotZ: 120, zoom: 2.6 }, // 3코너 (여기는 스크립트로 좌우반전 방지 추가)
             "6": { offsetX: -300, offsetY: 100, rotX: 80, rotZ: 120, zoom: 2.6 }, 
-            "7": { offsetX: 0, offsetY: 50, rotX: 85, rotZ: 90, zoom: 3 }, 
-            "8": { offsetX: -100, offsetY: 0, rotX: 87, rotZ: -200, zoom: 4 } 
+            "7": { offsetX: 0, offsetY: 100, rotX: 90, rotZ: 90, zoom: 5 }, // X 0, Y 100, RotX 90, RotZ 90, Zoom 5
+            "8": { offsetX: 100, offsetY: 0, rotX: 87, rotZ: -240, zoom: 3.5 } // offsetX 100, RotZ -240, Zoom 3.5
         };
 
         const camSelect = document.getElementById('cam-select');
         const configOutput = document.getElementById('config-output');
-        const sliders = { x: document.getElementById('slider-x'), y: document.getElementById('slider-y'), rotx: document.getElementById('slider-rotx'), rotz: document.getElementById('slider-rotz'), zoom: document.getElementById('slider-zoom') };
+        const sliders = {
+            x: document.getElementById('slider-x'), y: document.getElementById('slider-y'),
+            rotx: document.getElementById('slider-rotx'), rotz: document.getElementById('slider-rotz'),
+            zoom: document.getElementById('slider-zoom')
+        };
 
         function updateSlidersFromConfig(camId) {
             let conf = CAM_SETTINGS[camId];
@@ -240,14 +246,20 @@
         }
 
         camSelect.addEventListener('change', (e) => { updateSlidersFromConfig(e.target.value); });
+        
         Object.keys(sliders).forEach(key => {
             sliders[key].addEventListener('input', (e) => {
                 document.getElementById('val-' + key).innerText = e.target.value;
                 let camId = camSelect.value;
-                CAM_SETTINGS[camId] = { offsetX: parseFloat(sliders.x.value), offsetY: parseFloat(sliders.y.value), rotX: parseFloat(sliders.rotx.value), rotZ: parseFloat(sliders.rotz.value), zoom: parseFloat(sliders.zoom.value) };
+                CAM_SETTINGS[camId] = {
+                    offsetX: parseFloat(sliders.x.value), offsetY: parseFloat(sliders.y.value),
+                    rotX: parseFloat(sliders.rotx.value), rotZ: parseFloat(sliders.rotz.value),
+                    zoom: parseFloat(sliders.zoom.value)
+                };
                 configOutput.value = JSON.stringify(CAM_SETTINGS[camId]);
             });
         });
+
         updateSlidersFromConfig("1");
 
         // 💡 [단축키] 스페이스바 누르면 일시정지 (디버깅 편의성)
@@ -512,7 +524,6 @@
         function applyCamera(camId, isCut, timeTarget) {
             let isDebug = document.getElementById('enable-debug-cam').checked;
             
-            // 💡 디버그 모드일 때는 수동으로 조작된 값만 바로 반영
             if (isDebug) {
                 let manualCam = CAM_SETTINGS[document.getElementById('cam-select').value];
                 targetCam.rotX = manualCam.rotX; targetCam.rotZ = manualCam.rotZ; targetCam.zoom = manualCam.zoom;
@@ -538,15 +549,12 @@
             let elapsed = timeTarget - camStartTime; 
             let t = 0; let e = 0;
 
-            // 💡 [기획자님 시네마틱 타임라인 스크립트 엔진]
             if (camId === "1") {
-                // 프리쇼 기본: 마지막 10초에 줌인으로 1초간 이동
                 let conf = CAM_SETTINGS["1"];
                 let nowUnix = Math.floor(Date.now() / 1000);
                 let timeLeft = roomData.scheduled_time - nowUnix;
                 
                 if (timeLeft <= 10) {
-                    // 10초 전에 줌 1.0으로 서서히 전환 (1초 동안 easeIn)
                     t = Math.min(1.0, (10 - timeLeft) / 1.0);
                     e = easeIn(t);
                     targetCam.zoom = conf.zoom + (1.0 - conf.zoom) * e;
@@ -567,7 +575,6 @@
                 }
             } 
             else if (camId === "2") {
-                // 출발 직선: 8초간 rotZ -75로 이동
                 let conf = CAM_SETTINGS["2"];
                 t = Math.min(1.0, elapsed / 8.0); e = easeIn(t);
                 targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
@@ -575,7 +582,6 @@
                 targetCam.x = -smoothCenterX + conf.offsetX; targetCam.y = -smoothCenterY + conf.offsetY;
             } 
             else if (camId === "3") {
-                // 1코너: 8초간 offsetX 100, rotZ -20으로 이동
                 let conf = CAM_SETTINGS["3"];
                 t = Math.min(1.0, elapsed / 8.0); e = easeIn(t);
                 targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
@@ -584,7 +590,6 @@
                 targetCam.y = -smoothCenterY + conf.offsetY;
             } 
             else if (camId === "4") {
-                // 백스트레치: 24초간 rotZ 60으로 이동
                 let conf = CAM_SETTINGS["4"];
                 t = Math.min(1.0, elapsed / 24.0); e = easeIn(t);
                 targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
@@ -592,7 +597,6 @@
                 targetCam.x = -smoothCenterX + conf.offsetX; targetCam.y = -smoothCenterY + conf.offsetY;
             } 
             else if (camId === "5") {
-                // 3코너: 12초간 rotZ 180으로 이동
                 let conf = CAM_SETTINGS["5"];
                 t = Math.min(1.0, elapsed / 12.0); e = easeIn(t);
                 targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
@@ -600,7 +604,6 @@
                 targetCam.x = -smoothCenterX + conf.offsetX; targetCam.y = -smoothCenterY + conf.offsetY;
             } 
             else if (camId === "6") {
-                // 최종 코너: 10초간 offsetX -200, rotZ 150으로 이동
                 let conf = CAM_SETTINGS["6"];
                 t = Math.min(1.0, elapsed / 10.0); e = easeIn(t);
                 targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
@@ -609,7 +612,7 @@
                 targetCam.y = -smoothCenterY + conf.offsetY;
             } 
             else if (camId === "7") {
-                // 최종 직선: 18초간 offsetX -50, offsetY 100, rotX 80, rotZ 100으로 이동
+                // 💡 새롭게 업데이트 된 최종 직선 카메라 스크립트!
                 let conf = CAM_SETTINGS["7"];
                 t = Math.min(1.0, elapsed / 18.0); e = easeIn(t);
                 targetCam.rotZ = conf.rotZ + (100 - conf.rotZ) * e;
@@ -619,7 +622,6 @@
                 targetCam.y = -smoothCenterY + conf.offsetY + (100 - conf.offsetY) * e;
             } 
             else if (camId === "8") {
-                // 결승선: 2초간 rotZ -180으로 이동
                 let conf = CAM_SETTINGS["8"];
                 t = Math.min(1.0, elapsed / 2.0); e = easeIn(t);
                 let goalP = getTrackCoordinates(2000);
@@ -632,12 +634,10 @@
                 targetCam.y = -finishWorldY + conf.offsetY;
             }
 
-            // 💡 카메라가 바뀌었으면(isCut) 그 자리로 즉시 텔레포트 합니다 (Hard Cut)
             if (isCut) {
                 currentCam.x = targetCam.x; currentCam.y = targetCam.y;
                 currentCam.rotX = targetCam.rotX; currentCam.rotZ = targetCam.rotZ; currentCam.zoom = targetCam.zoom;
             } else {
-                // 프레임간 부드러운 이동
                 currentCam.x += (targetCam.x - currentCam.x) * 0.1; currentCam.y += (targetCam.y - currentCam.y) * 0.1;
                 currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.1; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.1;
                 currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.1;
@@ -708,7 +708,6 @@
                     
                     applyCamera(activeCamId, isCut, Date.now() / 1000);
                 } else {
-                    // 일시정지 중일 때는 화면(카메라)만 계속 렌더링
                     applyCamera(activeCamId, false, Date.now() / 1000);
                 }
                 requestAnimationFrame(preShowLoop);
@@ -752,7 +751,25 @@
 
             document.getElementById('main-timer').innerText = `RACE - ${timeTarget.toFixed(1)}s`;
 
-            let leaderDist = -1; 
+            // 프레임 보간 과정에서 LeaderDist 산출
+            let interpolatedDists = frameData.r.map(rData => {
+                let [id, dist] = rData;
+                let nextR = nextFrameData.r.find(r => r[0] === id);
+                if (nextR) dist = dist + (nextR[1] - dist) * ratio;
+                return dist;
+            });
+            let leaderDist = Math.max(...interpolatedDists); 
+            
+            // 💡 현재 렌더링될 카메라 ID 미리 평가 (스프라이트 좌우 반전용)
+            let newCamId = "2"; let statusText = "";
+            if (leaderDist <= 200) { newCamId = "2"; statusText = "🎥 [카메라 2] 출발 직선 뷰"; }
+            else if (leaderDist <= 400) { newCamId = "3"; statusText = "🎥 [카메라 3] 1코너 진입 뷰"; }
+            else if (leaderDist <= 950) { newCamId = "4"; statusText = "🎥 [카메라 4] 백 스트레치 뷰"; }
+            else if (leaderDist <= 1225) { newCamId = "5"; statusText = "🎥 [카메라 5] 3코너 진입 뷰"; }
+            else if (leaderDist <= 1475) { newCamId = "6"; statusText = "🎥 [카메라 6] 최종 코너 뷰"; }
+            else if (leaderDist <= 1950) { newCamId = "7"; statusText = "🎥 [카메라 7] 최종 직선 뷰"; }
+            else { newCamId = "8"; statusText = "🎥 [카메라 8] 결승선 고정 뷰"; }
+
             let nextRDataMap = new Map();
             nextFrameData.r.forEach(r => nextRDataMap.set(r[0], r));
 
@@ -769,12 +786,19 @@
                 let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                 let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
-                if (dist > leaderDist) { leaderDist = dist; }
-
                 let dom = document.getElementById(`runner-${id}`); let dot = document.getElementById(`dot-${id}`);
                 dom.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; dot.style.left = `${(dist / 2000) * 100}%`;
                 
                 let wrapper = dom.querySelector('.sprite-wrapper'); let sprite = dom.querySelector('.sprite-anim'); let badge = dom.querySelector('.status-badge');
+                let flipWrap = dom.querySelector('.flip-wrapper');
+
+                // 💡 3코너(카메라 5) 진입 시 주자 이미지가 뒤집히지 않도록 오리지널 정방향 유지
+                if (newCamId === "5") {
+                    flipWrap.style.transform = 'scaleX(1)';
+                } else {
+                    flipWrap.style.transform = 'scaleX(-1)';
+                }
+
                 wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.2)`;
                 
                 if(speed > 1.0 && !states.includes("Exhaust")) sprite.className = 'sprite-anim running'; else sprite.className = 'sprite-anim';
@@ -796,17 +820,6 @@
             smoothCenterX += (leaderWorldX - smoothCenterX) * 0.05; 
             smoothCenterY += (leaderWorldY - smoothCenterY) * 0.05;
             
-            let d = leaderDist; 
-            let newCamId = "2"; let statusText = "";
-            
-            if (d <= 200) { newCamId = "2"; statusText = "🎥 [카메라 2] 출발 직선 뷰"; }
-            else if (d <= 400) { newCamId = "3"; statusText = "🎥 [카메라 3] 1코너 진입 뷰"; }
-            else if (d <= 950) { newCamId = "4"; statusText = "🎥 [카메라 4] 백 스트레치 뷰"; }
-            else if (d <= 1225) { newCamId = "5"; statusText = "🎥 [카메라 5] 3코너 진입 뷰"; }
-            else if (d <= 1475) { newCamId = "6"; statusText = "🎥 [카메라 6] 최종 코너 뷰"; }
-            else if (d <= 1950) { newCamId = "7"; statusText = "🎥 [카메라 7] 최종 직선 뷰"; }
-            else { newCamId = "8"; statusText = "🎥 [카메라 8] 결승선 고정 뷰"; }
-
             document.getElementById('camera-status').innerText = statusText;
 
             let isCut = false;
@@ -820,7 +833,6 @@
             if (leaderDist >= 2000 && isPlaying) { isPlaying = false; showCommentary(`🏆 레이스 종료!!`); }
         }
 
-        // 💡 렌더링 최상단: 일시정지 로직 완벽 연동
         function renderLoop(timestamp) {
             if (!lastTimestamp) lastTimestamp = timestamp;
             let delta = (timestamp - lastTimestamp) / 1000;
