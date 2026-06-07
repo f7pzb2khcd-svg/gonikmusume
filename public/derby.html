@@ -28,7 +28,6 @@
         #minimap-container { width: 100%; height: 30px; background-color: rgba(0,0,0,0.8); border: 2px solid #718093; border-radius: 15px; position: relative; overflow: hidden; }
         .minimap-dot { position: absolute; width: 12px; height: 12px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; margin-top: 7px; transform: translateX(-50%); }
         
-        /* 2.5D 카메라 캔버스 */
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 1500px; }
         #world { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
         
@@ -76,7 +75,7 @@
         #ult-cutin-bg { width: 100%; background: linear-gradient(90deg, transparent, #e53935, transparent); padding: 40px 0; border-top: 2px solid #ffeb3b; border-bottom: 2px solid #ffeb3b; }
         .cutin-name { font-size: 45px; font-weight: 900; color: #ffe082; text-shadow: 3px 3px 5px #000; }
 
-        /* 💡 카메라 디버깅 패널 */
+        /* 카메라 디버깅 패널 */
         #camera-debugger { position: fixed; top: 10px; right: 10px; width: 320px; background: rgba(20, 20, 20, 0.95); padding: 15px; border: 2px solid #00e5ff; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); color: white; z-index: 9999; display: none; text-align: left; font-size: 13px; }
         #camera-debugger h3 { margin: 0 0 10px 0; color: #00e5ff; font-size: 16px; border-bottom: 1px solid #555; padding-bottom: 5px; }
         .debug-row { margin-bottom: 10px; }
@@ -104,19 +103,16 @@
             <input type="range" id="slider-y" min="-3000" max="3000" step="10" value="0">
         </div>
         <div class="debug-row">
-            <label>RotX (카메라 높이/지면 밀착) <span id="val-rotx">85</span>도</label>
+            <label>RotX (지면 밀착) <span id="val-rotx">85</span>도</label>
             <input type="range" id="slider-rotx" min="0" max="90" step="1" value="85">
         </div>
         <div class="debug-row">
-            <label>RotZ (카메라 회전각/측면 뷰) <span id="val-rotz">-180</span>도</label>
-            <input type="range" id="slider-rotz" min="-180" max="180" step="1" value="-180">
+            <label>RotZ (측면 뷰) <span id="val-rotz">-180</span>도</label>
+            <input type="range" id="slider-rotz" min="-270" max="180" step="1" value="-180">
         </div>
         <div class="debug-row">
-            <label>Zoom (망원렌즈 줌인) <span id="val-zoom">2.0</span>배</label>
+            <label>Zoom (망원 줌인) <span id="val-zoom">2.0</span>배</label>
             <input type="range" id="slider-zoom" min="0.1" max="4.0" step="0.05" value="2.0">
-        </div>
-        <div style="margin-top: 10px; font-size: 11px; color: #95a5a6;">
-            ※ 체크박스를 켜고 실시간으로 값을 조절해보세요!
         </div>
     </div>
 
@@ -152,7 +148,7 @@
     <div id="game-ui">
         <div id="header-area">
             <div id="timer-box">
-                <span id="camera-status" style="color: #0be881; font-size: 14px;">🎥 프리쇼 카메라 작동 중</span>
+                <span id="camera-status" style="color: #0be881; font-size: 14px;">🎥 [카메라 1] 입장 뷰</span>
                 <div style="font-size: 22px;">⏳ <span id="main-timer">대기 중</span></div>
             </div>
             <div id="minimap-container"></div>
@@ -202,7 +198,9 @@
         const CX = 14000;          
         const CY = 6000;           
 
-        let smoothLeaderX = 0, smoothLeaderY = 0, smoothLeaderAngle = -Math.PI/2;
+        // 카메라 즉시 컷(Cut)을 위한 플래그
+        let forceCameraCut = false;
+
         let currentCam = { x: CX, y: CY, rotX: 40, rotZ: 0, zoom: 0.4 }; 
         let targetCam  = { x: CX, y: CY, rotX: 40, rotZ: 0, zoom: 0.4 };
         
@@ -216,6 +214,10 @@
                 document.getElementById('val-' + e.target.id.split('-')[1]).innerText = e.target.value;
             });
         });
+
+        // 애니메이션 Easing 함수
+        const easeIn = (t) => t * t;
+        const easeOut = (t) => t * (2 - t);
 
         function getTrackCoordinates(d) {
             let x = 0, y = 0, angle = -Math.PI/2; 
@@ -498,13 +500,13 @@
 
                 let isDebug = document.getElementById('enable-debug-cam').checked;
                 if(isDebug) {
-                    targetCam.rotZ = (-startPos.angle * 180 / Math.PI) + parseFloat(document.getElementById('slider-rotz').value);
+                    targetCam.rotZ = parseFloat(document.getElementById('slider-rotz').value);
                     targetCam.rotX = parseFloat(document.getElementById('slider-rotx').value);
                     targetCam.zoom = parseFloat(document.getElementById('slider-zoom').value);
                     targetCam.x = -(startPos.x*VISUAL_SCALE + CX) + parseFloat(document.getElementById('slider-x').value);
                     targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + parseFloat(document.getElementById('slider-y').value);
                 } else {
-                    // 💡 기획자님의 프리쇼 카메라 옵션 적용
+                    // 💡 기획자님의 [카메라 1] 완벽 설정값
                     targetCam.rotZ = (-startPos.angle * 180 / Math.PI) + 62; 
                     targetCam.rotX = 45; 
                     targetCam.zoom = 0.55; 
@@ -512,11 +514,12 @@
                     targetCam.y = -(startPos.y*VISUAL_SCALE + CY) - 300; 
                 }
 
-                currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
-                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
-                currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
+                currentCam.x += (targetCam.x - currentCam.x) * 0.1; currentCam.y += (targetCam.y - currentCam.y) * 0.1;
+                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.1; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.1;
+                currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.1;
                 
-                document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
+                // 💡 [카메라 1/3 하단 배치]: 화면을 100px 정도 아래로 눌러서 피사체가 화면 하단에 오게 만듦
+                document.getElementById('world').style.transform = `translateY(100px) scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
 
                 requestAnimationFrame(preShowLoop);
             }
@@ -526,9 +529,12 @@
             isPreShow = false; 
             lastTimestamp = performance.now(); 
             
-            document.getElementById('camera-status').innerText = "🎥 시네마틱 스크립트 카메라 (본 레이스)";
+            document.getElementById('camera-status').innerText = "🎥 [카메라 2] 메인 레이스 디렉터 컷";
             document.getElementById('camera-status').style.color = "#ff4757";
             
+            // 💡 카메라 즉시 컷 (스무딩 무시 플래그)
+            forceCameraCut = true;
+
             preShowRunners.forEach(r => {
                 let dom = document.getElementById(`runner-${r.id}`); let flipWrap = dom.querySelector('.flip-wrapper');
                 dom.classList.remove('startled'); dom.style.transform = `translate3d(${r.finalX}px, ${r.finalY}px, 0)`; flipWrap.style.transform = 'scaleX(1)'; 
@@ -548,6 +554,7 @@
             isPlaying = true; requestAnimationFrame(renderLoop);
         }
 
+        // 💡 [카메라 2] 메인 레이스 전용 루프
         function renderFrameAtTime(timeTarget) {
             let frameIdx = Math.floor(timeTarget / DT);
             if (frameIdx >= maxFrames) frameIdx = maxFrames - 1;
@@ -556,8 +563,7 @@
 
             document.getElementById('main-timer').innerText = `RACE - ${timeTarget.toFixed(1)}s`;
 
-            let leaderX = -1; let focusRunner = null; 
-            let leaderWorldX = 0, leaderWorldY = 0, leaderAngle = 0;
+            let leaderDist = -1; 
 
             frameData.r.forEach(rData => {
                 let [id, dist, lane, speed, hp, states] = rData; 
@@ -565,8 +571,7 @@
                 let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                 let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
-                if (dist > leaderX) { leaderX = dist; leaderWorldX = worldX; leaderWorldY = worldY; leaderAngle = pos.angle; }
-                if (states.includes("Spurt")) focusRunner = { worldX, worldY, angle: pos.angle, id };
+                if (dist > leaderDist) { leaderDist = dist; }
 
                 let dom = document.getElementById(`runner-${id}`); let dot = document.getElementById(`dot-${id}`);
                 dom.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; dot.style.left = `${(dist / 2000) * 100}%`;
@@ -585,68 +590,71 @@
                 else badge.className = 'status-badge';
             });
 
-            if (smoothLeaderX === 0) { smoothLeaderX = leaderWorldX; smoothLeaderY = leaderWorldY; smoothLeaderAngle = leaderAngle; }
-            let camTargetObj = focusRunner ? focusRunner : { worldX: leaderWorldX, worldY: leaderWorldY, angle: leaderAngle };
-            
-            smoothLeaderX += (camTargetObj.worldX - smoothLeaderX) * 0.03; smoothLeaderY += (camTargetObj.worldY - smoothLeaderY) * 0.03;
-            let diffAngle = camTargetObj.angle - smoothLeaderAngle;
-            while(diffAngle < -Math.PI) diffAngle += Math.PI*2; while(diffAngle > Math.PI) diffAngle -= Math.PI*2;
-            smoothLeaderAngle += diffAngle * 0.02; 
+            // 💡 [카메라 짐벌 완벽 적용] 1등 주자의 레인 이동/바운스 무시하고 '코스의 중앙 절대 좌표'만 추적합니다.
+            let basePos = getTrackCoordinates(leaderDist);
+            let leaderWorldX = basePos.x * VISUAL_SCALE + CX;
+            let leaderWorldY = basePos.y * VISUAL_SCALE + CY;
             
             let isDebug = document.getElementById('enable-debug-cam').checked;
             if(isDebug) {
-                targetCam.rotZ = (-smoothLeaderAngle * 180 / Math.PI) + parseFloat(document.getElementById('slider-rotz').value);
+                targetCam.rotZ = (-basePos.angle * 180 / Math.PI) + parseFloat(document.getElementById('slider-rotz').value);
                 targetCam.rotX = parseFloat(document.getElementById('slider-rotx').value);
                 targetCam.zoom = parseFloat(document.getElementById('slider-zoom').value);
-                targetCam.x = -(smoothLeaderX) + parseFloat(document.getElementById('slider-x').value);
-                targetCam.y = -(smoothLeaderY) + parseFloat(document.getElementById('slider-y').value);
+                targetCam.x = -leaderWorldX + parseFloat(document.getElementById('slider-x').value);
+                targetCam.y = -leaderWorldY + parseFloat(document.getElementById('slider-y').value);
             } else {
-                // 💡 [기획자님 시네마틱 스크립트 카메라 연출]
-                let d = leaderX; // 선두 거리 기준
+                // 💡 [기획자님 시네마틱 스크립트 엔진]
+                let d = leaderDist; 
                 let offsetX = 0; let offsetY = 0; let offsetRotZ = -180;
-                let easeIn = (t) => t * t; // 처음엔 느리다가 끝에 갈수록 빨라지는 변화량
                 
                 if (d <= 200) {
                     offsetX = 1000; offsetY = 0; offsetRotZ = -180;
+                } else if (d <= 400) {
+                    let t = (d - 200) / 200;
+                    offsetX = 1000 + (0 - 1000) * easeIn(t);
+                    offsetY = 0; offsetRotZ = -180;
                 } else if (d <= 950) {
-                    let t = Math.max(0, Math.min(1, (d - 200) / 750));
-                    let e = easeIn(t);
-                    offsetX = 1000 + (0 - 1000) * e;
-                    offsetY = 0 + (-1000 - 0) * e;
+                    let t = (d - 400) / 550;
+                    offsetX = 0;
+                    offsetY = 0 + (-1000 - 0) * easeIn(t); // 중간 직선부터 Y오프셋 변경
                     offsetRotZ = -180;
                 } else if (d <= 1225) {
-                    let t = Math.max(0, Math.min(1, (d - 950) / 275));
-                    let e = easeIn(t);
+                    let t = (d - 950) / 275;
                     offsetX = 0;
-                    offsetY = -1000 + (0 - -1000) * e;
-                    // 두번째 마지막 코너를 돌면서 RotZ 값이 서서히 -150도로 변경되게 해줘
-                    let t_rot = Math.max(0, Math.min(1, (d - 950) / 525));
+                    offsetY = -1000 + (0 - -1000) * easeIn(t);
+                    let t_rot = (d - 950) / 525; // 3코너 ~ 최종코너 끝까지 RotZ 변화
                     offsetRotZ = -180 + (-150 - -180) * easeIn(t_rot);
                 } else if (d <= 1475) {
-                    let t = Math.max(0, Math.min(1, (d - 1225) / 250));
-                    let e = easeIn(t);
+                    let t = (d - 1225) / 250;
                     offsetX = 0;
-                    offsetY = 0 + (1000 - 0) * e;
-                    // 두번째 마지막 코너를 돌면서 RotZ 값이 서서히 -150도로 변경되게 해줘
-                    let t_rot = Math.max(0, Math.min(1, (d - 950) / 525));
+                    offsetY = 0 + (1000 - 0) * easeOut(t); // 💡 마지막 코너는 easeOut (빠르게 시작해서 느려짐)
+                    let t_rot = (d - 950) / 525;
                     offsetRotZ = -180 + (-150 - -180) * easeIn(t_rot);
                 } else {
                     offsetX = 0; offsetY = 1000; offsetRotZ = -150;
                 }
 
-                targetCam.rotZ = (-smoothLeaderAngle * 180 / Math.PI) + offsetRotZ; 
-                targetCam.rotX = 85; // 항상 85도 고정
-                targetCam.zoom = 2.0; // 줌인 2.0 고정
-                targetCam.x = -smoothLeaderX + offsetX; 
-                targetCam.y = -smoothLeaderY + offsetY; 
+                targetCam.rotZ = (-basePos.angle * 180 / Math.PI) + offsetRotZ; 
+                targetCam.rotX = 85; 
+                targetCam.zoom = 2.0; 
+                targetCam.x = -leaderWorldX + offsetX; 
+                targetCam.y = -leaderWorldY + offsetY; 
             }
 
-            currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
-            currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
-            currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
+            // 💡 카메라 즉시 컷 (프리쇼 -> 메인 레이스 전환 시 1프레임 텔레포트)
+            if (forceCameraCut) {
+                currentCam.x = targetCam.x; currentCam.y = targetCam.y;
+                currentCam.rotX = targetCam.rotX; currentCam.rotZ = targetCam.rotZ; currentCam.zoom = targetCam.zoom;
+                forceCameraCut = false;
+            } else {
+                currentCam.x += (targetCam.x - currentCam.x) * 0.1; currentCam.y += (targetCam.y - currentCam.y) * 0.1;
+                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.1; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.1;
+                currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.1;
+            }
             
-            document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
-            if (leaderX >= 2000 && isPlaying) { isPlaying = false; showCommentary(`🏆 레이스 종료!!`); }
+            // 💡 [카메라 1/3 하단 배치]: 화면을 100px 정도 아래로 눌러서 피사체가 화면 하단에 오게 만듦
+            document.getElementById('world').style.transform = `translateY(100px) scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
+            if (leaderDist >= 2000 && isPlaying) { isPlaying = false; showCommentary(`🏆 레이스 종료!!`); }
         }
 
         function renderLoop(timestamp) {
