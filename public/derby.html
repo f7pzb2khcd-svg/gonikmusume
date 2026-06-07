@@ -28,7 +28,7 @@
         #minimap-container { width: 100%; height: 30px; background-color: rgba(0,0,0,0.8); border: 2px solid #718093; border-radius: 15px; position: relative; overflow: hidden; }
         .minimap-dot { position: absolute; width: 12px; height: 12px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; margin-top: 7px; transform: translateX(-50%); }
         
-        /* top: 85%는 rotateX 로우앵글에서 주자가 화면 하단에 안착하도록 의도된 보정값 */
+        /* 💡 카메라 중앙 보정: top을 85%로 확 내려서, 85도 로우앵글에서도 주자가 안정적으로 하단 1/3 지점에 안착하도록 수정 */
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 4000px; }
         #world { position: absolute; left: 50%; top: 85%; width: 0; height: 0; transform-style: preserve-3d; }
         
@@ -512,8 +512,6 @@
                 currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.1; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.1;
                 currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.1;
                 
-                // 원래 transform 순서: scale→rotateX→rotateZ→translate (로컬 좌표계 이동)
-                // top:85%가 rotateX 보정을 이미 담당하므로 translate는 월드 위치 이동만 하면 됨
                 document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
 
                 requestAnimationFrame(preShowLoop);
@@ -603,21 +601,10 @@
             let leaderWorldY = centerPos.y * VISUAL_SCALE + CY + Math.sin(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
 
             if (smoothCenterX === 0) { smoothCenterX = leaderWorldX; smoothCenterY = leaderWorldY; smoothCenterAngle = centerPos.angle; }
-            
-            // 위치 스무딩: 코너에서는 조금 더 빠르게 따라가도록
-            let posLerp = (leaderDist > 150 && leaderDist < 450) ? 0.10 : 0.06;
-            smoothCenterX += (leaderWorldX - smoothCenterX) * posLerp; 
-            smoothCenterY += (leaderWorldY - smoothCenterY) * posLerp;
-            
-            // 각도 스무딩: 코너 구간에서는 각도 추적을 늦춰서 카메라가 선행하지 않도록
-            // 직선구간(0~150, 400~950, 1475~2000)은 빠르게, 코너(150~400, 950~1225, 1225~1475)는 느리게
-            let d = leaderDist;
-            let isCorner = (d > 150 && d < 450) || (d > 900 && d < 1500);
-            let angleLerp = isCorner ? 0.015 : 0.06;
-            let diffAngle = centerPos.angle - smoothCenterAngle;
-            while(diffAngle < -Math.PI) diffAngle += Math.PI*2; while(diffAngle > Math.PI) diffAngle -= Math.PI*2;
-            smoothCenterAngle += diffAngle * angleLerp; 
-            
+            // 선두 위치 추적 (빠르게 - 망원 카메라는 주자를 놓치면 안 됨)
+            smoothCenterX += (leaderWorldX - smoothCenterX) * 0.08;
+            smoothCenterY += (leaderWorldY - smoothCenterY) * 0.08;
+
             let isDebug = document.getElementById('enable-debug-cam').checked;
             if(isDebug) {
                 targetCam.rotZ = (-smoothCenterAngle * 180 / Math.PI) + parseFloat(document.getElementById('slider-rotz').value);
@@ -626,53 +613,115 @@
                 targetCam.x = -smoothCenterX + parseFloat(document.getElementById('slider-x').value);
                 targetCam.y = -smoothCenterY + parseFloat(document.getElementById('slider-y').value);
             } else {
-                // ─────────────────────────────────────────────────────────────────
-                // 핵심 원칙:
-                // transform 순서: translateX/Y → scale → rotateX → rotateZ
-                // translateX/Y는 회전 바깥에 있으므로 화면 기준으로 움직임.
-                // 따라서 targetCam.x = -smoothCenterX 만으로 주자가 화면 중앙에 옴.
+                // ═══════════════════════════════════════════════════════════════
+                // 실제 경마 중계 카메라 시스템
                 //
-                // rotateZ는 카메라가 트랙의 어느 방향을 정면으로 볼지 결정.
-                // smoothCenterAngle: 트랙 진행방향 각도 (라디안)
-                //   출발(북향): -π/2, 직선(서향): -π, 복귀직선(동향): 0
-                // rotZ = -smoothCenterAngle * (180/π) + sideAngle
-                //   sideAngle 0  : 진행방향 정면 (뒤에서 찍기)
-                //   sideAngle 90 : 진행방향 왼쪽 측면
-                //   sideAngle -90: 진행방향 오른쪽 측면
-                // ─────────────────────────────────────────────────────────────────
+                // 핵심 원칙:
+                //  - rotX 낮게(20~35도): 탑뷰 아닌 지면 레벨 수평 망원 앵글
+                //  - zoom 높게(3.5~5): 망원 압축으로 주자들이 밀집되어 보임
+                //  - 카메라는 트랙 측면 '고정 위치'에서 주자를 패닝(좌우로 따라감)
+                //  - 구간 전환 시 forceCameraCut으로 방송 컷 전환 느낌
+                //
+                // 트랙 구조 (월드 좌표 기준):
+                //  [CAM-A] 출발 직선 0~200m:  X≈14090, Y: 6000→3600  (북향)
+                //  [CAM-B] 1코너   200~400m:  X: 14090→12472, Y: 3600→1982
+                //  [CAM-C] 상단직선 400~950m: Y≈1982, X: 12472→5872  (서향)
+                //  [CAM-D] 2코너   950~1225m: X: 5872→3681, Y: 1982→4173
+                //  [CAM-E] 3코너  1225~1475m: X: 3681→5681, Y: 4173→6173
+                //  [CAM-F] 최종직선1475~2000m:Y≈6173, X: 5681→11981  (동향)
+                //
+                // 각 카메라의 rotZ:
+                //  트랙이 북향(-90°)일 때 측면(동쪽)에서 찍으면 rotZ = 0
+                //  트랙이 서향(-180°)일 때 측면(북쪽)에서 찍으면 rotZ = -90
+                //  트랙이 동향(0°)일 때 측면(북쪽)에서 찍으면 rotZ = 90
+                // ═══════════════════════════════════════════════════════════════
 
-                let sideAngle = 0; // 기본: 진행방향 오른쪽 측면
-                let cameraZoom = 2.2;
+                let d = leaderDist;
 
-                if (d <= 950) {
-                    // [구간 1~2] 출발 직선 + 1코너 + 직선: 오른쪽 측면
-                    sideAngle = -90;
-                } else if (d <= 1475) {
-                    // [구간 3~4] 2~3코너: 왼쪽 측면
-                    sideAngle = 90;
-                    if (d < 1050) {
-                        // 950~1050m: 오른쪽→왼쪽 전환
-                        let t = (d - 950) / 100;
-                        sideAngle = -90 + 180 * easeOut(t);
-                    }
+                // ── 카메라 구간 판정 및 컷 전환 트리거 ──
+                // 이전 구간을 저장해서 구간이 바뀔 때만 forceCameraCut 발동
+                let newSeg = d < 200 ? 'A' : d < 400 ? 'B' : d < 950 ? 'C' : d < 1225 ? 'D' : d < 1475 ? 'E' : 'F';
+                if (!window._lastSeg) window._lastSeg = newSeg;
+                if (newSeg !== window._lastSeg) { forceCameraCut = true; window._lastSeg = newSeg; }
+
+                // ── 각 카메라 고정 파라미터 ──
+                // offsetX/Y: 카메라를 선두 위치에서 얼마나 측면으로 벌릴지 (월드 좌표)
+                // rotZ: 카메라가 바라보는 방향
+                // rotX: 앙각 (낮을수록 수평, 경마 중계는 15~30도)
+                // zoom: 망원 배율
+
+                if (d < 200) {
+                    // [CAM-A] 출발 직선: 트랙 동쪽(오른쪽) 측면 고정, 북쪽으로 달리는 주자를 패닝
+                    // 카메라는 X=14090+오프셋, Y=선두 따라감
+                    // rotZ=0: 동쪽 카메라가 서쪽을 바라보는 각도
+                    targetCam.rotZ = 0;
+                    targetCam.rotX = 25;
+                    targetCam.zoom = 4.0;
+                    targetCam.x = -smoothCenterX + 800;  // 동쪽으로 800 벌림
+                    targetCam.y = -smoothCenterY;
+
+                } else if (d < 400) {
+                    // [CAM-B] 1코너: 코너 바깥쪽(북동) 고정 카메라, 주자가 코너를 도는 걸 담음
+                    // 코너 중심 바깥에서 전체 코너를 커버
+                    // 코너 중앙부 월드 좌표 ≈ (13300, 2700) 기준으로 바깥쪽 배치
+                    let cornerCX = 13300, cornerCY = 2700;
+                    targetCam.rotZ = -45; // 남서쪽을 바라봄
+                    targetCam.rotX = 28;
+                    targetCam.zoom = 3.0;
+                    targetCam.x = -cornerCX + 1200; // 북동쪽 오프셋
+                    targetCam.y = -cornerCY - 1200;
+
+                } else if (d < 950) {
+                    // [CAM-C] 상단 직선: 트랙 남쪽(아래) 측면 고정, 서쪽으로 달리는 주자를 패닝
+                    // rotZ=-90: 남쪽 카메라가 북쪽을 바라보는 각도
+                    targetCam.rotZ = -90;
+                    targetCam.rotX = 20;
+                    targetCam.zoom = 4.5;
+                    targetCam.x = -smoothCenterX;       // X는 선두 따라 패닝
+                    targetCam.y = -smoothCenterY - 900; // 남쪽으로 900 벌림
+
+                } else if (d < 1225) {
+                    // [CAM-D] 2코너: 코너 바깥쪽(서남) 고정 카메라
+                    // 코너 중앙부 월드 좌표 ≈ (4600, 3000)
+                    let cornerCX = 4600, cornerCY = 3000;
+                    targetCam.rotZ = 135; // 북동쪽을 바라봄
+                    targetCam.rotX = 28;
+                    targetCam.zoom = 3.0;
+                    targetCam.x = -cornerCX - 1200;
+                    targetCam.y = -cornerCY + 1200;
+
+                } else if (d < 1475) {
+                    // [CAM-E] 3코너: 코너 바깥쪽(서북) 고정 카메라
+                    // 코너 중앙부 월드 좌표 ≈ (4700, 5200)
+                    let cornerCX = 4700, cornerCY = 5200;
+                    targetCam.rotZ = 45; // 남동쪽을 바라봄
+                    targetCam.rotX = 28;
+                    targetCam.zoom = 3.0;
+                    targetCam.x = -cornerCX - 1200;
+                    targetCam.y = -cornerCY - 1200;
+
                 } else {
-                    // [구간 5] 최종 직선: 뒤에서 정면 추격
-                    sideAngle = 90;
-                    if (d < 1575) {
-                        let t = (d - 1475) / 100;
-                        sideAngle = 90 + (0 - 90) * easeOut(t);
-                    }
-                    if (d > 1800) {
-                        let t = (d - 1800) / 200;
-                        cameraZoom = 2.2 + 0.8 * easeIn(t);
+                    // [CAM-F] 최종 직선: 트랙 북쪽(위) 측면 고정, 동쪽으로 달리는 주자를 패닝
+                    // 막판 200m는 앞에서 정면으로 달려오는 앵글로 전환
+                    if (d < 1800) {
+                        // 북쪽 측면 망원
+                        targetCam.rotZ = 90;
+                        targetCam.rotX = 20;
+                        targetCam.zoom = 4.5;
+                        targetCam.x = -smoothCenterX;
+                        targetCam.y = -smoothCenterY + 900;
+                    } else {
+                        // 결승선 정면 카메라: 결승선 앞에서 주자가 달려오는 앵글
+                        // 결승선 월드 X ≈ 12000, Y ≈ 6173
+                        let goalX = 12000, goalY = 6173;
+                        if (d >= 1800 && d < 1810) forceCameraCut = true; // 마지막 컷
+                        targetCam.rotZ = 180; // 서쪽을 바라봄 (주자가 동쪽에서 달려옴)
+                        targetCam.rotX = 18;
+                        targetCam.zoom = 5.0 + (d - 1800) / 200 * 1.5; // 달려올수록 줌인
+                        targetCam.x = -goalX;
+                        targetCam.y = -goalY;
                     }
                 }
-
-                targetCam.rotZ = (-smoothCenterAngle * 180 / Math.PI) + sideAngle;
-                targetCam.rotX = 75;
-                targetCam.zoom = cameraZoom;
-                targetCam.x = -smoothCenterX;
-                targetCam.y = -smoothCenterY;
             }
 
             if (forceCameraCut) {
@@ -680,13 +729,14 @@
                 currentCam.rotX = targetCam.rotX; currentCam.rotZ = targetCam.rotZ; currentCam.zoom = targetCam.zoom;
                 forceCameraCut = false;
             } else {
-                currentCam.x += (targetCam.x - currentCam.x) * 0.08; currentCam.y += (targetCam.y - currentCam.y) * 0.08;
-                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.08;
-                // rotZ 각도 최단경로 보간 (360도 경계 넘어가는 끊김 방지)
+                // 패닝은 빠르게(주자 놓치면 안됨), 회전/줌은 부드럽게
+                currentCam.x += (targetCam.x - currentCam.x) * 0.12;
+                currentCam.y += (targetCam.y - currentCam.y) * 0.12;
+                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05;
                 let dRot = targetCam.rotZ - currentCam.rotZ;
                 while(dRot < -180) dRot += 360; while(dRot > 180) dRot -= 360;
-                currentCam.rotZ += dRot * 0.08;
-                currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.08;
+                currentCam.rotZ += dRot * 0.05;
+                currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
             }
             
             document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
