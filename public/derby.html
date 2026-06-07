@@ -224,7 +224,7 @@
             "5": { offsetX: 0, offsetY: -100, rotX: 80, rotZ: 120, zoom: 2.6 }, // 3코너 (여기는 스크립트로 좌우반전 방지 추가)
             "6": { offsetX: -300, offsetY: 100, rotX: 80, rotZ: 120, zoom: 2.6 }, 
             "7": { offsetX: 0, offsetY: 100, rotX: 90, rotZ: 90, zoom: 5 }, // X 0, Y 100, RotX 90, RotZ 90, Zoom 5
-            "8": { offsetX: 100, offsetY: 0, rotX: 87, rotZ: -240, zoom: 3.5 } // offsetX 100, RotZ -240, Zoom 3.5
+            "8": { offsetX: 100, offsetY: 0, rotX: 87, rotZ: -300, zoom: 3.5 } // offsetX 100, RotZ -300, Zoom 3.5
         };
 
         const camSelect = document.getElementById('cam-select');
@@ -617,7 +617,7 @@
                 t = Math.min(1.0, elapsed / 18.0); e = easeIn(t);
                 targetCam.rotZ = conf.rotZ + (100 - conf.rotZ) * e;
                 targetCam.rotX = conf.rotX + (80 - conf.rotX) * e;
-                targetCam.zoom = conf.zoom;
+                targetCam.zoom = conf.zoom + (3.0 - conf.zoom) * e;
                 targetCam.x = -smoothCenterX + conf.offsetX + (-50 - conf.offsetX) * e;
                 targetCam.y = -smoothCenterY + conf.offsetY + (100 - conf.offsetY) * e;
             } 
