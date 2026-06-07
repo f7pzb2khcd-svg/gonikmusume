@@ -571,29 +571,55 @@
             isPlaying = true; requestAnimationFrame(renderLoop);
         }
 
-        // 💡 [카메라 2] 메인 레이스 (짐벌 및 시네마틱 스크립트 적용)
+        // 💡 [카메라 2] 메인 레이스 (15FPS -> 60FPS 프레임 보간 완벽 적용)
         function renderFrameAtTime(timeTarget) {
-            let frameIdx = Math.floor(timeTarget / DT);
-            if (frameIdx >= maxFrames) frameIdx = maxFrames - 1;
+            // 💡 [핵심] 현재 시간이 어느 프레임 '사이'에 있는지 계산합니다.
+            let exactFrame = timeTarget / DT;
+            let frameIdx = Math.floor(exactFrame);
+            let nextFrameIdx = Math.min(frameIdx + 1, maxFrames - 1);
+            let ratio = exactFrame - frameIdx; // 0.0 ~ 1.0 (프레임 사이의 진행도)
+
             let frameData = roomData.replay_data[frameIdx];
-            if (!frameData) return;
+            let nextFrameData = roomData.replay_data[nextFrameIdx];
+            if (!frameData || !nextFrameData) return;
 
             document.getElementById('main-timer').innerText = `RACE - ${timeTarget.toFixed(1)}s`;
 
             let leaderDist = -1;
+            let leaderWorldX = 0, leaderWorldY = 0, leaderAngle = 0;
+            let focusRunner = null;
+
+            // 보간을 위해 다음 프레임의 주자 데이터를 Map으로 정리
+            let nextRDataMap = new Map();
+            nextFrameData.r.forEach(r => nextRDataMap.set(r[0], r));
 
             frameData.r.forEach(rData => {
                 let [id, dist, lane, speed, hp, states] = rData; 
-                let pos = getTrackCoordinates(dist); let laneOffset = lane * LANE_SCALE; 
+                let nextR = nextRDataMap.get(id);
+
+                // 💡 [보간 엔진] 현재 프레임과 다음 프레임 사이를 '비율(ratio)'만큼 부드럽게 연결!
+                if (nextR) {
+                    dist = dist + (nextR[1] - dist) * ratio;
+                    lane = lane + (nextR[2] - lane) * ratio;
+                }
+
+                let pos = getTrackCoordinates(dist); 
+                let laneOffset = lane * LANE_SCALE; 
                 let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                 let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
                 if (dist > leaderDist) { leaderDist = dist; }
 
-                let dom = document.getElementById(`runner-${id}`); let dot = document.getElementById(`dot-${id}`);
-                dom.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; dot.style.left = `${(dist / 2000) * 100}%`;
+                let dom = document.getElementById(`runner-${id}`); 
+                let dot = document.getElementById(`dot-${id}`);
                 
-                let wrapper = dom.querySelector('.sprite-wrapper'); let sprite = dom.querySelector('.sprite-anim'); let badge = dom.querySelector('.status-badge');
+                dom.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; 
+                dot.style.left = `${(dist / 2000) * 100}%`;
+                
+                let wrapper = dom.querySelector('.sprite-wrapper'); 
+                let sprite = dom.querySelector('.sprite-anim'); 
+                let badge = dom.querySelector('.status-badge');
+                
                 wrapper.style.transform = `scale(0.5) rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
                 
                 if(speed > 1.0 && !states.includes("Exhaust")) sprite.className = 'sprite-anim running'; else sprite.className = 'sprite-anim';
@@ -607,7 +633,7 @@
                 else badge.className = 'status-badge';
             });
 
-            // 💡 [카메라 짐벌 완벽 적용] 선두 주자의 '트랙 중앙 절대 좌표'만 계산 (떨림 원천 차단)
+            // 카메라 짐벌 로직 (코스 중앙 고정 추적)
             let centerPos = getTrackCoordinates(leaderDist);
             let leaderWorldX = centerPos.x * VISUAL_SCALE + CX + Math.cos(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
             let leaderWorldY = centerPos.y * VISUAL_SCALE + CY + Math.sin(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
@@ -629,38 +655,32 @@
                 targetCam.x = -smoothCenterX + parseFloat(document.getElementById('slider-x').value);
                 targetCam.y = -smoothCenterY + parseFloat(document.getElementById('slider-y').value);
             } else {
-                // 💡 [기획자님 시네마틱 카메라 대본 적용]
                 let d = leaderDist; 
                 let offsetX = 0; let offsetY = 0; let offsetRotZ = -180;
                 
                 if (d <= 300) {
                     offsetX = 1000; offsetY = 0; offsetRotZ = -180;
                 } else if (d <= 800) {
-                    // 1코너 (300~800m): 천천히 움직이다가 빨라짐 (Ease-In)
                     let t = (d - 300) / 500;
                     let e = easeIn(t); 
                     offsetX = 1000 + (0 - 1000) * e;
                     offsetY = 0 + (-1000 - 0) * e;
                     offsetRotZ = -180;
                 } else if (d <= 950) {
-                    // 중간 직선
                     offsetX = 0; offsetY = -1000; offsetRotZ = -180;
                 } else if (d <= 1225) {
-                    // 3코너 (950~1225m)
                     let t = (d - 950) / 275;
                     offsetX = 0;
                     offsetY = -1000 + (0 - -1000) * easeIn(t);
-                    let t_rot = (d - 950) / 525; // 최종 코너 끝까지 회전 연장
+                    let t_rot = (d - 950) / 525; 
                     offsetRotZ = -180 + (-150 - -180) * easeIn(t_rot);
                 } else if (d <= 1475) {
-                    // 마지막 코너 (1225~1475m): 처음에 확 꺾이고 코너 끝에 갈수록 느려짐 (Ease-Out)
                     let t = (d - 1225) / 250;
                     offsetX = 0;
                     offsetY = 0 + (1000 - 0) * easeOut(t); 
                     let t_rot = (d - 950) / 525;
                     offsetRotZ = -180 + (-150 - -180) * easeIn(t_rot);
                 } else {
-                    // 최종 직선
                     offsetX = 0; offsetY = 1000; offsetRotZ = -150;
                 }
 
@@ -671,7 +691,6 @@
                 targetCam.y = -smoothCenterY + offsetY; 
             }
 
-            // 카메라 컷(Cut) 또는 부드러운 이동(Lerp)
             if (forceCameraCut) {
                 currentCam.x = targetCam.x; currentCam.y = targetCam.y;
                 currentCam.rotX = targetCam.rotX; currentCam.rotZ = targetCam.rotZ; currentCam.zoom = targetCam.zoom;
@@ -682,7 +701,6 @@
                 currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
             }
             
-            // 💡 맵 중앙 고정으로 1/3 배치 자동 유지
             document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
             if (leaderDist >= 2000 && isPlaying) { isPlaying = false; showCommentary(`🏆 레이스 종료!!`); }
         }
