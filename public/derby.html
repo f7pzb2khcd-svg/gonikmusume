@@ -223,7 +223,7 @@
             "5": { offsetX: 0, offsetY: -100, rotX: 80, rotZ: 120, zoom: 2.6 }, 
             "6": { offsetX: -300, offsetY: 100, rotX: 80, rotZ: 120, zoom: 2.6 }, 
             "7": { offsetX: 0, offsetY: 100, rotX: 90, rotZ: 90, zoom: 5 }, 
-            "8": { offsetX: 100, offsetY: 0, rotX: 87, rotZ: -300, zoom: 3.5 } // rotZ -300으로 픽스
+            "8": { offsetX: 100, offsetY: 0, rotX: 87, rotZ: 60, zoom: 3.5 } 
         };
 
         const camSelect = document.getElementById('cam-select');
@@ -602,7 +602,7 @@
             } 
             else if (camId === "7") {
                 let conf = CAM_SETTINGS["7"];
-                t = Math.min(1.0, elapsed / 18.0); e = easeIn(t);
+                t = Math.min(1.0, elapsed / 10.0); e = easeIn(t);
                 targetCam.rotZ = conf.rotZ + (100 - conf.rotZ) * e;
                 targetCam.rotX = conf.rotX + (80 - conf.rotX) * e;
                 targetCam.zoom = conf.zoom + (2.0 - conf.zoom) * e; 
@@ -617,7 +617,7 @@
                 let finishWorldY = goalP.y * VISUAL_SCALE + CY;
                 
                 targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
-                targetCam.rotZ = conf.rotZ + (-180 - conf.rotZ) * e; 
+                targetCam.rotZ = conf.rotZ + (180 - conf.rotZ) * e; 
                 targetCam.x = -finishWorldX + conf.offsetX;
                 targetCam.y = -finishWorldY + conf.offsetY;
             }
