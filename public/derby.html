@@ -28,9 +28,8 @@
         #minimap-container { width: 100%; height: 30px; background-color: rgba(0,0,0,0.8); border: 2px solid #718093; border-radius: 15px; position: relative; overflow: hidden; }
         .minimap-dot { position: absolute; width: 12px; height: 12px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; margin-top: 7px; transform: translateX(-50%); }
         
-        /* 2.5D 카메라 캔버스 */
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 1500px; }
-        #world { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; } /* top을 50%로 변경하여 화면 중심 정렬 */
+        #world { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
         
         .runner-base { position: absolute; width: 60px; height: 60px; transform-style: preserve-3d; z-index: 5; margin-left: -30px; margin-top: -60px; }
         .sprite-wrapper { position: absolute; bottom: 0; left: 0; width: 60px; height: 60px; transform-origin: bottom center; will-change: transform; }
@@ -76,7 +75,7 @@
         #ult-cutin-bg { width: 100%; background: linear-gradient(90deg, transparent, #e53935, transparent); padding: 40px 0; border-top: 2px solid #ffeb3b; border-bottom: 2px solid #ffeb3b; }
         .cutin-name { font-size: 45px; font-weight: 900; color: #ffe082; text-shadow: 3px 3px 5px #000; }
 
-        /* 💡 카메라 디버깅 패널 CSS */
+        /* 💡 카메라 디버깅 패널 */
         #camera-debugger { position: fixed; top: 10px; right: 10px; width: 320px; background: rgba(20, 20, 20, 0.95); padding: 15px; border: 2px solid #00e5ff; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); color: white; z-index: 9999; display: none; text-align: left; font-size: 13px; }
         #camera-debugger h3 { margin: 0 0 10px 0; color: #00e5ff; font-size: 16px; border-bottom: 1px solid #555; padding-bottom: 5px; }
         .debug-row { margin-bottom: 10px; }
@@ -86,7 +85,7 @@
 </head>
 <body>
 
-    <h1>🏁 왁마갤 무스메 <span style="font-size: 16px; color:#dcdde1; font-weight:normal;">- 카메라 디버깅 모드 -</span></h1>
+    <h1>🏁 왁마갤 무스메 <span style="font-size: 16px; color:#dcdde1; font-weight:normal;">- 카메라 디렉터 -</span></h1>
     
     <div id="camera-debugger">
         <h3>🎥 실시간 카메라 디렉터</h3>
@@ -96,27 +95,27 @@
             </label>
         </div>
         <div class="debug-row">
-            <label>X축 오프셋 (좌우) <span id="val-x">0</span>px</label>
-            <input type="range" id="slider-x" min="-3000" max="3000" step="10" value="0">
+            <label>X축 오프셋 (좌우) <span id="val-x">-1140</span>px</label>
+            <input type="range" id="slider-x" min="-3000" max="3000" step="10" value="-1140">
         </div>
         <div class="debug-row">
             <label>Y축 오프셋 (앞뒤) <span id="val-y">0</span>px</label>
             <input type="range" id="slider-y" min="-3000" max="3000" step="10" value="0">
         </div>
         <div class="debug-row">
-            <label>RotX (카메라 높이/지면 밀착) <span id="val-rotx">75</span>도</label>
-            <input type="range" id="slider-rotx" min="0" max="90" step="1" value="75">
+            <label>RotX (카메라 높이/지면 밀착) <span id="val-rotx">85</span>도</label>
+            <input type="range" id="slider-rotx" min="0" max="90" step="1" value="85">
         </div>
         <div class="debug-row">
-            <label>RotZ (카메라 회전각/측면 뷰) <span id="val-rotz">-90</span>도</label>
-            <input type="range" id="slider-rotz" min="-180" max="180" step="1" value="-90">
+            <label>RotZ (카메라 회전각/측면 뷰) <span id="val-rotz">173</span>도</label>
+            <input type="range" id="slider-rotz" min="-180" max="180" step="1" value="173">
         </div>
         <div class="debug-row">
-            <label>Zoom (망원렌즈 줌인) <span id="val-zoom">1.0</span>배</label>
-            <input type="range" id="slider-zoom" min="0.1" max="3.0" step="0.05" value="1.0">
+            <label>Zoom (망원렌즈 줌인) <span id="val-zoom">2.0</span>배</label>
+            <input type="range" id="slider-zoom" min="0.1" max="4.0" step="0.05" value="2.0">
         </div>
         <div style="margin-top: 10px; font-size: 11px; color: #95a5a6;">
-            ※ 체크박스를 켜고 슬라이더를 움직이면서 가장 역동적이고 주자가 안 잘리는 최적의 값을 찾아주세요!
+            ※ 체크박스를 켜고 실시간으로 값을 조절해보세요!
         </div>
     </div>
 
@@ -210,7 +209,7 @@
         let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
         let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
 
-        // 💡 디버깅 슬라이더 이벤트 연결
+        // 슬라이더 UI 갱신 이벤트
         document.querySelectorAll('#camera-debugger input[type=range]').forEach(inp => {
             inp.addEventListener('input', (e) => {
                 document.getElementById('val-' + e.target.id.split('-')[1]).innerText = e.target.value;
@@ -318,7 +317,7 @@
 
             document.getElementById('lobby-panel').style.display = 'none';
             document.getElementById('game-ui').style.display = 'flex'; 
-            document.getElementById('camera-debugger').style.display = 'block'; // 💡 디버그 패널 노출
+            document.getElementById('camera-debugger').style.display = 'block'; 
 
             try {
                 const res = await fetch(`${API_BASE}/room/${roomId}`);
@@ -454,7 +453,6 @@
             }, 1000);
         }
 
-        // 💡 프리쇼 루프 (디버그 모드 결합 및 시작 앵글 하향 조정)
         function preShowLoop(timestamp) {
             if (!lastTimestamp) lastTimestamp = timestamp;
             let delta = (timestamp - lastTimestamp) / 1000;
@@ -499,25 +497,24 @@
 
                 let isDebug = document.getElementById('enable-debug-cam').checked;
                 if(isDebug) {
-                    // 수동 조작
-                    targetCam.rotZ = parseFloat(document.getElementById('slider-rotz').value);
+                    targetCam.rotZ = (-startPos.angle * 180 / Math.PI) + parseFloat(document.getElementById('slider-rotz').value);
                     targetCam.rotX = parseFloat(document.getElementById('slider-rotx').value);
                     targetCam.zoom = parseFloat(document.getElementById('slider-zoom').value);
                     targetCam.x = -(startPos.x*VISUAL_SCALE + CX) + parseFloat(document.getElementById('slider-x').value);
                     targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + parseFloat(document.getElementById('slider-y').value);
                 } else {
-                    // 💡 기획자님 요청 반영: 스타트 지점 '아래쪽'에서부터 넓게 담도록 Y값을 +800으로 조정!
-                    targetCam.x = -(startPos.x*VISUAL_SCALE + CX) + 100;
-                    targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + 800; 
-                    targetCam.rotX = 55; targetCam.rotZ = (-startPos.angle - Math.PI/2) * (180/Math.PI); targetCam.zoom = 1.0; 
+                    // 💡 기획자님 지정 앵글 (프리쇼: X -300, Y -300, RotX 45, RotZ 150, Zoom 0.5)
+                    targetCam.rotZ = (-startPos.angle * 180 / Math.PI) + 150; 
+                    targetCam.rotX = 45; 
+                    targetCam.zoom = 0.5; 
+                    targetCam.x = -(startPos.x*VISUAL_SCALE + CX) - 300;
+                    targetCam.y = -(startPos.y*VISUAL_SCALE + CY) - 300; 
                 }
 
                 currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
                 currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
                 currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
                 
-                // 💡 카메라 적용 렌더링 공식 변경!
-                // CSS Transform은 순서가 중요합니다. 캔버스를 먼저 회전시키고 나서 X, Y로 당겨옵니다.
                 document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
 
                 requestAnimationFrame(preShowLoop);
@@ -595,28 +592,26 @@
             while(diffAngle < -Math.PI) diffAngle += Math.PI*2; while(diffAngle > Math.PI) diffAngle -= Math.PI*2;
             smoothLeaderAngle += diffAngle * 0.02; 
             
-            // 💡 디버그 모드 체크
             let isDebug = document.getElementById('enable-debug-cam').checked;
             if(isDebug) {
                 targetCam.rotZ = (-smoothLeaderAngle * 180 / Math.PI) + parseFloat(document.getElementById('slider-rotz').value);
                 targetCam.rotX = parseFloat(document.getElementById('slider-rotx').value);
                 targetCam.zoom = parseFloat(document.getElementById('slider-zoom').value);
-                // 슬라이더 값을 중심 좌표에 더해줍니다.
                 targetCam.x = -(smoothLeaderX) + parseFloat(document.getElementById('slider-x').value);
                 targetCam.y = -(smoothLeaderY) + parseFloat(document.getElementById('slider-y').value);
             } else {
-                targetCam.rotZ = (-smoothLeaderAngle * 180 / Math.PI) - 100; 
-                targetCam.rotX = 75; 
-                targetCam.zoom = 1.3; 
-                targetCam.x = -smoothLeaderX; 
-                targetCam.y = -smoothLeaderY + 800; // Y축으로 뒤로 물러나 줌을 당기는 기본값
+                // 💡 기획자님이 설정하신 레이스 기준값 (Option 2 기반)
+                targetCam.rotZ = (-smoothLeaderAngle * 180 / Math.PI) + 173; 
+                targetCam.rotX = 85; 
+                targetCam.zoom = 2.0; 
+                targetCam.x = -(smoothLeaderX) - 1140; 
+                targetCam.y = -(smoothLeaderY) + 0; 
             }
 
             currentCam.x += (targetCam.x - currentCam.x) * 0.05; currentCam.y += (targetCam.y - currentCam.y) * 0.05;
             currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.05; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.05;
             currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.05;
             
-            // CSS 적용
             document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
             if (leaderX >= 2000 && isPlaying) { isPlaying = false; showCommentary(`🏆 레이스 종료!!`); }
         }
