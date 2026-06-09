@@ -373,7 +373,7 @@
                 let isFirstLoad = true;
                 chatRef.limitToLast(1).on('child_added', (snap) => { if (isFirstLoad) { isFirstLoad = false; return; } spawnChatBubble(snap.val().message); });
 
-                drawTrackCanvas(); initPreShowDOM(); 
+                drawTrackSVG(); initPreShowDOM();
                 
                 const nowSec = Date.now() / 1000;
                 if (roomData.scheduled_time - nowSec > 0) { isPreShow = true; requestAnimationFrame(preShowLoop); startCountdown(); } 
@@ -382,56 +382,85 @@
             } catch(e) { alert("데이터 로딩 실패! (API_BASE 주소를 확인해주세요)"); }
         };
 
-        // 💡 캔버스 해상도 최적화: 이중 스케일링 제거, 1:1 풀 해상도로 렌더링
-        function drawTrackCanvas() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 28000; canvas.height = 14000;
-            canvas.style.position = 'absolute'; canvas.style.left = '0px'; canvas.style.top = '0px';
-            canvas.style.transformOrigin = 'top left'; 
-            canvas.style.transform = 'translateZ(-1px)'; 
-            const ctx = canvas.getContext('2d'); 
-            
-            ctx.fillStyle = '#C8C8C8'; ctx.fillRect(0, 0, 28000, 14000);
-            ctx.strokeStyle = '#BDBDBD'; ctx.lineWidth = 4; ctx.beginPath();
-            for(let i = 0; i < 28000; i += 200) { ctx.moveTo(i, 0); ctx.lineTo(i, 14000); }
-            for(let i = 0; i < 14000; i += 200) { ctx.moveTo(0, i); ctx.lineTo(28000, i); }
-            ctx.stroke();
-            
-            ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
-            ctx.lineWidth = LANE_SCALE * 1.8; ctx.strokeStyle = '#f1c40f'; ctx.beginPath();
-            for(let i=0; i<=2000; i+=10) {
-                let p = getTrackCoordinates(i);
-                let centerX = p.x*VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                let centerY = p.y*VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                if(i===0) ctx.moveTo(centerX, centerY); else ctx.lineTo(centerX, centerY);
-            }
-            ctx.stroke();
+        function drawTrackSVG() {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("width", "28000");
+            svg.setAttribute("height", "14000");
+            svg.style.position = 'absolute';
+            svg.style.left = '0px'; svg.style.top = '0px';
+            svg.style.transform = 'translateZ(-1px) scale(4)';
+            svg.style.transformOrigin = 'top left';
+            svg.style.overflow = 'visible';
 
-            ctx.lineWidth = LANE_SCALE * 1.7; ctx.strokeStyle = '#30343A'; ctx.beginPath();
-            for(let i=0; i<=2000; i+=10) {
-                let p = getTrackCoordinates(i);
-                let centerX = p.x*VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                let centerY = p.y*VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                if(i===0) ctx.moveTo(centerX, centerY); else ctx.lineTo(centerX, centerY);
-            }
-            ctx.stroke();
-            
-            ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.setLineDash([60, 60]); ctx.beginPath();
-            for(let i=0; i<=2000; i+=10) {
-                let p = getTrackCoordinates(i);
-                let centerX = p.x*VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                let centerY = p.y*VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                if(i===0) ctx.moveTo(centerX, centerY); else ctx.lineTo(centerX, centerY);
-            }
-            ctx.stroke(); ctx.setLineDash([]);
+            // 1. 회색 배경 및 그리드(격자)
+            let bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            bgRect.setAttribute("width", "28000");
+            bgRect.setAttribute("height", "14000");
+            bgRect.setAttribute("fill", "#C8C8C8");
+            svg.appendChild(bgRect);
 
+            let gridPath = "";
+            for(let i = 0; i < 28000; i += 200) gridPath += `M${i},0 L${i},14000 `;
+            for(let i = 0; i < 14000; i += 200) gridPath += `M0,${i} L28000,${i} `;
+            
+            let grid = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            grid.setAttribute("d", gridPath);
+            grid.setAttribute("stroke", "#BDBDBD");
+            grid.setAttribute("stroke-width", "4");
+            svg.appendChild(grid);
+
+            // 2. 트랙 경로 연산
+            let trackPath = "";
+            for (let i = 0; i <= 2000; i += 10) {
+                let p = getTrackCoordinates(i);
+                let cx = p.x * VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                let cy = p.y * VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                trackPath += (i === 0 ? `M${cx},${cy} ` : `L${cx},${cy} `);
+            }
+
+            // 3. 노란 테두리
+            let border = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            border.setAttribute("d", trackPath);
+            border.setAttribute("stroke", "#f1c40f");
+            border.setAttribute("stroke-width", String(LANE_SCALE * 1.8));
+            border.setAttribute("fill", "none");
+            border.setAttribute("stroke-linecap", "butt");
+            border.setAttribute("stroke-linejoin", "round");
+            svg.appendChild(border);
+
+            // 4. 트랙 본체
+            let track = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            track.setAttribute("d", trackPath);
+            track.setAttribute("stroke", "#30343A");
+            track.setAttribute("stroke-width", String(LANE_SCALE * 1.7));
+            track.setAttribute("fill", "none");
+            track.setAttribute("stroke-linecap", "butt");
+            track.setAttribute("stroke-linejoin", "round");
+            svg.appendChild(track);
+
+            // 5. 중앙선 (점선)
+            let center = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            center.setAttribute("d", trackPath);
+            center.setAttribute("stroke", "rgba(255,255,255,0.5)");
+            center.setAttribute("stroke-width", "8");
+            center.setAttribute("fill", "none");
+            center.setAttribute("stroke-dasharray", "60 60");
+            svg.appendChild(center);
+
+            // 6. 출발선 (Start Line)
             let startP = getTrackCoordinates(0);
             let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
             let sInY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
             let sOutX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
             let sOutY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
-            ctx.beginPath(); ctx.moveTo(sInX, sInY); ctx.lineTo(sOutX, sOutY); ctx.lineWidth = 20; ctx.strokeStyle = 'white'; ctx.stroke();
-            document.getElementById('world').appendChild(canvas);
+            
+            let startLine = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            startLine.setAttribute("d", `M${sInX},${sInY} L${sOutX},${sOutY}`);
+            startLine.setAttribute("stroke", "white");
+            startLine.setAttribute("stroke-width", "20");
+            svg.appendChild(startLine);
+
+            document.getElementById('world').appendChild(svg);
         }
 
         function initPreShowDOM() {
