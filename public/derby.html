@@ -373,7 +373,7 @@
                 let isFirstLoad = true;
                 chatRef.limitToLast(1).on('child_added', (snap) => { if (isFirstLoad) { isFirstLoad = false; return; } spawnChatBubble(snap.val().message); });
 
-                drawTrackSVG(); initPreShowDOM();
+                drawTrackCanvas(); initPreShowDOM();
                 
                 const nowSec = Date.now() / 1000;
                 if (roomData.scheduled_time - nowSec > 0) { isPreShow = true; requestAnimationFrame(preShowLoop); startCountdown(); } 
