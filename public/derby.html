@@ -140,6 +140,22 @@
                 <option value="random">🔀 랜덤 BGM</option>
                 <option value="SKY HiGH Remix.mp3">SKY HiGH Remix</option>
                 <option value="CIDER BANG! Remix.mp3">CIDER BANG! Remix</option>
+                <option value="우주미아 Remix.mp3">우주미아 Remix</option>
+                <option value="Ballin Remix.mp3">Ballin Remix</option>
+                <option value="HEADLINE.mp3">HEADLINE</option>
+                <option value="We Ride.mp3">We Ride</option>
+                <option value="WAKTA!.mp3">WAKTA!</option>
+                <option value="스키!.mp3">스키!</option>
+                <option value="FINISH LINE.mp3">FINISH LINE (아세토 고갯길배틀)</option>
+                <option value="Boosting Higher.mp3">Boosting Higher (아세토 고갯길배틀)</option>
+                <option value="데자부.mp3">데자부</option>
+                <option value="왁스라다 리믹스.mp3">왁스라다</option>
+                <option value="지구용사 우왁굳.mp3">지구용사 우왁굳</option>
+                <option value="융터르.mp3">융터르</option>
+                <option value="꾀꼬리.mp3">꾀꼬리 (파이널 로맨스)</option>
+                <option value="멋쟁이 신사 쿤미옌.mp3">멋쟁이 신사 쿤미옌 (파이널 로맨스)</option>
+                <option value="아니아니아닌데.mp3">아니아니아닌데 (파이널 로맨스)</option>
+                <option value="종천지모 Megamix.mp3">종천지모 Megamix</option>
             </select>
             <div class="option-group">
                 <label><input type="checkbox" id="allowCustomChat">💬 관객석 커스텀(자유) 채팅 허용</label>
@@ -199,7 +215,7 @@
         const DT = 1 / 15.0; 
 
         const VISUAL_SCALE = 12;   
-        const LANE_SCALE = 240; 
+        const LANE_SCALE = 300; 
         const CX = 14000;          
         const CY = 6000;           
 
@@ -442,7 +458,7 @@
         }
 
         function initPreShowDOM() {
-            const skinList = ['cho.png', 'nin.png', 'shal.png', 'skin01.png', 'skin02.png', 'skin03.png']; 
+            const skinList = ['ti.png', 'nin.png', 'vic.png', 'cho.png', 'shal.png', 'skin01.png', 'skin02.png', 'skin03.png', 'skin04.png', 'skin05.png', 'skin06.png', 'skin07.png', 'skin08.png', 'skin21.png', 'skin22.png', 'skin23.png', 'skin24.png', 'skin25.png', 'skin31.png', 'skin32.png', 'skin33.png', 'skin34.png', 'skin35.png', 'skin36.png', 'skin41.png', 'skin42.png', 'skin43.png', 'skin51.png', 'skin52.png', 'skin53.png', 'skin54.png', 'skin55.png', 'skin61.png', 'skin62.png', 'skin63.png', 'skin64.png']; 
             let startPos = getTrackCoordinates(0);
             const chatZones = [
                 {x: startPos.x*VISUAL_SCALE+CX + 100, y: startPos.y*VISUAL_SCALE+CY + 600},
@@ -451,11 +467,20 @@
             ]; 
             
             roomData.participants.forEach((p, idx) => {
-                let startLane = (idx % 8) * 0.15; 
+                let row = Math.floor(idx / 18);
+                let col = idx % 18;
+                let startLane = col * 0.08; 
+                
                 let finalWorldX = startPos.x*VISUAL_SCALE + CX + Math.cos(startPos.angle + Math.PI/2) * (startLane * LANE_SCALE);
                 let finalWorldY = startPos.y*VISUAL_SCALE + CY + Math.sin(startPos.angle + Math.PI/2) * (startLane * LANE_SCALE);
                 
+                let backwardX = Math.cos(startPos.angle) * (-row * 2.5 * VISUAL_SCALE);
+                let backwardY = Math.sin(startPos.angle) * (-row * 2.5 * VISUAL_SCALE);
+                finalWorldX += backwardX;
+                finalWorldY += backwardY;
+                
                 let gatherY = finalWorldY + 400 + Math.random() * 500;
+                
                 let behavior = 'ready'; let r = Math.random();
                 if (r < 0.3) behavior = 'wander'; else if (r < 0.6) behavior = 'chat'; 
                 
