@@ -388,11 +388,12 @@
             svg.setAttribute("height", "14000");
             svg.style.position = 'absolute';
             svg.style.left = '0px'; svg.style.top = '0px';
-            svg.style.transform = 'translateZ(-1px) scale(4)';
+            // 💡 [버그 픽스] 우주로 날아가던 scale(4) 제거!
+            svg.style.transform = 'translateZ(-1px)';
             svg.style.transformOrigin = 'top left';
             svg.style.overflow = 'visible';
 
-            // 1. 회색 배경 및 그리드(격자)
+            // 1. 회색 배경 및 그리드
             let bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             bgRect.setAttribute("width", "28000");
             bgRect.setAttribute("height", "14000");
@@ -447,7 +448,7 @@
             center.setAttribute("stroke-dasharray", "60 60");
             svg.appendChild(center);
 
-            // 6. 출발선 (Start Line)
+            // 6. 출발선
             let startP = getTrackCoordinates(0);
             let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
             let sInY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
@@ -507,7 +508,7 @@
                 rBase.innerHTML = `
                     <div class="sprite-wrapper" style="transform: scale(0.2);">
                         <div class="panic-mark">!</div>
-                        <div class="flip-wrapper"><div class="sprite-anim" style="background-image: url('assets/skins/${randomSkin}'); filter: hue-rotate(${randomHue}deg);"></div></div>
+                        <div class="flip-wrapper"><div class="sprite-anim" style="background-image: url('${randomSkin}'); filter: hue-rotate(${randomHue}deg);"></div></div>
                         <div class="name-tag">${p.name}</div><div class="status-badge"></div>
                     </div>
                 `;
