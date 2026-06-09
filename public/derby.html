@@ -49,7 +49,7 @@
         .status-badge { font-size: 45px; font-weight: bold; position: absolute; top: -160px; left: 25px; padding: 10px 20px; border-radius: 12px; color: white; opacity: 0; }
         .show-badge { opacity: 1; }
         
-        .hp-bar { display: none !important; } /* HP 바 숨김 */
+        .hp-bar { display: none !important; }
         
         .b-spurt { background: #e84118; animation: pulse 0.5s infinite alternate; }
         .b-kakari { background: #d63031; animation: shake 0.3s infinite; }
@@ -58,6 +58,24 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
         .aura-spurt { filter: drop-shadow(0 0 40px #ff3f34) brightness(1.3) !important; }
         .aura-kakari { filter: drop-shadow(0 0 40px #d63031) brightness(1.2) hue-rotate(280deg) !important; }
+
+        .skill-popup {
+            position: absolute;
+            top: -120px; left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.8), transparent);
+            color: #FFD700; font-weight: bold; text-shadow: 2px 2px 4px #000;
+            white-space: nowrap; pointer-events: none; z-index: 999;
+            animation: skillFloatUp 1.5s ease-out forwards;
+            display: flex; align-items: center; gap: 8px; padding: 4px 15px; font-size: 26px;
+        }
+        .skill-popup img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #FFD700; background-color: #222; }
+        @keyframes skillFloatUp {
+            0% { opacity: 0; transform: translate(-50%, 20px) scale(0.8); }
+            15% { opacity: 1; transform: translate(-50%, 0px) scale(1.1); }
+            30% { transform: translate(-50%, 0px) scale(1.0); }
+            100% { opacity: 0; transform: translate(-50%, -100px) scale(1.0); }
+        }
         
         #commentary-board { background: #fff; color: #000; border-radius: 8px; padding: 10px 15px; height: 25px; overflow: hidden; font-weight: bold; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); display: flex; align-items: center; }
         .msg-line { font-size: 16px; color: #e53935; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -77,48 +95,11 @@
         #ult-cutin { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(50,0,0,0.8); z-index: 20; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #ult-cutin-bg { width: 100%; background: linear-gradient(90deg, transparent, #e53935, transparent); padding: 40px 0; border-top: 2px solid #ffeb3b; border-bottom: 2px solid #ffeb3b; }
         .cutin-name { font-size: 45px; font-weight: 900; color: #ffe082; text-shadow: 3px 3px 5px #000; }
-
-        #camera-debugger { position: fixed; top: 10px; right: 10px; width: 340px; background: rgba(20, 20, 20, 0.95); padding: 15px; border: 2px solid #00e5ff; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); color: white; z-index: 9999; display: none; text-align: left; font-size: 13px; }
-        #camera-debugger h3 { margin: 0 0 10px 0; color: #00e5ff; font-size: 16px; border-bottom: 1px solid #555; padding-bottom: 5px; }
-        .debug-row { margin-bottom: 10px; }
-        .debug-row label { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; }
-        .debug-row input[type="range"] { width: 100%; cursor: pointer; }
-        #cam-select { width: 100%; padding: 5px; background: #353b48; color: white; border: 1px solid #718093; font-weight: bold; margin-bottom: 10px; }
-        #config-output { width: 100%; height: 60px; background: #111; color: #0be881; border: 1px solid #555; margin-top: 10px; font-size: 11px; padding: 5px; box-sizing: border-box; resize: none; font-family: monospace; }
     </style>
 </head>
 <body>
 
     <h1>🏁 왁마갤 무스메 <span style="font-size: 16px; color:#dcdde1; font-weight:normal;">- 시네마틱 디렉터 컷 -</span></h1>
-    
-    <div id="camera-debugger">
-        <h3>🎥 8-채널 멀티캠 디버거</h3>
-        <select id="cam-select">
-            <option value="1">1. 프리쇼 (입장 대기 뷰)</option>
-            <option value="1.5">1.5 프리쇼 (인터뷰 줌인 뷰)</option>
-            <option value="2">2. 출발 직선 뷰 (0~200m)</option>
-            <option value="3">3. 1코너 뷰 (200~400m)</option>
-            <option value="4">4. 백 스트레치 뷰 (400~950m)</option>
-            <option value="5">5. 3코너 뷰 (950~1225m)</option>
-            <option value="6">6. 최종 코너 뷰 (1225~1475m)</option>
-            <option value="7">7. 최종 직선 뷰 (1475~1950m)</option>
-            <option value="8">8. 결승선 픽스 뷰 (1950m~)</option>
-        </select>
-        
-        <div style="margin-bottom: 10px;">
-            <label style="cursor: pointer; color: #ffeb3b; font-size: 14px; font-weight: bold;">
-                <input type="checkbox" id="enable-debug-cam" style="width: 15px; height: 15px;"> 현재 선택된 카메라 강제 고정
-            </label>
-        </div>
-        
-        <div class="debug-row"><label>X축 오프셋 <span id="val-x">0</span>px</label><input type="range" id="slider-x" min="-4000" max="4000" step="10" value="0"></div>
-        <div class="debug-row"><label>Y축 오프셋 <span id="val-y">0</span>px</label><input type="range" id="slider-y" min="-4000" max="4000" step="10" value="0"></div>
-        <div class="debug-row"><label>RotX (밀착) <span id="val-rotx">85</span>도</label><input type="range" id="slider-rotx" min="0" max="90" step="1" value="85"></div>
-        <div class="debug-row"><label>RotZ (측면) <span id="val-rotz">0</span>도</label><input type="range" id="slider-rotz" min="-360" max="360" step="1" value="0"></div>
-        <div class="debug-row"><label>Zoom <span id="val-zoom">4.0</span>배</label><input type="range" id="slider-zoom" min="0.1" max="6.0" step="0.05" value="4.0"></div>
-        <div style="font-size: 11px; margin-top: 5px;">현재 카메라 JSON 데이터 (복사해서 알려주세요)</div>
-        <textarea id="config-output" readonly></textarea>
-    </div>
 
     <div id="lobby-panel">
         <h2>대회 방 생성</h2>
@@ -202,7 +183,6 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
-        // 🚨 API 연결 주소
         const API_BASE = "https://gonik-musume-test.onrender.com/api"; 
         const firebaseConfig = { databaseURL: "https://wak-derby-chat-default-rtdb.firebaseio.com/" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -211,7 +191,7 @@
 
         let roomData = null;
         let isPreShow = false; let isPlaying = false; let isPaused = false;
-        let currentPlaybackTime = 0.0; let lastTimestamp = 0; let maxFrames = 0;
+        let currentPlaybackTime = 0.0; let maxFrames = 0;
         const DT = 1 / 15.0; 
 
         const VISUAL_SCALE = 12;   
@@ -229,59 +209,55 @@
         let preShowRunners = []; let currentExtractedList = []; let excludedNames = []; let rawParticipants = [];
         let preShowFocusId = null; let lastPreShowZoomTime = 0;
 
-        // 💡 [기획자님 커스텀 셋팅 기준값 - 최종 픽스판]
+        // 💡 분리된 프레임 계산용 타임스탬프
+        let lastPreShowTimestamp = 0;
+        let lastRenderTimestamp = 0;
+
+        // 💡 스킬 중복 방지용 Map (발동 쿨다운 타임 체크 지원)
+        let triggeredSkillsLog = new Map();
+        let lastRenderedTimeTarget = -1;
+
+        // 💡 통합된 카메라 셋팅 (애니메이션 목표값, 속도(duration) 포함)
         let CAM_SETTINGS = {
             "1": { offsetX: -300, offsetY: -300, rotX: 45, rotZ: 62, zoom: 0.6 },
             "1.5": { offsetX: 0, offsetY: 0, rotX: 80, rotZ: -90, zoom: 3.5 },
-            "2": { offsetX: 0, offsetY: 150, rotX: 85, rotZ: -105, zoom: 3.0 }, 
-            "3": { offsetX: 150, offsetY: 0, rotX: 89, rotZ: -50, zoom: 2.6 }, 
-            "4": { offsetX: 100, offsetY: 0, rotX: 85, rotZ: 15, zoom: 3.0 }, 
-            "5": { offsetX: 0, offsetY: -100, rotX: 80, rotZ: 120, zoom: 2.6 }, 
-            "6": { offsetX: -300, offsetY: 100, rotX: 80, rotZ: 120, zoom: 2.6 }, 
-            "7": { offsetX: 0, offsetY: 100, rotX: 90, rotZ: 90, zoom: 5 }, 
-            "8": { offsetX: 50, offsetY: 0, rotX: 87, rotZ: 105, zoom: 3.5 } 
+            "2": { offsetX: 0, offsetY: 150, rotX: 85, rotZ: -105, zoom: 3.0, duration: 8.0, targetRotZ: -75 }, 
+            "3": { offsetX: 150, offsetY: 0, rotX: 89, rotZ: -50, zoom: 2.6, duration: 8.0, targetRotZ: -20, targetOffsetX: 100 }, 
+            "4": { offsetX: 100, offsetY: 0, rotX: 85, rotZ: 15, zoom: 3.0 }, // 4번 카메라는 커스텀 스크립트
+            "5": { offsetX: 0, offsetY: -100, rotX: 80, rotZ: 120, zoom: 2.6, duration: 12.0, targetRotZ: 180 }, 
+            "6": { offsetX: -300, offsetY: 100, rotX: 80, rotZ: 120, zoom: 2.6, duration: 10.0, targetRotZ: 150, targetOffsetX: -200 }, 
+            "7": { offsetX: 0, offsetY: 100, rotX: 90, rotZ: 90, zoom: 5, duration: 10.0, targetRotZ: 100, targetRotX: 80, targetZoom: 2.0, targetOffsetX: -50, targetOffsetY: 100 }, 
+            "8": { offsetX: 50, offsetY: 0, rotX: 87, rotZ: 105, zoom: 3.5, duration: 2.0, targetRotZ: 180 } 
         };
 
-        const camSelect = document.getElementById('cam-select');
-        const configOutput = document.getElementById('config-output');
-        const sliders = { x: document.getElementById('slider-x'), y: document.getElementById('slider-y'), rotx: document.getElementById('slider-rotx'), rotz: document.getElementById('slider-rotz'), zoom: document.getElementById('slider-zoom') };
-
-        function updateSlidersFromConfig(camId) {
-            let conf = CAM_SETTINGS[camId];
-            sliders.x.value = conf.offsetX; document.getElementById('val-x').innerText = conf.offsetX;
-            sliders.y.value = conf.offsetY; document.getElementById('val-y').innerText = conf.offsetY;
-            sliders.rotx.value = conf.rotX; document.getElementById('val-rotx').innerText = conf.rotX;
-            sliders.rotz.value = conf.rotZ; document.getElementById('val-rotz').innerText = conf.rotZ;
-            sliders.zoom.value = conf.zoom; document.getElementById('val-zoom').innerText = conf.zoom;
-            configOutput.value = JSON.stringify(conf);
-        }
-
-        camSelect.addEventListener('change', (e) => { updateSlidersFromConfig(e.target.value); });
-        Object.keys(sliders).forEach(key => {
-            sliders[key].addEventListener('input', (e) => {
-                document.getElementById('val-' + key).innerText = e.target.value;
-                let camId = camSelect.value;
-                CAM_SETTINGS[camId] = { offsetX: parseFloat(sliders.x.value), offsetY: parseFloat(sliders.y.value), rotX: parseFloat(sliders.rotx.value), rotZ: parseFloat(sliders.rotz.value), zoom: parseFloat(sliders.zoom.value) };
-                configOutput.value = JSON.stringify(CAM_SETTINGS[camId]);
-            });
-        });
-        updateSlidersFromConfig("1");
-
-        // 💡 [단축키] 스페이스바 일시정지 (디버깅 편의성)
         window.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'INPUT') return; 
             if (e.code === 'Space' && (isPlaying || isPreShow)) {
                 isPaused = !isPaused; e.preventDefault(); 
-                showCommentary(isPaused ? "⏸️ [디렉터 모드] 레이스 일시정지 (화면 조작 가능)" : "▶️ 레이스 재개");
+                showCommentary(isPaused ? "⏸️ [디렉터 모드] 레이스 일시정지" : "▶️ 레이스 재개");
             }
         });
 
-        // 💡 애니메이션 Easing 함수
         const easeIn = (t) => t * t;
         const easeOut = (t) => t * (2 - t);
 
         let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
         let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
+
+        // 💡 스킬 팝업 생성 함수
+        function spawnSkillEffect(runnerId, skillName, skillIcon) {
+            let runnerDOM = document.getElementById(`runner-${runnerId}`);
+            if (!runnerDOM) return;
+            
+            let pop = document.createElement('div');
+            pop.className = 'skill-popup';
+            pop.innerHTML = `<img src="assets/skills/${skillIcon}" onerror="this.style.display='none'"> <span>${skillName}</span>`;
+            
+            let wrapper = runnerDOM.querySelector('.sprite-wrapper');
+            if (wrapper) wrapper.appendChild(pop);
+            
+            setTimeout(() => { if (pop.parentNode) pop.remove(); }, 1500);
+        }
 
         function getTrackCoordinates(d) {
             let x = 0, y = 0, angle = -Math.PI/2; 
@@ -385,7 +361,6 @@
 
             document.getElementById('lobby-panel').style.display = 'none';
             document.getElementById('game-ui').style.display = 'flex'; 
-            document.getElementById('camera-debugger').style.display = 'block'; 
 
             try {
                 const res = await fetch(`${API_BASE}/room/${roomId}`);
@@ -400,19 +375,21 @@
 
                 drawTrackCanvas(); initPreShowDOM(); 
                 
-                const nowUnix = Math.floor(Date.now() / 1000);
-                if (roomData.scheduled_time - nowUnix > 0) { isPreShow = true; requestAnimationFrame(preShowLoop); startCountdown(); } 
+                const nowSec = Date.now() / 1000;
+                if (roomData.scheduled_time - nowSec > 0) { isPreShow = true; requestAnimationFrame(preShowLoop); startCountdown(); } 
                 else startGame(); 
 
             } catch(e) { alert("데이터 로딩 실패! (API_BASE 주소를 확인해주세요)"); }
         };
 
+        // 💡 캔버스 해상도 최적화: 이중 스케일링 제거, 1:1 풀 해상도로 렌더링
         function drawTrackCanvas() {
             const canvas = document.createElement('canvas');
-            canvas.width = 7000; canvas.height = 3500;
+            canvas.width = 28000; canvas.height = 14000;
             canvas.style.position = 'absolute'; canvas.style.left = '0px'; canvas.style.top = '0px';
-            canvas.style.transformOrigin = 'top left'; canvas.style.transform = 'translateZ(-1px) scale(4)'; 
-            const ctx = canvas.getContext('2d'); ctx.scale(0.25, 0.25); 
+            canvas.style.transformOrigin = 'top left'; 
+            canvas.style.transform = 'translateZ(-1px)'; 
+            const ctx = canvas.getContext('2d'); 
             
             ctx.fillStyle = '#C8C8C8'; ctx.fillRect(0, 0, 28000, 14000);
             ctx.strokeStyle = '#BDBDBD'; ctx.lineWidth = 4; ctx.beginPath();
@@ -490,7 +467,8 @@
                 preShowRunners.push({
                     id: p.id, finalX: finalWorldX, finalY: finalWorldY, gatherY: gatherY,
                     currX: spawnX, currY: spawnY, targetX: finalWorldX, targetY: gatherY,
-                    behavior: behavior, chatZone: chatZones[Math.floor(Math.random() * chatZones.length)], timer: 0, panicked: false
+                    behavior: behavior, chatZone: chatZones[Math.floor(Math.random() * chatZones.length)], timer: 0, panicked: false,
+                    chatPosSet: false
                 });
 
                 let randomSkin = skinList[Math.floor(Math.random() * skinList.length)];
@@ -500,7 +478,7 @@
                 rBase.innerHTML = `
                     <div class="sprite-wrapper" style="transform: scale(0.2);">
                         <div class="panic-mark">!</div>
-                        <div class="flip-wrapper"><div class="sprite-anim" style="background-image: url('${randomSkin}'); filter: hue-rotate(${randomHue}deg);"></div></div>
+                        <div class="flip-wrapper"><div class="sprite-anim" style="background-image: url('assets/skins/${randomSkin}'); filter: hue-rotate(${randomHue}deg);"></div></div>
                         <div class="name-tag">${p.name}</div><div class="status-badge"></div>
                     </div>
                 `;
@@ -522,8 +500,8 @@
 
         function startCountdown() {
             let timer = setInterval(() => {
-                const nowUnix = Math.floor(Date.now() / 1000);
-                let diff = roomData.scheduled_time - nowUnix;
+                const nowSec = Date.now() / 1000;
+                let diff = Math.floor(roomData.scheduled_time - nowSec);
                 if (diff <= 0) { clearInterval(timer); startGame(); } 
                 else {
                     let m = Math.floor(diff / 60).toString().padStart(2, '0'); let s = (diff % 60).toString().padStart(2, '0');
@@ -535,41 +513,16 @@
             }, 1000);
         }
 
-        // 💡 통합 카메라 적용 함수 (Hard Cut 및 시네마틱 스크립트 적용)
         function applyCamera(camId, isCut, timeTarget) {
-            let isDebug = document.getElementById('enable-debug-cam').checked;
-            
-            if (isDebug) {
-                let manualCam = CAM_SETTINGS[document.getElementById('cam-select').value];
-                targetCam.rotX = manualCam.rotX; targetCam.rotZ = manualCam.rotZ; targetCam.zoom = manualCam.zoom;
-                
-                if (camId === "1" || camId === "1.5") {
-                    let startPos = getTrackCoordinates(0);
-                    targetCam.x = -(startPos.x*VISUAL_SCALE + CX) + manualCam.offsetX;
-                    targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + manualCam.offsetY;
-                } else {
-                    targetCam.x = -smoothCenterX + manualCam.offsetX;
-                    targetCam.y = -smoothCenterY + manualCam.offsetY;
-                }
-                
-                currentCam.x += (targetCam.x - currentCam.x) * 0.1; currentCam.y += (targetCam.y - currentCam.y) * 0.1;
-                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.1; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.1;
-                currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.1;
-                
-                document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
-                return;
-            }
-
             let startPos = getTrackCoordinates(0);
             let elapsed = timeTarget - camStartTime; 
             let t = 0; let e = 0;
+            let conf = CAM_SETTINGS[camId];
 
             if (camId === "1") {
-                let conf = CAM_SETTINGS["1"];
-                let nowUnix = Math.floor(Date.now() / 1000);
-                let timeLeft = roomData.scheduled_time - nowUnix;
-                
-                if (timeLeft <= 10) {
+                let nowSec = Date.now() / 1000;
+                let timeLeft = roomData.scheduled_time - nowSec;
+                if (timeLeft <= 10 && timeLeft > 0) {
                     t = Math.min(1.0, (10 - timeLeft) / 1.0);
                     e = easeIn(t);
                     targetCam.zoom = conf.zoom + (1.0 - conf.zoom) * e;
@@ -582,69 +535,36 @@
                 targetCam.y = -(startPos.y*VISUAL_SCALE + CY) + targetCam.offsetY;
             } 
             else if (camId === "1.5") {
-                let conf = CAM_SETTINGS["1.5"];
                 targetCam.rotX = conf.rotX; targetCam.rotZ = conf.rotZ; targetCam.zoom = conf.zoom;
                 if (preShowFocusId) {
                     let focusR = preShowRunners.find(r => r.id === preShowFocusId);
                     if (focusR) { targetCam.x = -focusR.currX + conf.offsetX; targetCam.y = -focusR.currY + conf.offsetY; }
                 }
             } 
-            else if (camId === "2") {
-                let conf = CAM_SETTINGS["2"];
-                t = Math.min(1.0, elapsed / 8.0); e = easeIn(t);
-                targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
-                targetCam.rotZ = conf.rotZ + (-75 - conf.rotZ) * e;
-                targetCam.x = -smoothCenterX + conf.offsetX; targetCam.y = -smoothCenterY + conf.offsetY;
-            } 
-            else if (camId === "3") {
-                let conf = CAM_SETTINGS["3"];
-                t = Math.min(1.0, elapsed / 8.0); e = easeIn(t);
-                targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
-                targetCam.rotZ = conf.rotZ + (-20 - conf.rotZ) * e;
-                targetCam.x = -smoothCenterX + conf.offsetX + (100 - conf.offsetX) * e;
-                targetCam.y = -smoothCenterY + conf.offsetY;
-            } 
             else if (camId === "4") {
-                // 이 카메라는 renderFrameAtTime에서 별도로 스크립팅 되므로 기본값만 세팅
-                let conf = CAM_SETTINGS["4"];
-                targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom; targetCam.rotZ = conf.rotZ;
-                targetCam.x = -smoothCenterX + conf.offsetX; targetCam.y = -smoothCenterY + conf.offsetY;
+                // 커스텀 카메라(renderFrameAtTime 에서 직접 조작)
             } 
-            else if (camId === "5") {
-                let conf = CAM_SETTINGS["5"];
-                t = Math.min(1.0, elapsed / 12.0); e = easeIn(t);
-                targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
-                targetCam.rotZ = conf.rotZ + (180 - conf.rotZ) * e;
-                targetCam.x = -smoothCenterX + conf.offsetX; targetCam.y = -smoothCenterY + conf.offsetY;
-            } 
-            else if (camId === "6") {
-                let conf = CAM_SETTINGS["6"];
-                t = Math.min(1.0, elapsed / 10.0); e = easeIn(t);
-                targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
-                targetCam.rotZ = conf.rotZ + (150 - conf.rotZ) * e;
-                targetCam.x = -smoothCenterX + conf.offsetX + (-200 - conf.offsetX) * e;
-                targetCam.y = -smoothCenterY + conf.offsetY;
-            } 
-            else if (camId === "7") {
-                let conf = CAM_SETTINGS["7"];
-                t = Math.min(1.0, elapsed / 10.0); e = easeIn(t);
-                targetCam.rotZ = conf.rotZ + (100 - conf.rotZ) * e;
-                targetCam.rotX = conf.rotX + (80 - conf.rotX) * e;
-                targetCam.zoom = conf.zoom + (2.0 - conf.zoom) * e; 
-                targetCam.x = -smoothCenterX + conf.offsetX + (-50 - conf.offsetX) * e;
-                targetCam.y = -smoothCenterY + conf.offsetY + (100 - conf.offsetY) * e;
-            } 
-            else if (camId === "8") {
-                let conf = CAM_SETTINGS["8"];
-                t = Math.min(1.0, elapsed / 2.0); e = easeIn(t);
-                let goalP = getTrackCoordinates(2000);
-                let finishWorldX = goalP.x * VISUAL_SCALE + CX;
-                let finishWorldY = goalP.y * VISUAL_SCALE + CY;
+            else {
+                let duration = conf.duration || 10;
+                t = Math.min(1.0, elapsed / duration); e = easeIn(t);
                 
-                targetCam.rotX = conf.rotX; targetCam.zoom = conf.zoom;
-                targetCam.rotZ = conf.rotZ + (180 - conf.rotZ) * e; 
-                targetCam.x = -finishWorldX + conf.offsetX;
-                targetCam.y = -finishWorldY + conf.offsetY;
+                targetCam.rotX = conf.rotX + ((conf.targetRotX !== undefined ? conf.targetRotX : conf.rotX) - conf.rotX) * e;
+                targetCam.rotZ = conf.rotZ + ((conf.targetRotZ !== undefined ? conf.targetRotZ : conf.rotZ) - conf.rotZ) * e;
+                targetCam.zoom = conf.zoom + ((conf.targetZoom !== undefined ? conf.targetZoom : conf.zoom) - conf.zoom) * e;
+                
+                let oX = conf.offsetX + ((conf.targetOffsetX !== undefined ? conf.targetOffsetX : conf.offsetX) - conf.offsetX) * e;
+                let oY = conf.offsetY + ((conf.targetOffsetY !== undefined ? conf.targetOffsetY : conf.offsetY) - conf.offsetY) * e;
+
+                if (camId === "8") {
+                    let goalP = getTrackCoordinates(2000);
+                    let finishWorldX = goalP.x * VISUAL_SCALE + CX;
+                    let finishWorldY = goalP.y * VISUAL_SCALE + CY;
+                    targetCam.x = -finishWorldX + oX;
+                    targetCam.y = -finishWorldY + oY;
+                } else {
+                    targetCam.x = -smoothCenterX + oX; 
+                    targetCam.y = -smoothCenterY + oY;
+                }
             }
 
             if (isCut) {
@@ -660,15 +580,15 @@
         }
 
         function preShowLoop(timestamp) {
-            if (!lastTimestamp) lastTimestamp = timestamp;
-            let delta = (timestamp - lastTimestamp) / 1000;
-            lastTimestamp = timestamp;
+            if (!lastPreShowTimestamp) lastPreShowTimestamp = timestamp;
+            let delta = (timestamp - lastPreShowTimestamp) / 1000;
+            lastPreShowTimestamp = timestamp;
             if (delta > 0.1) delta = 0.1; 
 
             if (isPreShow) {
                 if (!isPaused) {
-                    const nowUnix = Math.floor(Date.now() / 1000);
-                    let timeLeft = roomData.scheduled_time - nowUnix;
+                    const nowSec = Date.now() / 1000;
+                    let timeLeft = roomData.scheduled_time - nowSec;
 
                     if (timeLeft <= 60) {
                         preShowRunners.forEach(r => {
@@ -687,7 +607,10 @@
                                         r.targetY = r.chatZone.y + (Math.random() * 150 - 75);
                                         r.chatPosSet = true;
                                     }
-                                    if (Math.random() < 0.01) { sprite.style.transform = 'translateY(-30px)'; setTimeout(() => { sprite.style.transform = 'none'; }, 200); }
+                                    if (Math.random() < 0.01) { 
+                                        wrapper.style.transform = 'translateY(-30px) scale(0.2)'; 
+                                        setTimeout(() => { wrapper.style.transform = 'scale(0.2)'; }, 200); 
+                                    }
                                 }
                             }
 
@@ -700,8 +623,6 @@
                                 sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
                                 if(r.panicked) dom.classList.remove('startled'); 
                                 if(r.behavior === 'chat') flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
-                                
-                                // 💡 10초 전 라인 정렬 시 오리지널 방향(정면) 유지
                                 if(timeLeft <= 10) flipWrap.style.transform = 'scaleX(1)'; 
                             }
                             dom.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
@@ -723,7 +644,7 @@
                     }
 
                     let isCut = false;
-                    if (activeCamId !== newCamId) { isCut = true; activeCamId = newCamId; camStartTime = Date.now() / 1000; document.getElementById('cam-select').value = newCamId; updateSlidersFromConfig(newCamId); }
+                    if (activeCamId !== newCamId) { isCut = true; activeCamId = newCamId; camStartTime = Date.now() / 1000; }
                     
                     applyCamera(activeCamId, isCut, Date.now() / 1000);
                 } else {
@@ -735,7 +656,7 @@
 
         function startGame() {
             isPreShow = false; 
-            lastTimestamp = performance.now(); 
+            lastRenderTimestamp = performance.now(); 
             activeCamId = "2"; camStartTime = 0;
             
             document.getElementById('camera-status').innerText = "🎥 [카메라 2] 출발 직선 뷰";
@@ -748,7 +669,7 @@
             });
 
             if (roomData.bgm && roomData.bgm !== 'none') {
-                globalBgmAudio = new Audio(roomData.bgm); globalBgmAudio.loop = true; globalBgmAudio.volume = 0.4;
+                let globalBgmAudio = new Audio(roomData.bgm); globalBgmAudio.loop = true; globalBgmAudio.volume = 0.4;
                 globalBgmAudio.play().catch(e => {
                     showCommentary("🔇 화면을 한 번 클릭하면 재생됩니다!");
                     document.body.addEventListener('click', () => { globalBgmAudio.play(); }, { once: true });
@@ -768,13 +689,16 @@
             let nextFrameData = roomData.replay_data[nextFrameIdx];
             if (!frameData || !nextFrameData) return;
 
+            // 재생 시점이 되돌아간 경우 맵 초기화 방어
+            if (timeTarget < lastRenderedTimeTarget) triggeredSkillsLog.clear();
+            lastRenderedTimeTarget = timeTarget;
+
             document.getElementById('main-timer').innerText = `RACE - ${timeTarget.toFixed(1)}s`;
 
             let leaderDist = -1; 
             let nextRDataMap = new Map();
             nextFrameData.r.forEach(r => nextRDataMap.set(r[0], r));
 
-            // 💡 [카메라 4번 연출용 배열] 주자들의 현재 좌표를 저장
             let runnerPositions = [];
 
             frameData.r.forEach(rData => {
@@ -790,7 +714,6 @@
                 let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                 let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
-                // 카메라 4를 위해 데이터 저장
                 runnerPositions.push({ id: id, dist: dist, worldX: worldX, worldY: worldY });
 
                 if (dist > leaderDist) { leaderDist = dist; }
@@ -818,7 +741,29 @@
                 else if (states.includes("PaceUp") || states.includes("PaceUpEx")) { badge.className = 'status-badge b-pk show-badge'; badge.innerText = '🔺 가속'; badge.style.background = '#0984e3'; }
                 else if (states.includes("Overtake")) { badge.className = 'status-badge b-pk show-badge'; badge.innerText = '⚡ 추월'; badge.style.background = '#d63031'; }
                 else badge.className = 'status-badge';
+                
+                if (states && states.length > 0) {
+                    states.forEach(st => {
+                        if (st.startsWith("SKILL|")) {
+                            let parts = st.split("|");
+                            let sName = parts[1];
+                            let sIcon = parts[2];
+                            
+                            // 스킬 팝업 1.5초 쿨다운 적용으로 무한루프 방지
+                            let uniqueKey = `${id}-${sName}`;
+                            let lastTriggerTime = triggeredSkillsLog.get(uniqueKey) || -999;
+                            
+                            if (timeTarget - lastTriggerTime > 1.5) {
+                                triggeredSkillsLog.set(uniqueKey, timeTarget);
+                                spawnSkillEffect(id, sName, sIcon);
+                            }
+                        }
+                    });
+                }
             });
+
+            // 원본 배열 변이 없이 깊은 복사 정렬 적용
+            let sorted = [...runnerPositions].sort((a, b) => b.dist - a.dist);
 
             let centerPos = getTrackCoordinates(leaderDist);
             let leaderWorldX = centerPos.x * VISUAL_SCALE + CX + Math.cos(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
@@ -844,90 +789,79 @@
             let isCut = false;
             if (activeCamId !== newCamId) {
                 isCut = true; activeCamId = newCamId; camStartTime = timeTarget;
-                document.getElementById('cam-select').value = newCamId; updateSlidersFromConfig(newCamId);
             }
 
-            let isDebug = document.getElementById('enable-debug-cam').checked;
+            let elapsed = timeTarget - camStartTime; 
+            let t = 0; let e = 0;
             
-            if (isDebug) {
-                applyCamera(activeCamId, isCut, timeTarget);
-            } else {
-                let elapsed = timeTarget - camStartTime; 
-                let t = 0; let e = 0;
+            if (activeCamId === "4") {
+                let conf = CAM_SETTINGS["4"];
+                t = Math.min(1.0, elapsed / 24.0); e = easeIn(t);
                 
-                // 💡 [카메라 4] 커스텀 엔진 분기
-                if (activeCamId === "4") {
-                    let conf = CAM_SETTINGS["4"];
-                    t = Math.min(1.0, elapsed / 24.0); e = easeIn(t);
-                    
-                    let sorted = runnerPositions.sort((a, b) => b.dist - a.dist);
-                    let focusX = smoothCenterX;
-                    let focusY = smoothCenterY;
-                    let targetZoom = conf.zoom;
+                let focusX = smoothCenterX;
+                let focusY = smoothCenterY;
+                let targetZoom = conf.zoom;
 
-                    if (t < 0.7) {
-                        let scanT = t / 0.7; 
-                        let floatIdx = scanT * (sorted.length - 1);
-                        let idx1 = Math.floor(floatIdx);
-                        let idx2 = Math.ceil(floatIdx);
-                        let w = floatIdx - idx1; 
-                        
-                        let r1 = sorted[idx1]; let r2 = sorted[idx2];
-                        if (r1 && r2) {
-                            focusX = r1.worldX * (1 - w) + r2.worldX * w;
-                            focusY = r1.worldY * (1 - w) + r2.worldY * w;
-                        }
-                    } else {
-                        let topCount = Math.min(4, sorted.length);
-                        let sumX = 0, sumY = 0;
-                        for(let i = 0; i < topCount; i++) {
-                            sumX += sorted[i].worldX; sumY += sorted[i].worldY;
-                        }
-                        let avgX = sumX / topCount; let avgY = sumY / topCount;
-                        
-                        let backT = (t - 0.7) / 0.3; 
-                        let backE = easeOut(backT); 
-                        
-                        let lastR = sorted[sorted.length - 1];
-                        focusX = lastR.worldX * (1 - backE) + avgX * backE;
-                        focusY = lastR.worldY * (1 - backE) + avgY * backE;
-                        
-                        targetZoom = conf.zoom - (0.8 * backE); 
+                if (t < 0.7) {
+                    let scanT = t / 0.7; 
+                    let floatIdx = scanT * (sorted.length - 1);
+                    let idx1 = Math.floor(floatIdx);
+                    let idx2 = Math.ceil(floatIdx);
+                    let w = floatIdx - idx1; 
+                    
+                    let r1 = sorted[idx1]; let r2 = sorted[idx2];
+                    if (r1 && r2) {
+                        focusX = r1.worldX * (1 - w) + r2.worldX * w;
+                        focusY = r1.worldY * (1 - w) + r2.worldY * w;
                     }
-
-                    // 인간적인 카메라 손떨림
-                    let shakeX = Math.sin(timeTarget * 3.5) * 20 + Math.cos(timeTarget * 5.2) * 10;
-                    let shakeY = Math.cos(timeTarget * 2.8) * 20 + Math.sin(timeTarget * 4.6) * 10;
-
-                    targetCam.rotX = conf.rotX; 
-                    targetCam.zoom = targetZoom;
-                    targetCam.rotZ = conf.rotZ + (60 - conf.rotZ) * e;
-                    targetCam.x = -focusX + conf.offsetX + shakeX; 
-                    targetCam.y = -focusY + conf.offsetY + shakeY;
-                    
-                    if (isCut) {
-                        currentCam.x = targetCam.x; currentCam.y = targetCam.y;
-                        currentCam.rotX = targetCam.rotX; currentCam.rotZ = targetCam.rotZ; currentCam.zoom = targetCam.zoom;
-                    } else {
-                        currentCam.x += (targetCam.x - currentCam.x) * 0.1; currentCam.y += (targetCam.y - currentCam.y) * 0.1;
-                        currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.1; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.1;
-                        currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.1;
-                    }
-                    
-                    document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
                 } else {
-                    // 💡 나머지 카메라는 기존 applyCamera 호출
-                    applyCamera(activeCamId, isCut, timeTarget);
+                    let topCount = Math.min(4, sorted.length);
+                    let sumX = 0, sumY = 0;
+                    for(let i = 0; i < topCount; i++) {
+                        sumX += sorted[i].worldX; sumY += sorted[i].worldY;
+                    }
+                    let avgX = sumX / topCount; let avgY = sumY / topCount;
+                    
+                    let backT = (t - 0.7) / 0.3; 
+                    let backE = easeOut(backT); 
+                    
+                    let lastR = sorted[sorted.length - 1];
+                    focusX = lastR.worldX * (1 - backE) + avgX * backE;
+                    focusY = lastR.worldY * (1 - backE) + avgY * backE;
+                    
+                    targetZoom = conf.zoom - (0.8 * backE); 
                 }
+
+                let shakeX = Math.sin(timeTarget * 3.5) * 20 + Math.cos(timeTarget * 5.2) * 10;
+                let shakeY = Math.cos(timeTarget * 2.8) * 20 + Math.sin(timeTarget * 4.6) * 10;
+
+                targetCam.rotX = conf.rotX; 
+                targetCam.zoom = targetZoom;
+                targetCam.rotZ = conf.rotZ + (60 - conf.rotZ) * e;
+                targetCam.x = -focusX + conf.offsetX + shakeX; 
+                targetCam.y = -focusY + conf.offsetY + shakeY;
+                
+                if (isCut) {
+                    currentCam.x = targetCam.x; currentCam.y = targetCam.y;
+                    currentCam.rotX = targetCam.rotX; currentCam.rotZ = targetCam.rotZ; currentCam.zoom = targetCam.zoom;
+                } else {
+                    currentCam.x += (targetCam.x - currentCam.x) * 0.1; currentCam.y += (targetCam.y - currentCam.y) * 0.1;
+                    currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.1; currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.1;
+                    currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.1;
+                }
+                
+                document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
+            } else {
+                applyCamera(activeCamId, isCut, timeTarget);
             }
 
             if (leaderDist >= 2000 && isPlaying) { isPlaying = false; showCommentary(`🏆 레이스 종료!!`); }
         }
 
         function renderLoop(timestamp) {
-            if (!lastTimestamp) lastTimestamp = timestamp;
-            let delta = (timestamp - lastTimestamp) / 1000;
-            lastTimestamp = timestamp;
+            if (!lastRenderTimestamp) lastRenderTimestamp = timestamp;
+            let delta = (timestamp - lastRenderTimestamp) / 1000;
+            lastRenderTimestamp = timestamp;
             if (delta > 0.1) delta = 0.1; 
             
             if (isPlaying) { 
