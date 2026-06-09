@@ -682,7 +682,11 @@
                                     r.timer -= delta;
                                     if (r.timer <= 0) { r.targetX = r.finalX - 300 + Math.random() * 600; r.targetY = r.gatherY - 200 + Math.random() * 400; r.timer = 2 + Math.random() * 4; }
                                 } else if (r.behavior === 'chat') {
-                                    r.targetX = r.chatZone.x + (Math.random() * 80 - 40); r.targetY = r.chatZone.y + (Math.random() * 80 - 40);
+                                    if (!r.chatPosSet) {
+                                        r.targetX = r.chatZone.x + (Math.random() * 150 - 75); 
+                                        r.targetY = r.chatZone.y + (Math.random() * 150 - 75);
+                                        r.chatPosSet = true;
+                                    }
                                     if (Math.random() < 0.01) { sprite.style.transform = 'translateY(-30px)'; setTimeout(() => { sprite.style.transform = 'none'; }, 200); }
                                 }
                             }
