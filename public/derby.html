@@ -115,27 +115,32 @@
         #cam-select { width: 100%; padding: 5px; background: #353b48; color: white; border: 1px solid #718093; font-weight: bold; margin-bottom: 10px; }
         #config-output { width: 100%; height: 60px; background: #111; color: #0be881; border: 1px solid #555; margin-top: 10px; font-size: 11px; padding: 5px; box-sizing: border-box; resize: none; font-family: monospace; }
 
+        /* 💡 만화적 연출 집중선 (Focus Lines) 효과 */
         #ult-edge-effect {
             display: none;
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 50;
-            backdrop-filter: blur(8px) contrast(1.2) brightness(1.2);
-            -webkit-mask-image: radial-gradient(circle at center, transparent 35%, black 85%);
-            mask-image: radial-gradient(circle at center, transparent 35%, black 85%);
-            animation: edgeTremble 0.05s infinite alternate;
+            background: repeating-conic-gradient(
+                from 0deg at 50% 50%,
+                transparent 0deg,
+                transparent 1deg,
+                rgba(255, 255, 255, 0.8) 1.2deg,
+                rgba(255, 255, 255, 0.8) 1.5deg,
+                transparent 1.7deg
+            );
+            -webkit-mask-image: radial-gradient(circle at center, transparent 40%, black 100%);
+            mask-image: radial-gradient(circle at center, transparent 40%, black 100%);
+            animation: focusFlicker 0.1s infinite alternate;
         }
-        @keyframes edgeTremble {
-            0% { transform: translate(2px, 2px) scale(1.02); }
-            50% { transform: translate(-2px, -3px) scale(1.0); }
-            100% { transform: translate(-3px, 2px) scale(1.03); }
+        @keyframes focusFlicker {
+            0% { transform: scale(1.0); opacity: 0.8; }
+            100% { transform: scale(1.05); opacity: 1.0; }
         }
     </style>
 </head>
 <body>
 
     <h1>🏁 왁마갤 무스메 <span style="font-size: 16px; color:#dcdde1; font-weight:normal;">- 시네마틱 디렉터 컷 -</span></h1>
-
-    <div id="ult-edge-effect"></div>
 
     <div id="camera-debugger">
         <h3>🎥 멀티캠 디버거</h3>
@@ -220,6 +225,7 @@
         </div>
         <div id="screen-container">
             <div id="world"></div>
+            <div id="ult-edge-effect"></div>
             <div id="ult-cutin">
                 <div id="ult-cutin-bg"><div style="font-size: 30px; font-weight: bold; color: white;">🔥 [라스트 스퍼트!] 🔥</div><div id="ult-user" class="cutin-name">닉네임</div></div>
             </div>
@@ -284,13 +290,12 @@
         let ultUserId = null; 
         let ultCamEndTime = 0;
 
-        // 💡 [카메라 7번 애니메이션 연속성을 위한 베이스 시간 추적]
         let baseCamId = "2";
         let baseCamStartTime = 0;
 
         const domCache = new Map();
 
-        // 💡 [기획 반영] 최신 수정된 카메라 세팅값
+        // 💡 [최종 반영] 세팅
         let CAM_SETTINGS = {
             "1": { offsetX: -500, offsetY: -500, rotX: 45, rotZ: 62, zoom: 0.5 },
             "1.5": { offsetX: -150, offsetY: 0, rotX: 80, rotZ: -90, zoom: 3.5 },
@@ -299,12 +304,11 @@
             "4": { offsetX: 100, offsetY: 0, rotX: 85, rotZ: 15, zoom: 2.5 }, 
             "5": { offsetX: -150, offsetY: -100, rotX: 80, rotZ: 120, zoom: 1.5, duration: 12.0, targetRotZ: 180 }, 
             "6": { offsetX: -200, offsetY: 0, rotX: 80, rotZ: 120, zoom: 1.5, duration: 10.0, targetRotZ: 135, targetOffsetX: 0, targetOffsetY: 100 }, 
-            "7": { offsetX: 0, offsetY: 100, rotX: 90, rotZ: 90, zoom: 2.5, duration: 8.0, targetRotZ: 120, targetRotX: 70, targetZoom: 2.0, targetOffsetX: 0, targetOffsetY: 150 }, 
-            "8": { offsetX: 100, offsetY: 0, rotX: 87, rotZ: 105, zoom: 2.0, duration: 2.0, targetRotZ: 180 },
+            "7": { offsetX: 0, offsetY: 100, rotX: 90, rotZ: 90, zoom: 2.5, duration: 8.0, targetRotZ: 120, targetRotX: 70, targetZoom: 1.2, targetOffsetX: 0, targetOffsetY: 150 }, 
+            "8": { offsetX: 50, offsetY: 0, rotX: 87, rotZ: 105, zoom: 2.0, duration: 2.0, targetRotZ: 180, targetOffsetX: -100 },
             "ULT": { offsetX: 1800, offsetY: 0, rotX: 89, rotZ: 90, zoom: 4.5 }
         };
 
-        // 💡 [디렉터 모드 부활] 스페이스바 일시정지
         window.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'INPUT') return; 
             if (e.code === 'Space' && (isPlaying || isPreShow)) {
@@ -535,7 +539,7 @@
             ctx.stroke();
 
             let trackPathCoords = [];
-            // 💡 [기획 반영] 시각적인 트랙은 2050m까지만 그립니다.
+            // 💡 50m 늘려서 2050m까지만 그립니다
             for(let i=0; i<=2050; i+=10) {
                 let p = getTrackCoordinates(i);
                 let cx = p.x * VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
@@ -563,6 +567,29 @@
             ctx.beginPath();
             trackPathCoords.forEach((pt, idx) => idx === 0 ? ctx.moveTo(pt.cx, pt.cy) : ctx.lineTo(pt.cx, pt.cy));
             ctx.stroke(); 
+            ctx.setLineDash([]);
+
+            // 💡 [골인 라인 렌더링] 2000m 지점에 눈에 확 띄게 두꺼운 선 추가
+            let finishP = getTrackCoordinates(2000);
+            let fInX = (finishP.x*VISUAL_SCALE + CX) + Math.cos(finishP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
+            let fInY = (finishP.y*VISUAL_SCALE + CY) + Math.sin(finishP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
+            let fOutX = (finishP.x*VISUAL_SCALE + CX) + Math.cos(finishP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
+            let fOutY = (finishP.y*VISUAL_SCALE + CY) + Math.sin(finishP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
+            
+            ctx.beginPath(); 
+            ctx.moveTo(fInX, fInY); 
+            ctx.lineTo(fOutX, fOutY); 
+            ctx.lineWidth = 40; 
+            ctx.strokeStyle = '#e74c3c'; 
+            ctx.stroke();
+
+            ctx.beginPath(); 
+            ctx.moveTo(fInX, fInY); 
+            ctx.lineTo(fOutX, fOutY); 
+            ctx.lineWidth = 40; 
+            ctx.strokeStyle = 'white'; 
+            ctx.setLineDash([40, 40]);
+            ctx.stroke();
             ctx.setLineDash([]);
 
             let startP = getTrackCoordinates(0);
@@ -744,6 +771,7 @@
             }
 
             let startPos = getTrackCoordinates(0);
+            // 💡 [카메라 7번 애니메이션 연속성 보장]
             let elapsed = timeTarget - (baseCamStart !== undefined ? baseCamStart : camStartTime); 
             let t = 0; let e = 0;
             let conf = CAM_SETTINGS[camId];
@@ -752,10 +780,10 @@
                 let nowSec = Date.now() / 1000;
                 let timeLeft = roomData.scheduled_time - nowSec;
                 if (timeLeft <= 10 && timeLeft > 0) {
-                    // 💡 [기획 반영] 시작 10초 전에 0.5초만에 확! 줌 땡기기
+                    // 💡 [기획 반영] 시작 10초 전에 0.5초만에 확! 줌(0.8) 땡기기
                     t = Math.min(1.0, Math.max(0, (10 - timeLeft) / 0.5));
                     e = easeOut(t);
-                    targetCam.zoom = conf.zoom + (1.0 - conf.zoom) * e;
+                    targetCam.zoom = conf.zoom + (0.8 - conf.zoom) * e;
                     targetCam.offsetY = conf.offsetY + (0 - conf.offsetY) * e;
                 } else {
                     targetCam.zoom = conf.zoom; targetCam.offsetY = conf.offsetY;
@@ -863,7 +891,7 @@
                     }
 
                     let newCamId = "1";
-                    // 💡 [기획 반영] 시작 전 11초에 1.5 카메라에서 1 카메라로 전환
+                    // 💡 [기획 반영] 시작 전 11초에 1.5 카메라에서 1 카메라로 전환!
                     if (timeLeft <= 30 && timeLeft > 11) {
                         newCamId = "1.5";
                         if (Date.now() - lastPreShowZoomTime > 4000) {
@@ -955,6 +983,7 @@
                 let cache = domCache.get(id);
                 if (cache) {
                     cache.base.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; 
+                    // 미니맵은 최대 2000 고정 (2000 넘어가면 끝점에 붙게)
                     cache.dot.style.left = `${(Math.min(dist, 2000) / 2000) * 100}%`;
                     
                     if (activeCamId === "5" || activeCamId === "ULT" || (document.getElementById('enable-debug-cam') && document.getElementById('enable-debug-cam').checked && document.getElementById('cam-select').value === "5")) {
@@ -1020,7 +1049,6 @@
             
             let d = leaderDist; 
             
-            // 💡 [기획 반영] 카메라 베이스 ID 판정 (필살기 후 카메라 리셋 버그 픽스용)
             let bCamId = "2"; let statusText = "";
             if (d <= 200) { bCamId = "2"; statusText = "🎥 [카메라 2] 출발 직선 뷰"; }
             else if (d <= 400) { bCamId = "3"; statusText = "🎥 [카메라 3] 1코너 진입 뷰"; }
@@ -1049,7 +1077,7 @@
             let isCut = false;
             if (activeCamId !== newCamId) {
                 isCut = true; activeCamId = newCamId; 
-                // 필살기 복귀 시 연속성을 위해 camStartTime 리셋은 ULT 관련만 함
+                // 💡 [버그 픽스] 필살기에서 복귀 시 카메라 애니메이션이 리셋되지 않고 베이스 시간에 맞춰 연속재생되도록
                 camStartTime = timeTarget; 
             }
 
@@ -1057,13 +1085,11 @@
             
             if (!isDebug && activeCamId === "4") {
                 let conf = CAM_SETTINGS["4"];
-                let elapsed = timeTarget - baseCamStartTime; // 카메라 4번의 애니메이션 시간 기준
+                let elapsed = timeTarget - baseCamStartTime; 
                 let t = Math.min(1.0, elapsed / 24.0); let e = easeIn(t);
                 
                 let focusX = smoothCenterX;
                 let focusY = smoothCenterY;
-                
-                // 💡 2.5에서 1.2로 줌아웃
                 let targetZoom = conf.zoom;
 
                 if (t < 0.7) {
@@ -1115,7 +1141,6 @@
             if(!screen) {
                 screen = document.createElement('div');
                 screen.id = 'podium-screen';
-                // 💡 다시하기 버튼 삭제
                 screen.innerHTML = `
                     <div class="podium-title">🏆 결 승 전  결 과 🏆</div>
                     <div id="podium-container">
@@ -1127,6 +1152,7 @@
                 document.getElementById('screen-container').appendChild(screen);
             }
             
+            // 💡 마지막 프레임 기준으로 등수 매기기
             let lastFrame = roomData.replay_data[maxFrames - 1].r;
             let sorted = [...lastFrame].sort((a,b) => b[1] - a[1]);
             let container = screen.querySelector('#podium-container');
@@ -1152,7 +1178,7 @@
                 } else if (idx === 2) {
                     rDiv.style.bottom = '100px'; rDiv.style.left = 'calc(50% + 160px)'; rDiv.style.transform = 'translateX(-50%) scale(0.5)'; rDiv.style.zIndex = '8';
                 } else {
-                    // 💡 나머지 주자들은 눕지 않고 우승대 밑에서 둘러싸고 서있기
+                    // 💡 [기획 반영] 우승대 밑에서 둘러싸고 축하해주는 나머지 주자들
                     let isLeft = (idx % 2 === 0);
                     let offsetX = isLeft ? (-300 - Math.random() * 120) : (300 + Math.random() * 120);
                     let ry = 0 + Math.random() * 40; 
@@ -1186,6 +1212,7 @@
 
             let exactFrame = currentPlaybackTime / DT;
             let frameIdx = Math.floor(exactFrame);
+            
             if (frameIdx >= maxFrames - 2 && isPlaying) { 
                 isPlaying = false; 
                 showPodium();
