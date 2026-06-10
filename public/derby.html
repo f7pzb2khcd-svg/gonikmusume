@@ -209,21 +209,23 @@
         let preShowRunners = []; let currentExtractedList = []; let excludedNames = []; let rawParticipants = [];
         let preShowFocusId = null; let lastPreShowZoomTime = 0;
 
-        // 💡 분리된 프레임 계산용 타임스탬프
         let lastPreShowTimestamp = 0;
         let lastRenderTimestamp = 0;
-
-        // 💡 스킬 중복 방지용 Map (발동 쿨다운 타임 체크 지원)
         let triggeredSkillsLog = new Map();
         let lastRenderedTimeTarget = -1;
 
-        // 💡 통합된 카메라 셋팅 (애니메이션 목표값, 속도(duration) 포함)
+        // 💡 [필살기 전용 제어 변수]
+        let isUltPausing = false; 
+        let ultActive = false; 
+        let ultUserId = null; 
+        let ultCamEndTime = 0;
+
         let CAM_SETTINGS = {
             "1": { offsetX: -300, offsetY: -300, rotX: 45, rotZ: 62, zoom: 0.6 },
             "1.5": { offsetX: 0, offsetY: 0, rotX: 80, rotZ: -90, zoom: 3.5 },
             "2": { offsetX: 0, offsetY: 150, rotX: 85, rotZ: -105, zoom: 3.0, duration: 8.0, targetRotZ: -75 }, 
             "3": { offsetX: 150, offsetY: 0, rotX: 89, rotZ: -50, zoom: 2.6, duration: 8.0, targetRotZ: -20, targetOffsetX: 100 }, 
-            "4": { offsetX: 100, offsetY: 0, rotX: 85, rotZ: 15, zoom: 3.0 }, // 4번 카메라는 커스텀 스크립트
+            "4": { offsetX: 100, offsetY: 0, rotX: 85, rotZ: 15, zoom: 3.0 }, 
             "5": { offsetX: 0, offsetY: -100, rotX: 80, rotZ: 120, zoom: 2.6, duration: 12.0, targetRotZ: 180 }, 
             "6": { offsetX: -300, offsetY: 100, rotX: 80, rotZ: 120, zoom: 2.6, duration: 10.0, targetRotZ: 150, targetOffsetX: -200 }, 
             "7": { offsetX: 0, offsetY: 100, rotX: 90, rotZ: 90, zoom: 5, duration: 10.0, targetRotZ: 100, targetRotX: 80, targetZoom: 2.0, targetOffsetX: -50, targetOffsetY: 100 }, 
@@ -244,19 +246,43 @@
         let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
         let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
 
-        // 💡 스킬 팝업 생성 함수
         function spawnSkillEffect(runnerId, skillName, skillIcon) {
             let runnerDOM = document.getElementById(`runner-${runnerId}`);
             if (!runnerDOM) return;
-            
             let pop = document.createElement('div');
             pop.className = 'skill-popup';
             pop.innerHTML = `<img src="assets/skills/${skillIcon}" onerror="this.style.display='none'"> <span>${skillName}</span>`;
-            
             let wrapper = runnerDOM.querySelector('.sprite-wrapper');
             if (wrapper) wrapper.appendChild(pop);
-            
             setTimeout(() => { if (pop.parentNode) pop.remove(); }, 1500);
+        }
+
+        // 💡 [필살기 발동 및 타임 프리즈 연출 함수]
+        function triggerUltimate(runnerId, ultName, voiceFile) {
+            isUltPausing = true; // 레이스 타이머 정지 (시간 멈춤)
+            ultUserId = runnerId;
+            
+            let runnerDOM = document.getElementById(`runner-${runnerId}`);
+            let nameDOM = runnerDOM ? runnerDOM.querySelector('.name-tag') : null;
+            let rName = nameDOM ? nameDOM.innerText : "선수";
+            
+            // 컷인 UI 활성화
+            document.getElementById('ult-user').innerText = `${rName}`;
+            let cutin = document.getElementById('ult-cutin');
+            cutin.style.display = 'flex';
+            
+            // 전용 보이스 재생
+            let voiceAudio = new Audio(`assets/voice/${voiceFile}`);
+            voiceAudio.play().catch(e => console.log("음성 재생 불가 (파일 확인 필요)"));
+            showCommentary(`💥 [필살기 발동!] ${rName} - ${ultName}`);
+
+            // 2초 뒤 시간 정지 해제, 컷인 종료, 3초간 전용 카메라 활성화
+            setTimeout(() => {
+                cutin.style.display = 'none';
+                isUltPausing = false; // 시간 흐름 재개
+                ultActive = true;     // 셀카 캠 모드 ON
+                ultCamEndTime = currentPlaybackTime + 3.0; 
+            }, 2000);
         }
 
         function getTrackCoordinates(d) {
@@ -373,34 +399,33 @@
                 let isFirstLoad = true;
                 chatRef.limitToLast(1).on('child_added', (snap) => { if (isFirstLoad) { isFirstLoad = false; return; } spawnChatBubble(snap.val().message); });
 
-                drawTrackCanvas(); initPreShowDOM();
+                drawTrackCanvas(); initPreShowDOM(); 
                 
                 const nowSec = Date.now() / 1000;
                 if (roomData.scheduled_time - nowSec > 0) { isPreShow = true; requestAnimationFrame(preShowLoop); startCountdown(); } 
                 else startGame(); 
 
-            } catch(e) { alert("데이터 로딩 실패! (API_BASE 주소를 확인해주세요)"); }
+            } catch(e) { 
+                alert(`데이터 로딩 실패!\n에러 내용: ${e.message}\n(F12 콘솔을 확인해주세요)`);
+                console.error("초기화 에러 상세:", e);
+            }
         };
 
-        // 💡 캔버스 하드웨어 가속(GPU) 최적화 렌더링 (렉, 끊김 완벽 해소)
+        // 💡 [캔버스 복구] 안정적인 3500x1750 해상도 + Scale(8) 매핑
         function drawTrackCanvas() {
             const canvas = document.createElement('canvas');
-            // GPU 최대 텍스처 한계(8K)를 넘지 않도록 7000x3500으로 제한하여 생성
-            canvas.width = 7000; 
-            canvas.height = 3500;
+            canvas.width = 3500; 
+            canvas.height = 1750;
             canvas.style.position = 'absolute'; 
             canvas.style.left = '0px'; 
             canvas.style.top = '0px';
             canvas.style.transformOrigin = 'top left'; 
-            // CSS GPU 가속을 이용해 4배 확대 (28000x14000 월드 규격에 맞춤)
-            canvas.style.transform = 'translateZ(-1px) scale(4)'; 
+            canvas.style.transform = 'translateZ(-1px) scale(8)'; 
             
-            // alpha: false 옵션으로 브라우저 렌더링 파이프라인 최적화
             const ctx = canvas.getContext('2d', { alpha: false }); 
-            // 그릴 때는 28000 좌표계를 그대로 쓰기 위해 0.25배율 스케일링 세팅
-            ctx.scale(0.25, 0.25); 
+            if (!ctx) return;
+            ctx.scale(0.125, 0.125); 
             
-            // 1. 회색 배경 및 그리드
             ctx.fillStyle = '#C8C8C8'; 
             ctx.fillRect(0, 0, 28000, 14000);
             
@@ -411,7 +436,6 @@
             for(let i = 0; i < 14000; i += 200) { ctx.moveTo(0, i); ctx.lineTo(28000, i); }
             ctx.stroke();
             
-            // 2. 노란 테두리
             ctx.lineCap = 'butt'; 
             ctx.lineJoin = 'round';
             ctx.lineWidth = LANE_SCALE * 1.8; 
@@ -425,7 +449,6 @@
             }
             ctx.stroke();
 
-            // 3. 트랙 본체
             ctx.lineWidth = LANE_SCALE * 1.7; 
             ctx.strokeStyle = '#30343A'; 
             ctx.beginPath();
@@ -437,7 +460,6 @@
             }
             ctx.stroke();
             
-            // 4. 중앙 점선
             ctx.lineWidth = 8; 
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; 
             ctx.setLineDash([60, 60]); 
@@ -451,7 +473,6 @@
             ctx.stroke(); 
             ctx.setLineDash([]);
 
-            // 5. 출발선
             let startP = getTrackCoordinates(0);
             let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
             let sInY = (startP.y*VISUAL_SCALE + CY) + Math.sin(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
@@ -547,7 +568,44 @@
             }, 1000);
         }
 
-        function applyCamera(camId, isCut, timeTarget) {
+        function applyCamera(camId, isCut, timeTarget, runnerPositions) {
+            // 💡 [필살기 전용 카메라 핸들링]
+            if (camId === "ULT") {
+                let conf = { offsetX: 0, offsetY: 0, rotX: 91, rotZ: 90, zoom: 6 };
+                let focusX = smoothCenterX; let focusY = smoothCenterY;
+                
+                if (runnerPositions) {
+                    let uData = runnerPositions.find(r => r.id === ultUserId);
+                    if (uData) { focusX = uData.worldX; focusY = uData.worldY; }
+                }
+
+                // 💡 셀카봉처럼 부드럽게 꿀렁거리는 핸드헬드 수학 공식 적용
+                let shakeX = Math.sin(timeTarget * 12) * 8 + Math.cos(timeTarget * 7) * 4;
+                let shakeY = Math.cos(timeTarget * 14) * 8 + Math.sin(timeTarget * 6) * 4;
+                let shakeRotZ = Math.sin(timeTarget * 9) * 1.5;
+
+                targetCam.rotX = conf.rotX;
+                targetCam.zoom = conf.zoom;
+                targetCam.rotZ = conf.rotZ + shakeRotZ;
+                targetCam.x = -focusX + conf.offsetX + shakeX;
+                targetCam.y = -focusY + conf.offsetY + shakeY;
+
+                // 컷인 연출 직후 부드럽게 따라잡기 위한 강한 보간 속도 설정
+                if (isCut) {
+                    currentCam.x = targetCam.x; currentCam.y = targetCam.y;
+                    currentCam.rotX = targetCam.rotX; currentCam.rotZ = targetCam.rotZ; currentCam.zoom = targetCam.zoom;
+                } else {
+                    currentCam.x += (targetCam.x - currentCam.x) * 0.3; 
+                    currentCam.y += (targetCam.y - currentCam.y) * 0.3;
+                    currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.3; 
+                    currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.3;
+                    currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.3;
+                }
+                
+                document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
+                return;
+            }
+
             let startPos = getTrackCoordinates(0);
             let elapsed = timeTarget - camStartTime; 
             let t = 0; let e = 0;
@@ -576,7 +634,7 @@
                 }
             } 
             else if (camId === "4") {
-                // 커스텀 카메라(renderFrameAtTime 에서 직접 조작)
+                // 커스텀 뷰는 renderFrameAtTime에서 별도 처리
             } 
             else {
                 let duration = conf.duration || 10;
@@ -723,7 +781,6 @@
             let nextFrameData = roomData.replay_data[nextFrameIdx];
             if (!frameData || !nextFrameData) return;
 
-            // 재생 시점이 되돌아간 경우 맵 초기화 방어
             if (timeTarget < lastRenderedTimeTarget) triggeredSkillsLog.clear();
             lastRenderedTimeTarget = timeTarget;
 
@@ -758,7 +815,7 @@
                 let wrapper = dom.querySelector('.sprite-wrapper'); let sprite = dom.querySelector('.sprite-anim'); let badge = dom.querySelector('.status-badge');
                 let flipWrap = dom.querySelector('.flip-wrapper');
 
-                if (activeCamId === "5") {
+                if (activeCamId === "5" || activeCamId === "ULT") {
                     flipWrap.style.transform = 'scaleX(1)';
                 } else {
                     flipWrap.style.transform = 'scaleX(-1)';
@@ -776,14 +833,13 @@
                 else if (states.includes("Overtake")) { badge.className = 'status-badge b-pk show-badge'; badge.innerText = '⚡ 추월'; badge.style.background = '#d63031'; }
                 else badge.className = 'status-badge';
                 
+                // 💡 [스킬 및 필살기 판정 엔진]
                 if (states && states.length > 0) {
                     states.forEach(st => {
+                        // 일반 스킬
                         if (st.startsWith("SKILL|")) {
                             let parts = st.split("|");
-                            let sName = parts[1];
-                            let sIcon = parts[2];
-                            
-                            // 스킬 팝업 1.5초 쿨다운 적용으로 무한루프 방지
+                            let sName = parts[1]; let sIcon = parts[2];
                             let uniqueKey = `${id}-${sName}`;
                             let lastTriggerTime = triggeredSkillsLog.get(uniqueKey) || -999;
                             
@@ -792,11 +848,21 @@
                                 spawnSkillEffect(id, sName, sIcon);
                             }
                         }
+                        // 💡 필살기 발동 판정
+                        else if (st.startsWith("ULT|")) {
+                            let parts = st.split("|");
+                            let ultName = parts[1]; let voiceFile = parts[2];
+                            let uniqueKey = `ULT-${id}-${ultName}`;
+                            
+                            if (!triggeredSkillsLog.has(uniqueKey)) {
+                                triggeredSkillsLog.set(uniqueKey, timeTarget);
+                                triggerUltimate(id, ultName, voiceFile);
+                            }
+                        }
                     });
                 }
             });
 
-            // 원본 배열 변이 없이 깊은 복사 정렬 적용
             let sorted = [...runnerPositions].sort((a, b) => b.dist - a.dist);
 
             let centerPos = getTrackCoordinates(leaderDist);
@@ -810,13 +876,19 @@
             let d = leaderDist; 
             let newCamId = "2"; let statusText = "";
             
-            if (d <= 200) { newCamId = "2"; statusText = "🎥 [카메라 2] 출발 직선 뷰"; }
-            else if (d <= 400) { newCamId = "3"; statusText = "🎥 [카메라 3] 1코너 진입 뷰"; }
-            else if (d <= 950) { newCamId = "4"; statusText = "🎥 [카메라 4] 백 스트레치 뷰"; }
-            else if (d <= 1225) { newCamId = "5"; statusText = "🎥 [카메라 5] 3코너 진입 뷰"; }
-            else if (d <= 1475) { newCamId = "6"; statusText = "🎥 [카메라 6] 최종 코너 뷰"; }
-            else if (d <= 1950) { newCamId = "7"; statusText = "🎥 [카메라 7] 최종 직선 뷰"; }
-            else { newCamId = "8"; statusText = "🎥 [카메라 8] 결승선 고정 뷰"; }
+            // 💡 [카메라 뷰 판정 로직 추가: 필살기 중에는 무조건 ULT 뷰 고정]
+            if (ultActive && currentPlaybackTime <= ultCamEndTime) {
+                newCamId = "ULT"; statusText = "🎥 [필살기] 셀프 카메라 모드";
+            } else {
+                ultActive = false; // 시간이 지나면 필살기 모드 해제
+                if (d <= 200) { newCamId = "2"; statusText = "🎥 [카메라 2] 출발 직선 뷰"; }
+                else if (d <= 400) { newCamId = "3"; statusText = "🎥 [카메라 3] 1코너 진입 뷰"; }
+                else if (d <= 950) { newCamId = "4"; statusText = "🎥 [카메라 4] 백 스트레치 뷰"; }
+                else if (d <= 1225) { newCamId = "5"; statusText = "🎥 [카메라 5] 3코너 진입 뷰"; }
+                else if (d <= 1475) { newCamId = "6"; statusText = "🎥 [카메라 6] 최종 코너 뷰"; }
+                else if (d <= 1950) { newCamId = "7"; statusText = "🎥 [카메라 7] 최종 직선 뷰"; }
+                else { newCamId = "8"; statusText = "🎥 [카메라 8] 결승선 고정 뷰"; }
+            }
 
             document.getElementById('camera-status').innerText = statusText;
 
@@ -839,10 +911,8 @@
                 if (t < 0.7) {
                     let scanT = t / 0.7; 
                     let floatIdx = scanT * (sorted.length - 1);
-                    let idx1 = Math.floor(floatIdx);
-                    let idx2 = Math.ceil(floatIdx);
+                    let idx1 = Math.floor(floatIdx); let idx2 = Math.ceil(floatIdx);
                     let w = floatIdx - idx1; 
-                    
                     let r1 = sorted[idx1]; let r2 = sorted[idx2];
                     if (r1 && r2) {
                         focusX = r1.worldX * (1 - w) + r2.worldX * w;
@@ -851,18 +921,12 @@
                 } else {
                     let topCount = Math.min(4, sorted.length);
                     let sumX = 0, sumY = 0;
-                    for(let i = 0; i < topCount; i++) {
-                        sumX += sorted[i].worldX; sumY += sorted[i].worldY;
-                    }
+                    for(let i = 0; i < topCount; i++) { sumX += sorted[i].worldX; sumY += sorted[i].worldY; }
                     let avgX = sumX / topCount; let avgY = sumY / topCount;
-                    
-                    let backT = (t - 0.7) / 0.3; 
-                    let backE = easeOut(backT); 
-                    
+                    let backT = (t - 0.7) / 0.3; let backE = easeOut(backT); 
                     let lastR = sorted[sorted.length - 1];
                     focusX = lastR.worldX * (1 - backE) + avgX * backE;
                     focusY = lastR.worldY * (1 - backE) + avgY * backE;
-                    
                     targetZoom = conf.zoom - (0.8 * backE); 
                 }
 
@@ -886,7 +950,7 @@
                 
                 document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
             } else {
-                applyCamera(activeCamId, isCut, timeTarget);
+                applyCamera(activeCamId, isCut, timeTarget, runnerPositions); // ULT 카메라 파라미터 전달
             }
 
             if (leaderDist >= 2000 && isPlaying) { isPlaying = false; showCommentary(`🏆 레이스 종료!!`); }
@@ -899,7 +963,10 @@
             if (delta > 0.1) delta = 0.1; 
             
             if (isPlaying) { 
-                if (!isPaused) currentPlaybackTime += delta; 
+                // 💡 [타임 프리즈 제어] 디렉터 모드 정지나 필살기 연출 중이 아닐 때만 시간의 흐름을 허용!
+                if (!isPaused && !isUltPausing) {
+                    currentPlaybackTime += delta; 
+                }
                 renderFrameAtTime(currentPlaybackTime); 
                 requestAnimationFrame(renderLoop);
             }
