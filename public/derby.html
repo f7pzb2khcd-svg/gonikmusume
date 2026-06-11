@@ -902,17 +902,15 @@
                             cache.sprite.className = 'sprite-anim';
                             cache.sprite.style.animationDuration = '0s';
                         }
-                        cache.flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
+                        cache.flipWrap.style.transform = (dx > 0) ? 'scaleX(1)' : 'scaleX(-1)';
                     } else {
                         cache.sprite.className = 'sprite-anim'; cache.sprite.style.animationDuration = '0s'; 
                         r.currX = r.targetX; r.currY = r.targetY;
                         if(r.panicked) {
                             cache.base.classList.remove('startled'); 
-                            // 경기장(출발선) 방향으로 좌우반전: 출발선은 화면 위쪽 방향
-                            // panicked 상태로 finalX에 도달했으면 경기장 쪽(scaleX(1)) 방향으로 고정
                             cache.flipWrap.style.transform = 'scaleX(1)';
                         }
-                        if(r.behavior === 'chat' && !r.panicked) cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
+                        if(r.behavior === 'chat' && !r.panicked) cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(1)' : 'scaleX(-1)';
                     }
                     
                     if(timeLeft <= 10) cache.nameTag.style.opacity = '0'; 
