@@ -135,6 +135,7 @@
         <h2>대회 방 생성</h2>
         <input type="text" id="dcUrl" placeholder="디시인사이드 게시글 주소를 입력하세요">
         <button onclick="extractParticipants()">참가자 추출</button>
+        <div id="extract-status" style="margin-top: 8px; color: #fbc531; font-weight: bold; min-height: 20px;"></div>
         <div id="filter-box"></div>
         <div id="setup-box" style="display:none; margin-top:20px;">
             <div class="option-group" style="border-bottom: 2px dashed #718093; padding-bottom: 15px;">
@@ -150,7 +151,14 @@
             <input type="text" id="datetimeInput" placeholder="시작 시간 예약 (클릭)">
             <br>
             <button onclick="createRoomFinal()" style="background:#e84118; margin-top: 10px;">방 만들기</button>
-            <div id="lobby-status" style="margin-top: 10px; color: #fbc531; font-weight: bold;"></div>
+            <div id="lobby-status" style="margin-top: 10px; color: #fbc531; font-weight: bold; min-height: 20px;"></div>
+            <div id="room-result" style="display:none; margin-top: 15px;">
+                <input type="text" id="room-url-display" readonly style="width:100%; box-sizing:border-box;">
+                <div style="margin-top: 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                    <button id="copy-link-btn" style="background:#f39c12; padding:10px 20px; font-size:15px;">🔗 링크 복사하기</button>
+                    <button id="enter-room-btn" style="background:#27ae60; padding:10px 20px; font-size:15px;">🚪 방 입장하기</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -178,6 +186,7 @@
             <div id="ult-cutin">
                 <div id="ult-cutin-bg"><div style="font-size: 30px; font-weight: bold; color: white;">🔥 [라스트 스퍼트!] 🔥</div><div id="ult-user" class="cutin-name">닉네임</div></div>
             </div>
+            <div id="ult-edge-effect" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; box-shadow: inset 0 0 60px rgba(255,50,50,0.7); z-index:15;"></div>
         </div>
         
         <div id="spectator-area">
@@ -414,18 +423,20 @@
         }
 
         async function extractParticipants() {
-            const urlInput = document.getElementById('dcUrl').value; const statusDiv = document.getElementById('lobby-status');
-            if(!urlInput) return; statusDiv.innerText = "명단 추출 중...";
+            const urlInput = document.getElementById('dcUrl').value; 
+            const extractStatus = document.getElementById('extract-status');
+            if(!urlInput) return; 
+            extractStatus.innerText = "참가자 추출하는 중...";
             try {
                 const res = await fetch(`${API_BASE}/extract_only`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: urlInput }) });
                 const data = await res.json();
                 if(data.success) {
                     rawParticipants = data.participants; excludedNames = []; applyTimeFilter();
                     let d = new Date(); d.setMinutes(d.getMinutes() + 2); fpDatetime.setDate(d);
-                    statusDiv.innerText = "추출 완료! 명단 필터링 및 설정을 진행하세요.";
+                    extractStatus.innerText = "추출 완료! 명단 필터링 및 설정을 진행하세요.";
                     document.getElementById('filter-box').style.display = 'block'; document.getElementById('setup-box').style.display = 'block';
-                } else statusDiv.innerText = "추출 실패: " + data.message;
-            } catch(e) { statusDiv.innerText = "서버 통신 오류"; alert("오류: " + e.message); }
+                } else extractStatus.innerText = "추출 실패: " + data.message;
+            } catch(e) { extractStatus.innerText = "서버 통신 오류"; alert("오류: " + e.message); }
         }
 
         function toggleTimeCutoff() {
@@ -482,7 +493,8 @@
             ];
             let chosenBgm = bgmList[Math.floor(Math.random() * bgmList.length)];
             
-            document.getElementById('lobby-status').innerText = "방 만드는 중...";
+            const lobbyStatus = document.getElementById('lobby-status');
+            lobbyStatus.innerText = "방을 만드는 중...";
             try {
                 const res = await fetch(`${API_BASE}/create_room_final`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -491,16 +503,15 @@
                 const data = await res.json();
                 if(data.success) {
                     const roomUrl = window.location.origin + window.location.pathname + '?room=' + data.room_id;
-                    document.getElementById('lobby-panel').innerHTML = `
-                        <h2>🎉 방 생성 완료!</h2>
-                        <input type="text" value="${roomUrl}" readonly style="width:100%;">
-                        <div style="margin-top: 15px;">
-                            <button onclick="copyLink('${roomUrl}')" style="background:#f39c12; margin-right:10px;">🔗 링크 복사</button>
-                            <button onclick="window.location.href='${roomUrl}'">입장하기</button>
-                        </div>
-                    `;
-                } else alert("방 생성 실패: " + data.message);
-            } catch(e) { alert("서버 연결 실패 또는 에러 발생: " + e.message); console.error(e); }
+                    lobbyStatus.innerText = "🎉 방 생성 완료!";
+                    lobbyStatus.style.color = '#2ecc71';
+                    const roomResult = document.getElementById('room-result');
+                    document.getElementById('room-url-display').value = roomUrl;
+                    document.getElementById('copy-link-btn').onclick = () => copyLink(roomUrl);
+                    document.getElementById('enter-room-btn').onclick = () => { window.location.href = roomUrl; };
+                    roomResult.style.display = 'block';
+                } else { lobbyStatus.innerText = "방 생성 실패: " + data.message; }
+            } catch(e) { lobbyStatus.innerText = "서버 연결 실패 또는 에러 발생"; console.error(e); }
         }
 
         window.onload = async function() {
@@ -886,8 +897,13 @@
                     } else {
                         cache.sprite.className = 'sprite-anim'; cache.sprite.style.animationDuration = '0s'; 
                         r.currX = r.targetX; r.currY = r.targetY;
-                        if(r.panicked) cache.base.classList.remove('startled'); 
-                        if(r.behavior === 'chat') cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
+                        if(r.panicked) {
+                            cache.base.classList.remove('startled'); 
+                            // 경기장(출발선) 방향으로 좌우반전: 출발선은 화면 위쪽 방향
+                            // panicked 상태로 finalX에 도달했으면 경기장 쪽(scaleX(-1)) 방향으로 고정
+                            cache.flipWrap.style.transform = 'scaleX(-1)';
+                        }
+                        if(r.behavior === 'chat' && !r.panicked) cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
                     }
                     
                     if(timeLeft <= 10) cache.nameTag.style.opacity = '0'; 
@@ -922,7 +938,7 @@
             
             isPreShow = false; 
             lastRenderTimestamp = 0; 
-            activeCamId = "2"; camStartTime = 0;
+            activeCamId = "2"; camStartTime = 0; baseCamId = "2"; baseCamStartTime = 0;
             
             AUDIO_FX.lobby.pause();
             document.getElementById('timer-box').style.display = 'block'; 
