@@ -6,7 +6,6 @@
     <title>왁마갤 무스메 : 갸샤욘 레이싱</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
-        /* 💡 경기천년제목 폰트 적용 (로컬 및 웹폰트 폴백) */
         @font-face {
             font-family: 'GyeonggiTitleM';
             src: url('assets/Title_Medium.woff') format('woff'), 
@@ -50,7 +49,7 @@
         .minimap-runner-icon { position: absolute; width: 16px; height: 16px; clip-path: polygon(0% 0%, 75% 0%, 100% 50%, 75% 100%, 0% 100%); filter: drop-shadow(1px 1px 2px black); transform: translate(-50%, -50%); transition: left 0.1s linear, top 0.1s linear, transform 0.3s; z-index: 82; display: flex; justify-content: center; align-items: center; }
         .minimap-runner-icon span { color: #fff; font-size: 10px; font-weight: 900; margin-right: 3px; text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000; }
         
-        .minimap-runner-icon.ult-highlight { transform: translate(-50%, -50%) scale(1.6); z-index: 100; filter: drop-shadow(0 0 8px #fbc531) drop-shadow(0 0 3px #fff); }
+        .minimap-runner-icon.ult-highlight { transform: translate(-50%, -50%) scale(2.0); z-index: 100; filter: drop-shadow(0 0 8px #fbc531) drop-shadow(0 0 3px #fff); }
 
         #skill-log-box { position: absolute; top: 70px; left: 15px; width: 280px; height: 350px; display: flex; flex-direction: column; gap: 8px; z-index: 80; pointer-events: none; overflow: hidden; justify-content: flex-start; }
         .skill-log-item { background: linear-gradient(90deg, rgba(0,0,0,0.85), rgba(0,0,0,0.2)); border-left: 4px solid #FFD700; border-radius: 8px; padding: 6px 12px; display: flex; align-items: center; gap: 12px; animation: slideInLeft 0.3s ease-out forwards, fadeOut 0.5s ease-in 3.5s forwards; opacity: 0.7; transform: scale(0.9); transform-origin: left bottom; transition: all 0.3s ease; }
@@ -62,70 +61,69 @@
         @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
 
-        .energy-aura { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0.66); width: 150px; height: 150px; border-radius: 50%; mix-blend-mode: screen; opacity: 0; pointer-events: none; z-index: 15; transition: opacity 0.3s ease; }
-        .energy-aura.buff { background: radial-gradient(circle, rgba(0,255,255,0.7) 0%, rgba(0,255,255,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; }
-        .energy-aura.debuff { background: radial-gradient(circle, rgba(138,43,226,0.7) 0%, rgba(138,43,226,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; mix-blend-mode: multiply; }
-        .energy-aura.debuff-mix { background: radial-gradient(circle, rgba(200,200,255,0.7) 0%, rgba(200,200,255,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; }
-        @keyframes pulseAura { 0% { transform: translate(-50%, -50%) scale(0.56); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(0.76); opacity: 1.0; } }
 
+        /* 💡 [기획 반영] 주자 크기 확대에 맞춰 팝업 아이콘 높이 조정 (bottom: 80px -> 120px) */
         .status-popup-icon { position: absolute; left: 50%; bottom: 80px; transform: translateX(-50%); width: 80px; height: auto; z-index: 30; pointer-events: none; border-radius: 8px; animation: popUpFadeBody 1.2s ease-out forwards; }
         @keyframes popUpFadeBody { 0% { transform: translate(-50%, 0px) scale(0.5); opacity: 0; } 15% { transform: translate(-50%, -20px) scale(1.1); opacity: 1; } 80% { transform: translate(-50%, -30px) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -40px) scale(0.8); opacity: 0; } }
 
         .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; z-index: 5; }
         
+        /* 💡 [기획 반영] 주자 이미지 크기 1.5배 확대 (80px -> 120px, left -40px -> -60px) */
         .sprite-wrapper { 
-            position: absolute; bottom: 0; left: -40px; 
-            width: 80px; height: 80px;
+            position: absolute; bottom: 0; left: -60px; 
+            width: 120px; height: 120px; 
             transform-origin: bottom center; transform-style: preserve-3d; 
         }
-        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; z-index: 10; transform-style: preserve-3d; }
+
+        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s, filter 0.3s ease; position: relative; z-index: 10; transform-style: preserve-3d; } 
+
+        /* 💡 [기획 반영] 테두리 빛나는 효과 (Glow) 정의 - 톤다운 및 투명도 적용 */
+        /* 버프: 톤다운된 빨강 */
+        .flip-wrapper.has-buff { filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.8)); }
+        /* 디버프: 톤다운된 파랑 */
+        .flip-wrapper.has-debuff { filter: drop-shadow(0 0 10px rgba(116, 185, 255, 0.8)); }
+        /* 버프+디버프 혼합: 톤다운된 보라 */
+        .flip-wrapper.has-buff.has-debuff { filter: drop-shadow(0 0 10px rgba(162, 155, 254, 0.8)); }
+
         .sprite-anim { 
             width: 100%; height: 100%; 
             background-size: contain; 
             background-repeat: no-repeat; background-position: center bottom; 
-            transform-origin: bottom center; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.6)); position: relative; z-index: 5; transform-style: preserve-3d; 
-            
+            transform-origin: bottom center; 
+            /* 💡 테두리 글로우 효과와 겹치지 않도록 기본 그림자는 약하게 조정 */
+            filter: drop-shadow(1px 1px 3px rgba(0,0,0,0.5)); 
+            position: relative; z-index: 5; transform-style: preserve-3d; 
             image-rendering: auto; 
         }
         
-        .sweat-mark { position: absolute; top: -10px; right: 80px; width: 60px; height: 60px; z-index: 20; opacity: 0; pointer-events: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300a8ff"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>'); filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.8)); transition: opacity 0.3s; }
+        /* 💡 [기획 반영] 주자 크기 확대에 맞춰 땀방울, 느낌표 좌표 재조정 */
+        .sweat-mark { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; z-index: 20; opacity: 0; pointer-events: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300a8ff"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>'); filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.8)); transition: opacity 0.3s; }
         .sweat-mark.show-sweat { opacity: 1; animation: sweatDrop 1.5s infinite; }
-        @keyframes sweatDrop { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(20px) scale(0.5); opacity: 0; } }
+        @keyframes sweatDrop { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(15px) scale(0.5); opacity: 0; } }
 
-        @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-10px) rotateZ(4deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-10px) rotateZ(-4deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
+        @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-5px) rotateZ(2deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-5px) rotateZ(-2deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         .running { animation: runCycle 0.6s infinite linear; }
         
-        @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.1) translateY(-40px) rotateZ(10deg); filter: brightness(1.5); } 100% { transform: scale(1) translateY(0); } }
+        @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.05) translateY(-20px) rotateZ(5deg); filter: brightness(1.3); } 100% { transform: scale(1) translateY(0); } }
         .startled .sprite-anim { animation: startleJump 0.4s ease-out; }
-        .panic-mark { position: absolute; top: -60px; left: 120px; font-size: 100px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 4px 4px 6px black; transform-origin: bottom center; }
+        /* 💡 느낌표 좌표 조정 */
+        .panic-mark { position: absolute; top: -10px; left: 10px; font-size: 60px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 2px 2px 3px black; transform-origin: bottom center; z-index: 21; }
         .startled .panic-mark { opacity: 1; animation: floatUpChat 0.5s forwards; }
         
-        .name-tag { font-size: 35px; font-weight: bold; background: rgba(0,0,0,0.8); color: white; padding: 4px 12px; border-radius: 10px; position: absolute; top: -50px; left: 30px; white-space: nowrap; z-index: 15; transition: opacity 0.5s ease; opacity: 1; }
+        .name-tag { font-size: 20px; font-weight: bold; background: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 6px; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 15; transition: opacity 0.5s ease; opacity: 1; border: 1px solid #555; }
         .status-badge, .hp-bar { display: none !important; } 
         
         #spectator-area { width: 100%; height: 300px; border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; background: linear-gradient(to bottom, #111, #222); z-index: 60; margin-top: 5px; }
+        #spectator-area::before { content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background-image: url('assets/spectator_bg.png'); background-size: contain; background-repeat: repeat-x; background-position: center bottom; opacity: 0.6; z-index: 1; pointer-events: none; }
 
-        #spectator-area::before { 
-            content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; 
-            background-image: url('assets/spectator_bg.png'); 
-            
-            background-size: contain;
-            background-repeat: repeat-x;
-            background-position: center bottom;
-            
-            opacity: 0.6; z-index: 1; pointer-events: none; 
-        }
-		
-        /* 💡 다이나믹 중계창을 관중석 상단 1/3 부분 배치 */
         #commentary-board { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 90%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; pointer-events: none; z-index: 70; }
         .msg-line { font-size: 18px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.75); padding: 8px 20px; border-radius: 8px; border-left: 6px solid #3498db; box-shadow: 0 4px 10px rgba(0,0,0,0.5); opacity: 0.5; transform: scale(0.85); transition: all 0.3s ease; white-space: nowrap; margin-top: 5px; }
         .msg-line:last-child { opacity: 1.0; transform: scale(1.0); font-size: 20px; border-left-color: #e74c3c; color: #f1c40f; } 
 
-        /* 💡 채팅 랜덤 표시 (검은 텍스트 + 흰 테두리) */
         .chat-bubble { position: absolute; color: #000; font-size: 16px; font-weight: 900; white-space: nowrap; z-index: 10; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 5px rgba(255,255,255,0.8); animation: popChatFixed 2.5s ease-in-out forwards; pointer-events: none; }
         @keyframes popChatFixed { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
         
-        #chat-controls { display: flex; justify-content: center; gap: 15px; align-items: center; z-index: 20; padding: 0 10px; margin-top: auto; }
+        #chat-controls { display: flex; justify(Content): center; gap: 15px; align-items: center; z-index: 20; padding: 0 10px; margin-top: auto; }
         .chat-macros { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
         .chat-macros button { padding: 6px 12px; font-size: 13px; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.5); border-radius: 15px; font-weight: bold; cursor: pointer; backdrop-filter: blur(5px); }
         .chat-macros button:hover { background: rgba(255,255,255,0.5); }
@@ -296,6 +294,7 @@
 
         const domCache = new Map();
         
+        /* 💡 [기획 반영] 사운드 믹싱 밸런스 재설정 */
         const AUDIO_FX = {
             lobby: new Audio('assets/sounds/lobby_bgm.mp3'),
             whistle: new Audio('assets/sounds/whistle.mp3'),
@@ -303,13 +302,13 @@
             buff: new Audio('assets/sounds/buff.mp3'),
             debuff: new Audio('assets/sounds/debuff.mp3')
         };
-        AUDIO_FX.lobby.loop = true; AUDIO_FX.lobby.volume = 0.15;
-        AUDIO_FX.whistle.volume = 0.1; 
-        AUDIO_FX.applause.volume = 0.3;
-        AUDIO_FX.buff.volume = 0.05;    
-        AUDIO_FX.debuff.volume = 0.05;  
+        AUDIO_FX.lobby.loop = true; 
+        AUDIO_FX.lobby.volume = 0.15;    /* 로비 BGM 낮춤 */
+        AUDIO_FX.whistle.volume = 0.3;  /* 호각 소리 키움 */
+        AUDIO_FX.applause.volume = 0.4; /* 박수 소리 살짝 키움 */
+        AUDIO_FX.buff.volume = 0.15;    /* 버프음 키움 */
+        AUDIO_FX.debuff.volume = 0.15;  /* 디버프음 키움 */
         let globalBgmAudio = null;
-        let runAudios = []; 
 
         const POPUP_MAP = {
             "목표 속도 증가": "SPD_UP.png", "현재 속도 증가": "SPD_UP.png", "속도 증가": "SPD_UP.png",
@@ -343,7 +342,6 @@
             });
         }
 
-        // 팝업 큐 프로세서
         function processPopupQueue(runnerIdStr) {
             let cache = domCache.get(runnerIdStr);
             if (!cache || cache.isPopupPlaying || cache.popupQueue.length === 0) return;
@@ -361,7 +359,7 @@
             icon.className = 'status-popup-icon';
             icon.src = `assets/skills/${POPUP_MAP[nextPopup.type] || 'SPD_UP.png'}`;
             icon.onerror = function() { this.style.display='none'; };
-            cache.wrapper.appendChild(icon); // flip-wrapper가 아닌 wrapper에 종속 (scale 문제 해결)
+            cache.wrapper.appendChild(icon);
 
             let isBuff = nextPopup.type.includes("증가") || nextPopup.type.includes("회복");
             if(isBuff && AUDIO_FX.buff) AUDIO_FX.buff.play().catch(e=>{});
@@ -375,7 +373,6 @@
             setTimeout(() => { if (icon.parentNode) icon.remove(); }, 1200);
         }
 
-        // 스킬 로그 팝업
         function spawnSkillLog(runnerName, skillName, skillIcon) {
             let logBox = document.getElementById('skill-log-box');
             if(logBox.childElementCount >= 4) {
@@ -406,17 +403,18 @@
             cutin.style.display = 'flex';
             
             let voiceAudio = new Audio(`assets/voice/${voiceFile}`);
+            /* 💡 [기획 반영] 필살기 음성 볼륨 대폭 낮춤 (1.0 -> 0.4) */
+            voiceAudio.volume = 0.5; 
             voiceAudio.play().catch(e => console.log("음성 재생 불가"));
             
             if(globalBgmAudio) {
-                globalBgmAudio.volume = 0.05;
+                let currentBgmVol = globalBgmAudio.volume;
+                globalBgmAudio.volume = currentBgmVol * 0.2; /* 음성 나올 때 BGM 일시 페이드 아웃 */
                 setTimeout(() => {
-                    let v = 0.05;
                     let fade = setInterval(() => {
-                        v += 0.05;
-                        globalBgmAudio.volume = Math.min(v, 0.4);
-                        if(v >= 0.4) clearInterval(fade);
-                    }, 200);
+                        globalBgmAudio.volume = Math.min(globalBgmAudio.volume + 0.02, currentBgmVol);
+                        if(globalBgmAudio.volume >= currentBgmVol) clearInterval(fade);
+                    }, 100);
                 }, 3000);
             }
 
@@ -692,10 +690,9 @@
                 const rBase = document.createElement('div'); rBase.className = 'runner-base'; rBase.id = `runner-${p.id}`;
                 rBase.style.transform = `translate3d(${spawnX}px, ${spawnY}px, 0)`;
 
-                // 💡 [해상도 문제 해결] 기본 크기를 키우고 (300px), CSS에서 scale3d로 줄이는 방식을 사용
+                // 💡 [기획 반영] 에네르기 아우라 HTML 삭제됨
                 rBase.innerHTML = `
                     <div class="sprite-wrapper">
-                        <div class="energy-aura" id="aura-${p.id}"></div>
                         <div class="flip-wrapper">
                             <svg class="sweat-mark" viewBox="0 0 24 24"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>
                             <div class="panic-mark">!</div>
@@ -719,11 +716,11 @@
                 domCache.set(String(p.id), {
                     base: rBase,
                     dot: dot,
-                    wrapper: rBase.querySelector('.sprite-wrapper'), // 부속 이펙트 스케일 처리용
+                    wrapper: rBase.querySelector('.sprite-wrapper'), 
                     sprite: rBase.querySelector('.sprite-anim'),
                     flipWrap: rBase.querySelector('.flip-wrapper'),
                     nameTag: rBase.querySelector('.name-tag'),
-                    aura: rBase.querySelector('.energy-aura'),
+                    // 💡 aura 캐시 삭제됨
                     sweat: rBase.querySelector('.sweat-mark'),
                     popupQueue: [],
                     isPopupPlaying: false
@@ -921,9 +918,7 @@
                     if(timeLeft <= 10) cache.nameTag.style.opacity = '0'; 
 
                     cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
-                    
-                    // 💡 [해상도 문제 해결] JS에서 최종적으로 scale3d(0.66)를 적용하여 초고해상도 원본을 올바른 크기로 렌더링
-                    cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale3d(0.66, 0.66, 0.66)`;
+                    cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale3d(1, 1, 1)`;
                 });
 
                 let newCamId = "1";
@@ -966,7 +961,9 @@
             });
 
             if (roomData.bgm && roomData.bgm !== 'none') {
-                globalBgmAudio = new Audio(`assets/bgm/${roomData.bgm}`); globalBgmAudio.loop = true; globalBgmAudio.volume = 0.4;
+                globalBgmAudio = new Audio(`assets/bgm/${roomData.bgm}`); globalBgmAudio.loop = true; 
+                /* 💡 [기획 반영] 경기 중 BGM 볼륨 살짝 낮춤 (효과음 강조) */
+                globalBgmAudio.volume = 0.3; 
                 globalBgmAudio.play().catch(e => {
                     document.body.addEventListener('click', () => { globalBgmAudio.play(); }, { once: true });
                 });
@@ -1045,8 +1042,7 @@
                             cache.flipWrap.style.transform = 'scaleX(-1)';
                         }
 
-                        // 💡 [해상도 문제 해결] JS에서도 scale3d(0.66)를 적용하여 빌보딩 연산에 반영
-                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale3d(0.66, 0.66, 0.66)`;
+                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale3d(1, 1, 1)`;
                         
                         if(speed > 1.0) {
                             cache.sprite.className = 'sprite-anim running';
@@ -1060,14 +1056,15 @@
                         if (states.includes("Exhaust")) cache.sweat.classList.add('show-sweat');
                         else cache.sweat.classList.remove('show-sweat');
 
-                        let hasBuff = false; let hasDebuff = false;
-                        if (states.includes("PaceDown") || states.includes("Exhaust") || states.includes("AuraDebuff")) hasDebuff = true;
-                        if (states.includes("Spurt") || states.includes("PaceUp") || states.includes("PaceUpEx") || states.includes("Overtake") || states.includes("AuraBuff")) hasBuff = true;
+                        /* 💡 [기획 반영] 테두리 빛나는 효과 (Glow) CSS 클래스 부여 */
+                        let hasBuff = states.some(st => ["Spurt", "PaceUp", "PaceUpEx", "Overtake", "AuraBuff"].includes(st));
+                        let hasDebuff = states.some(st => ["PaceDown", "Exhaust", "AuraDebuff"].includes(st));
 
-                        if (hasBuff && !hasDebuff) cache.aura.className = 'energy-aura buff';
-                        else if (hasDebuff && !hasBuff) cache.aura.className = 'energy-aura debuff';
-                        else if (hasBuff && hasDebuff) cache.aura.className = 'energy-aura buff debuff-mix'; 
-                        else cache.aura.className = 'energy-aura';
+                        if (hasBuff) cache.flipWrap.classList.add('has-buff');
+                        else cache.flipWrap.classList.remove('has-buff');
+
+                        if (hasDebuff) cache.flipWrap.classList.add('has-debuff');
+                        else cache.flipWrap.classList.remove('has-debuff');
                     }
                     
                     if (states && states.length > 0) {
@@ -1088,11 +1085,10 @@
                             else if (st.startsWith("SKILL|")) {
                                 let parts = st.split("|");
                                 let sName = parts[1]; let sIcon = parts[2];
-                                let uniqueKey = `${id}-${sName}`; // 주자 ID + 스킬명
+                                let uniqueKey = `${id}-${sName}`;
                                 
-                                // 💡 [핀셋 수정] 시간 쿨타임 삭제! 기록에 없으면 딱 1번만 띄우고 영구 차단
                                 if (!triggeredSkillsLog.has(uniqueKey)) {
-                                    triggeredSkillsLog.set(uniqueKey, true); // true로 박제하여 재발동 완벽 차단
+                                    triggeredSkillsLog.set(uniqueKey, true); 
                                     let cName = roomData.participants.find(pt => String(pt.id) === id)?.name || "선수";
                                     spawnSkillLog(cName, sName, sIcon);
                                 }
@@ -1239,7 +1235,6 @@
                 let pSkin = p.skin ? (p.skin.startsWith('http') ? p.skin : `assets/skin/${p.skin}`) : 'assets/skin/skin01.png';
                 let pHue = p.hue || 0;
 
-                // 💡 포디움용 이미지도 깨지지 않게 큰 사이즈(256px)로 배치
                 rDiv.innerHTML = `
                     <div class="podium-name">${p.name}</div>
                     <div class="sprite-anim" style="width:256px; height:256px; background-image: url('${pSkin}'); filter: hue-rotate(${pHue}deg);"></div>
