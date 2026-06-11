@@ -23,10 +23,10 @@
         
         #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; position: relative; }
         
-        #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; }
+        #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; z-index: 1; }
         #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; }
         
-        /* 타이머 전광판 UI (우측 상단) */
+        /* 💡 타이머 전광판 UI (우측 상단) */
         #timer-box { 
             position: absolute; top: 15px; right: 20px; z-index: 90; 
             background: rgba(0,0,0,0.7); padding: 6px 15px; border-radius: 8px; 
@@ -34,7 +34,7 @@
             border: 2px solid #e1b12c; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); 
         }
 
-        /* 💡 미니맵: 전체 배경 박스 제거, 투명한 공간에서 달리기 */
+        /* 💡 다이나믹 미니맵 (배경 네모 박스 완전 제거) */
         #integrated-minimap {
             position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
             width: 80%; display: flex; flex-direction: column; align-items: center;
@@ -42,37 +42,36 @@
         }
         #integrated-minimap.show { top: 20px; opacity: 1; }
         
-        /* 💡 유성 궤적 게이지 바 및 중반/종반 선 복구 */
+        /* 유성 궤적 게이지 바 및 중반/종반 선 */
         #minimap-progress-track { width: 100%; height: 4px; background: rgba(0,0,0,0.6); border-radius: 2px; position: relative; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.8); overflow: visible; }
         #leader-trail { position: absolute; top: -1px; height: 6px; width: 0%; background: linear-gradient(90deg, transparent, #0be881, #fff); box-shadow: 2px 0 10px #0be881, 2px 0 5px #fff; border-radius: 3px; transition: left 0.1s linear, width 0.1s linear; }
         
-        .minimap-marker { position: absolute; top: -4px; height: 12px; width: 2px; background: rgba(255,255,255,0.8); }
-        .minimap-marker span { position: absolute; top: -16px; left: -12px; font-size: 11px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; white-space: nowrap;}
+        .minimap-marker { position: absolute; top: -6px; height: 16px; width: 2px; background: rgba(255,255,255,0.9); box-shadow: 0 0 3px #000; }
+        .minimap-marker span { position: absolute; top: -18px; left: -12px; font-size: 11px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; white-space: nowrap;}
         .minimap-start { left: 0%; }
-        .minimap-mid1 { left: 16.6%; } /* 중반 시작 */
-        .minimap-mid2 { left: 66.6%; } /* 종반 시작 */
+        .minimap-mid1 { left: 16.6%; } 
+        .minimap-mid2 { left: 66.6%; } 
         .minimap-goal { left: 100%; }
         
-        /* 마군 뷰 (오각형 화살표 아이콘) */
-        #minimap-pack-view { width: 100%; height: 35px; position: relative; }
+        /* 💡 마군 뷰 (배경 없음, 오각형 화살표 아이콘) */
+        #minimap-pack-view { width: 100%; height: 40px; position: relative; }
         .minimap-runner-icon { 
-            position: absolute; width: 16px; height: 16px; 
+            position: absolute; width: 18px; height: 18px; 
             clip-path: polygon(0% 0%, 75% 0%, 100% 50%, 75% 100%, 0% 100%);
             filter: drop-shadow(1px 1px 2px black);
             transform: translate(-50%, -50%); transition: left 0.1s linear, top 0.1s linear, transform 0.3s; 
             z-index: 82; display: flex; justify-content: center; align-items: center;
         }
-        .minimap-runner-icon span { color: #fff; font-size: 10px; font-weight: 900; margin-right: 3px; text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000; }
+        .minimap-runner-icon span { color: #fff; font-size: 11px; font-weight: 900; margin-right: 3px; text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000; }
         
-        /* 💡 필살기 발동 시 미니맵 아이콘 거대화 하이라이트 */
+        /* 필살기 발동 시 미니맵 하이라이트 효과 */
         .minimap-runner-icon.ult-highlight {
             transform: translate(-50%, -50%) scale(2.0);
-            z-index: 100;
-            filter: drop-shadow(0 0 5px #fbc531);
+            z-index: 100; filter: drop-shadow(0 0 8px #fbc531) drop-shadow(0 0 4px #fff);
         }
 
-        /* 💡 2줄 구성 스킬 로그 팝업 (최대 4개) */
-        #skill-log-box { position: absolute; top: 80px; left: 15px; width: 280px; display: flex; flex-direction: column; gap: 8px; z-index: 80; pointer-events: none; }
+        /* 💡 2줄 구성 스킬 로그 팝업 (왼쪽 박스형, 최대 4개 여유 공간 확보) */
+        #skill-log-box { position: absolute; top: 70px; left: 15px; width: 280px; height: 350px; display: flex; flex-direction: column; gap: 8px; z-index: 80; pointer-events: none; overflow: hidden; justify-content: flex-start; }
         .skill-log-item { 
             background: linear-gradient(90deg, rgba(0,0,0,0.85), rgba(0,0,0,0.2)); 
             border-left: 4px solid #FFD700; border-radius: 8px; padding: 6px 12px;
@@ -88,38 +87,39 @@
         @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
 
-        /* 방사형 에네르기 아우라 (z-index 15로 주자 앞 배치) */
+        /* 💡 방사형 에네르기 아우라 (z-index 15로 주자 앞 배치) */
         .energy-aura {
-            position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
             width: 150px; height: 150px; border-radius: 50%;
             mix-blend-mode: screen; opacity: 0; pointer-events: none; z-index: 15; transition: opacity 0.3s ease;
         }
         .energy-aura.buff { background: radial-gradient(circle, rgba(0,255,255,0.7) 0%, rgba(0,255,255,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; }
         .energy-aura.debuff { background: radial-gradient(circle, rgba(138,43,226,0.7) 0%, rgba(138,43,226,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; mix-blend-mode: multiply; }
         .energy-aura.debuff-mix { background: radial-gradient(circle, rgba(200,200,255,0.7) 0%, rgba(200,200,255,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; }
-        @keyframes pulseAura { 0% { transform: translateX(-50%) scale(0.85); opacity: 0.6; } 100% { transform: translateX(-50%) scale(1.15); opacity: 1.0; } }
+        @keyframes pulseAura { 0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1.0; } }
 
         /* 💡 2배 크기(160px) + 둥근 사각형 팝업 아이콘 (가슴 위치) */
         .status-popup-icon {
-            position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%);
+            position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
             width: 160px; height: auto; z-index: 30; pointer-events: none; border-radius: 12px;
             animation: popUpFadeBody 1.2s ease-out forwards;
         }
         @keyframes popUpFadeBody {
-            0% { transform: translate(-50%, 0px) scale(0.5); opacity: 0; }
-            15% { transform: translate(-50%, -30px) scale(1.1); opacity: 1; }
-            80% { transform: translate(-50%, -50px) scale(1.0); opacity: 1; }
-            100% { transform: translate(-50%, -80px) scale(0.8); opacity: 0; }
+            0% { transform: translate(-50%, 0%) scale(0.5); opacity: 0; }
+            15% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            80% { transform: translate(-50%, -70%) scale(1.0); opacity: 1; }
+            100% { transform: translate(-50%, -100%) scale(0.8); opacity: 0; }
         }
 
+        /* 💡 [찌그러짐 원천 차단] runner-base에 반드시 preserve-3d가 있어야 자식 요소들이 바닥에 눕지 않습니다! */
         .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; z-index: 5; }
         
-        /* 💡 [찌그러짐 완벽 해결] JS scale 박멸, CSS 원본 2/3 사이즈 (80x80px) 고정! */
+        /* 💡 JS scale 박멸, CSS 원본 2/3 사이즈 (80x80px) 고정! */
         .sprite-wrapper { position: absolute; bottom: 0; left: -40px; width: 80px; height: 80px; transform-origin: bottom center; transform-style: preserve-3d; }
         .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; z-index: 10; transform-style: preserve-3d; } 
         .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.6)); position: relative; z-index: 5; transform-style: preserve-3d; }
         
-        /* 땀방울 이펙트 */
+        /* 땀방울(지구력 소진) 이펙트 */
         .sweat-mark {
             position: absolute; top: -10px; right: -20px; width: 30px; height: 30px; z-index: 20; opacity: 0; pointer-events: none;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300a8ff"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>');
@@ -128,7 +128,6 @@
         .sweat-mark.show-sweat { opacity: 1; animation: sweatDrop 1.5s infinite; }
         @keyframes sweatDrop { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(20px) scale(0.5); opacity: 0; } }
 
-        /* 달리기 애니메이션 */
         @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-10px) rotateZ(4deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-10px) rotateZ(-4deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         .running { animation: runCycle 0.6s infinite linear; }
         
@@ -142,14 +141,14 @@
         .hp-bar { display: none !important; }
         
         /* 💡 관중석(채팅창) 실루엣 연출 및 크기 조정 */
-        #spectator-area { width: 100%; height: 300px; border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; background: linear-gradient(to bottom, #111, #222); z-index: 60; }
+        #spectator-area { width: 100%; height: 250px; border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; background: linear-gradient(to bottom, #111, #222); z-index: 60; margin-top: 5px; }
         #spectator-area::before { content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 120%; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><path d="M5,20 Q10,15 15,20 Q20,10 25,20 Q30,12 35,20 Q40,5 45,20 Q50,15 55,20 Q60,10 65,20 Q70,5 75,20 Q80,18 85,20 Q90,8 95,20 Z" fill="rgba(0,0,0,0.8)"/></svg>'); background-size: cover; background-position: bottom; background-repeat: repeat-x; opacity: 0.8; z-index: 1; pointer-events: none; }
 
-        /* 💡 다이나믹 중계창 UI (관중석 안쪽 상단 1/3 부분 배치) */
-        #commentary-board { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 8px; height: 100px; padding-bottom: 5px; box-sizing: border-box; pointer-events: none; z-index: 70; }
+        /* 💡 다이나믹 중계창 (관중석 상단 1/3 부분 배치) */
+        #commentary-board { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 90%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; height: 100px; pointer-events: none; z-index: 70; }
         .msg-line { font-size: 18px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.75); padding: 8px 20px; border-radius: 8px; border-left: 6px solid #3498db; box-shadow: 0 4px 10px rgba(0,0,0,0.5); opacity: 0.5; transform: scale(0.85); transition: all 0.3s ease; white-space: nowrap; }
-        .msg-line:last-child { opacity: 1.0; transform: scale(1.05); border-left-color: #e74c3c; color: #f1c40f; } 
-        @keyframes fadeInMsg { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .msg-line:last-child { opacity: 1.0; transform: scale(1.1); border-left-color: #e74c3c; color: #f1c40f; } 
+        @keyframes fadeInMsg { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* 채팅 랜덤 표시 (흰 테두리 글자만) */
         .chat-bubble { position: absolute; color: #fff; font-size: 16px; font-weight: 900; white-space: nowrap; z-index: 10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 5px rgba(0,0,0,0.8); animation: popChat 2.5s ease-in-out forwards; transform: translateX(-50%); pointer-events: none; }
@@ -350,6 +349,7 @@
             "가속도 감소": "ACC_DOWN.png", "지구력 감소": "ST_DOWN.png", "파워 감소": "POW_DOWN.png", "근성 감소": "GT_DOWN.png"
         };
 
+        // 카메라는 수정하신 값 그대로 유지
         let CAM_SETTINGS = {
             "1": { offsetX: -500, offsetY: -500, rotX: 45, rotZ: 62, zoom: 0.5 },
             "1.5": { offsetX: -150, offsetY: 0, rotX: 80, rotZ: -90, zoom: 3.5 },
@@ -369,7 +369,7 @@
         let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
         let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
 
-        // 몸통(가슴)에서 둥근 사각형으로 뜨는 버프 팝업
+        // 몸통(가슴)에서 둥근 사각형으로 뜨는 버프 팝업 (base에 붙여서 찌그러짐 방지)
         function processPopupQueue(runnerIdStr) {
             let cache = domCache.get(runnerIdStr);
             if (!cache || cache.isPopupPlaying || cache.popupQueue.length === 0) return;
@@ -387,6 +387,7 @@
             icon.className = 'status-popup-icon';
             icon.src = `assets/skills/${POPUP_MAP[nextPopup.type] || 'SPD_UP.png'}`;
             icon.onerror = function() { this.style.display='none'; };
+            // 💡 wrapper가 아닌 base에 append하여 3D Rotate 영향을 받지 않고 화면을 똑바로 보게 함
             cache.base.appendChild(icon);
 
             let isBuff = nextPopup.type.includes("증가") || nextPopup.type.includes("회복");
@@ -401,7 +402,7 @@
             setTimeout(() => { if (icon.parentNode) icon.remove(); }, 1200);
         }
 
-        // 💡 [기획 반영] 2줄 스킬 로그 및 4개 제한
+        // 💡 2줄 스킬 로그 및 4개 제한
         function spawnSkillLog(runnerName, skillName, skillIcon) {
             let logBox = document.getElementById('skill-log-box');
             // 최대 4개까지만 유지
@@ -447,10 +448,10 @@
                 }, 3000);
             }
 
-            // 💡 [기획 반영] 필살기 중계 텍스트
+            // 💡 필살기 중계 텍스트
             postCommentary(`💥 ${rName}의 ${ultName} 발동!`, true);
             
-            // 💡 [기획 반영] 미니맵 오각형 아이콘 거대화 (6초 유지)
+            // 💡 미니맵 오각형 아이콘 거대화 (6초 유지)
             if(cache && cache.dot) {
                 cache.dot.classList.add('ult-highlight');
                 setTimeout(() => { if (cache.dot) cache.dot.classList.remove('ult-highlight'); }, 6000);
@@ -464,7 +465,7 @@
             }, 2000);
         }
 
-        // 💡 [기획 반영] 중계창 2줄 제한
+        // 💡 중계창 2줄 제한
         function postCommentary(text, highlight = false) {
             let board = document.getElementById('commentary-board');
             let line = document.createElement('div');
@@ -716,7 +717,7 @@
                 const rBase = document.createElement('div'); rBase.className = 'runner-base'; rBase.id = `runner-${p.id}`;
                 rBase.style.transform = `translate3d(${spawnX}px, ${spawnY}px, 0)`;
 
-                // 💡 [찌그러짐 원천 차단] JS의 scale()을 버리고 CSS에서 80x80px 원본 비율로 그립니다.
+                // 💡 [찌그러짐 원천 차단] JS의 scale()을 버리고 CSS에서 80x80px 원본 비율로 완벽하게 그립니다.
                 rBase.innerHTML = `
                     <div class="energy-aura" id="aura-${p.id}"></div>
                     <div class="sprite-wrapper">
@@ -735,6 +736,7 @@
                 let firstChar = p.name ? p.name.charAt(0) : '?';
                 dot.innerHTML = `<span>${firstChar}</span>`;
                 
+                // 마군 뷰: 현재 레인 동기화 (0~100%)
                 dot.style.top = `${(startLane / 1.5) * 100}%`;
                 minimapContainer.appendChild(dot);
 
@@ -1062,7 +1064,7 @@
                             cache.flipWrap.style.transform = 'scaleX(-1)';
                         }
 
-                        // 💡 [찌그러짐 원천 차단] 스케일 제거 및 순수 회전 보정
+                        // 💡 [찌그러짐 방지] JS에서 스케일을 빼고 회전만 시켜 원본 비율(2/3 크기) 완벽 보존
                         cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
                         
                         // 💡 지치면 느리게, 스퍼트면 아주 빠르게
