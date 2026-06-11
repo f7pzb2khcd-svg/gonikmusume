@@ -30,7 +30,7 @@
         
         #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; position: relative; }
         
-        #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; z-index: 1; }
+        #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; }
         #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; }
         
         #timer-box { position: absolute; top: 15px; right: 20px; z-index: 90; background: rgba(0,0,0,0.7); padding: 6px 15px; border-radius: 8px; color: #fbc531; font-weight: bold; font-size: 20px; border: 2px solid #e1b12c; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
@@ -45,13 +45,13 @@
         .minimap-marker span { position: absolute; top: -18px; left: -12px; font-size: 11px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; white-space: nowrap;}
         .minimap-start { left: 0%; } .minimap-mid1 { left: 16.6%; } .minimap-mid2 { left: 66.6%; } .minimap-goal { left: 100%; }
         
-        #minimap-pack-view { width: 100%; height: 35px; position: relative; }
-        .minimap-runner-icon { position: absolute; width: 16px; height: 16px; clip-path: polygon(0% 0%, 75% 0%, 100% 50%, 75% 100%, 0% 100%); filter: drop-shadow(1px 1px 2px black); transform: translate(-50%, -50%); transition: left 0.1s linear, top 0.1s linear, transform 0.3s; z-index: 82; display: flex; justify-content: center; align-items: center; }
+        #minimap-pack-view { width: 100%; height: 35px; position: relative; background: transparent; border: none; }
+        .minimap-runner-icon { position: absolute; width: 16px; height: 16px; clip-path: polygon(0% 0%, 75% 0%, 100% 50%, 75% 100%, 0% 100%); filter: drop-shadow(1px 1px 2px black); transform: translate(-50%, -50%); transition: left 0.1s linear, top 0.1s linear, transform 0.3s; display: flex; justify-content: center; align-items: center; }
         .minimap-runner-icon span { color: #fff; font-size: 10px; font-weight: 900; margin-right: 3px; text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000; }
         
-        .minimap-runner-icon.ult-highlight { transform: translate(-50%, -50%) scale(2.0); z-index: 100; filter: drop-shadow(0 0 8px #fbc531) drop-shadow(0 0 3px #fff); }
+        .minimap-runner-icon.ult-highlight { transform: translate(-50%, -50%) scale(2.0); z-index: 100; filter: drop-shadow(0 0 5px #fbc531) drop-shadow(0 0 3px #fff); }
 
-        #skill-log-box { position: absolute; top: 70px; left: 15px; width: 280px; height: 350px; display: flex; flex-direction: column; gap: 8px; z-index: 80; pointer-events: none; overflow: hidden; justify-content: flex-start; }
+        #skill-log-box { position: absolute; top: 70px; left: 15px; width: 280px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
         .skill-log-item { background: linear-gradient(90deg, rgba(0,0,0,0.85), rgba(0,0,0,0.2)); border-left: 4px solid #FFD700; border-radius: 8px; padding: 6px 12px; display: flex; align-items: center; gap: 12px; animation: slideInLeft 0.3s ease-out forwards, fadeOut 0.5s ease-in 3.5s forwards; opacity: 0.7; transform: scale(0.9); transform-origin: left bottom; transition: all 0.3s ease; }
         .skill-log-item:last-child { opacity: 1.0; transform: scale(1.1); }
         .skill-log-item img { width: 40px; height: 40px; border-radius: 8px; border: 2px solid #FFD700; background-color: #222; object-fit: cover; }
@@ -61,52 +61,54 @@
         @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
 
-        .status-popup-icon { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); width: 100px; height: auto; z-index: 30; pointer-events: none; border-radius: 12px; animation: popUpFadeBody 1.2s ease-out forwards; }
-        @keyframes popUpFadeBody { 0% { transform: translate(-50%, 0px) scale(0.5); opacity: 0; } 15% { transform: translate(-50%, -30px) scale(1.1); opacity: 1; } 80% { transform: translate(-50%, -50px) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -70px) scale(0.8); opacity: 0; } }
+        .status-popup-icon { position: absolute; left: 50%; bottom: 80px; transform: translateX(-50%); width: 80px; height: auto; pointer-events: none; border-radius: 12px; animation: popUpFadeBody 1.2s ease-out forwards; }
+        @keyframes popUpFadeBody { 0% { transform: translate(-50%, 0px) scale(0.5); opacity: 0; } 15% { transform: translate(-50%, -20px) scale(1.1); opacity: 1; } 80% { transform: translate(-50%, -30px) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -40px) scale(0.8); opacity: 0; } }
 
-        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; z-index: 5; }
-        .sprite-wrapper { position: absolute; bottom: 0; left: -60px; width: 120px; height: 120px; transform-origin: bottom center; transform-style: preserve-3d; }
-        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s, filter 0.3s ease; position: relative; z-index: 10; transform-style: preserve-3d; } 
-
-        /* 빛나는 테두리(Glow) 효과 */
+        /* 💡 z-index를 박멸하고 오직 translateZ를 이용한 완벽한 3D 빌보딩 설계 (1.5배 크기인 120px 유지) */
+        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; }
+        .sprite-wrapper { position: absolute; bottom: 0; left: -60px; width: 120px; height: 120px; transform-origin: bottom center; transform-style: preserve-3d; transform: translateZ(0px); }
+        
+        /* 빛나는 테두리(Glow) 효과 - z-index 제거 */
+        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s, filter 0.3s ease; position: relative; transform-style: preserve-3d; } 
         .flip-wrapper.has-buff { filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.8)); }
         .flip-wrapper.has-debuff { filter: drop-shadow(0 0 10px rgba(116, 185, 255, 0.8)); }
         .flip-wrapper.has-buff.has-debuff { filter: drop-shadow(0 0 10px rgba(162, 155, 254, 0.8)); }
 
-        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; filter: drop-shadow(1px 1px 3px rgba(0,0,0,0.5)); position: relative; z-index: 5; transform-style: preserve-3d; image-rendering: auto; }
+        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; position: relative; transform-style: preserve-3d; image-rendering: auto; }
         
-        .sweat-mark { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; z-index: 20; opacity: 0; pointer-events: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300a8ff"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>'); filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.8)); transition: opacity 0.3s; }
+        .sweat-mark { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; opacity: 0; pointer-events: none; transform: translateZ(2px); background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300a8ff"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>'); transition: opacity 0.3s; }
         .sweat-mark.show-sweat { opacity: 1; animation: sweatDrop 1.5s infinite; }
-        @keyframes sweatDrop { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(15px) scale(0.5); opacity: 0; } }
+        @keyframes sweatDrop { 0% { transform: translateY(0) translateZ(2px) scale(1); opacity: 1; } 100% { transform: translateY(15px) translateZ(2px) scale(0.5); opacity: 0; } }
 
         @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-5px) rotateZ(2deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-5px) rotateZ(-2deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         .running { animation: runCycle 0.6s infinite linear; }
         
         @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.05) translateY(-20px) rotateZ(5deg); filter: brightness(1.3); } 100% { transform: scale(1) translateY(0); } }
         .startled .sprite-anim { animation: startleJump 0.4s ease-out; }
-        .panic-mark { position: absolute; top: -10px; left: 10px; font-size: 60px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 2px 2px 3px black; transform-origin: bottom center; z-index: 21; }
+        .panic-mark { position: absolute; top: -10px; left: 10px; font-size: 60px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 2px 2px 3px black; transform-origin: bottom center; transform: translateX(-50%) translateZ(6px); }
         .startled .panic-mark { opacity: 1; animation: floatUpChat 0.5s forwards; }
         
-        .name-tag { font-size: 20px; font-weight: bold; background: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 6px; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 15; transition: opacity 0.5s ease; opacity: 1; border: 1px solid #555; }
+        .name-tag { font-size: 20px; font-weight: bold; background: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 6px; position: absolute; top: -30px; left: 50%; transform: translateX(-50%) translateZ(5px); white-space: nowrap; transition: opacity 0.5s ease; opacity: 1; border: 1px solid #555; }
         .status-badge, .hp-bar { display: none !important; } 
         
-        #spectator-area { width: 100%; height: 300px; border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; background: linear-gradient(to bottom, #111, #222); z-index: 60; margin-top: 5px; }
-        #spectator-area::before { content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background-image: url('assets/spectator_bg.png'); background-size: contain; background-repeat: repeat-x; background-position: center bottom; opacity: 0.6; z-index: 1; pointer-events: none; }
+        #spectator-area { width: 100%; height: 300px; border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; background: linear-gradient(to bottom, #111, #222); margin-top: 5px; }
+        #spectator-area::before { content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background-image: url('assets/spectator_bg.png'); background-size: contain; background-repeat: repeat-x; background-position: center bottom; opacity: 0.6; pointer-events: none; }
 
-        #commentary-board { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 90%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; height: 100px; pointer-events: none; z-index: 70; }
-        .msg-line { font-size: 18px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.75); padding: 8px 20px; border-radius: 8px; border-left: 6px solid #3498db; box-shadow: 0 4px 10px rgba(0,0,0,0.5); opacity: 0.5; transform: scale(0.85); transition: all 0.3s ease; white-space: nowrap; margin-top: 5px; }
+        #commentary-board { position: absolute; top: 0; left: 0; width: 100%; height: 33%; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; padding: 10px 20px; box-sizing: border-box; pointer-events: none; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+        .msg-line { font-size: 18px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.75); padding: 8px 15px; border-radius: 8px; border-left: 6px solid #3498db; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); opacity: 0.6; transform: scale(0.9); transform-origin: left bottom; transition: all 0.3s ease; white-space: nowrap; margin-top: 5px; }
         .msg-line:last-child { opacity: 1.0; transform: scale(1.0); font-size: 20px; border-left-color: #e74c3c; color: #f1c40f; } 
+        @keyframes fadeInMsg { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
 
-        .chat-bubble { position: absolute; color: #000; font-size: 16px; font-weight: 900; white-space: nowrap; z-index: 10; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 5px rgba(255,255,255,0.8); animation: popChatFixed 2.5s ease-in-out forwards; pointer-events: none; }
+        .chat-bubble { position: absolute; color: #000; font-size: 16px; font-weight: 900; white-space: nowrap; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 5px rgba(255,255,255,0.8); animation: popChatFixed 2.5s ease-in-out forwards; pointer-events: none; }
         @keyframes popChatFixed { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
         
-        #chat-controls { display: flex; justify-content: center; gap: 15px; align-items: center; z-index: 20; padding: 0 10px; margin-top: auto; }
+        #chat-controls { display: flex; flex-direction: column; gap: 10px; align-items: center; padding: 10px; width: 100%; }
         .chat-macros { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-        .chat-macros button { padding: 6px 12px; font-size: 13px; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.5); border-radius: 15px; font-weight: bold; cursor: pointer; backdrop-filter: blur(5px); }
+        .chat-macros button { font-family: 'GyeonggiTitleL'; padding: 6px 12px; font-size: 13px; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.5); border-radius: 15px; font-weight: bold; cursor: pointer; backdrop-filter: blur(5px); }
         .chat-macros button:hover { background: rgba(255,255,255,0.5); }
-        #custom-chat-box { display: none; gap: 5px; }
-        #custom-chat-box input { padding: 6px 10px; border-radius: 15px; border: none; outline: none; font-weight: bold; width: 200px; background: rgba(255,255,255,0.8); }
-        #custom-chat-box button { background: #e84118; color: white; padding: 6px 15px; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; }
+        #custom-chat-box { display: flex; gap: 5px; justify-content: center; }
+        #custom-chat-box input { font-family: 'GyeonggiTitleL'; padding: 6px 10px; border-radius: 15px; border: none; outline: none; font-weight: bold; width: 250px; background: rgba(255,255,255,0.9); }
+        #custom-chat-box button { font-family: 'GyeonggiTitleL'; background: #e84118; color: white; padding: 6px 15px; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; }
         
         #ult-cutin { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(50,0,0,0.8); z-index: 20; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #ult-cutin-bg { width: 100%; background: linear-gradient(90deg, transparent, #e53935, transparent); padding: 40px 0; border-top: 2px solid #ffeb3b; border-bottom: 2px solid #ffeb3b; }
@@ -118,9 +120,9 @@
         @keyframes floatUpTitle { 0% { transform: translateY(20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
         #podium-container { position: relative; width: 800px; height: 350px; }
         .podium-step { position: absolute; bottom: 0; width: 160px; display: flex; justify-content: center; align-items: flex-start; padding-top: 10px; font-size: 50px; font-weight: 900; color: rgba(255,255,255,0.8); text-shadow: 2px 2px 4px #000; border-top-left-radius: 10px; border-top-right-radius: 10px; box-shadow: inset 0 10px 20px rgba(255,255,255,0.2), 0 10px 20px rgba(0,0,0,0.8); }
-        .step-1 { left: 50%; transform: translateX(-50%); height: 220px; background: linear-gradient(to bottom, #f1c40f, #e67e22); z-index: 3; }
-        .step-2 { left: calc(50% - 160px); transform: translateX(-50%); height: 150px; background: linear-gradient(to bottom, #bdc3c7, #7f8c8d); z-index: 2; }
-        .step-3 { left: calc(50% + 160px); transform: translateX(-50%); height: 100px; background: linear-gradient(to bottom, #cd7f32, #a04000); z-index: 1; }
+        .step-1 { left: 50%; transform: translateX(-50%); height: 220px; background: linear-gradient(to bottom, #f1c40f, #e67e22); transform-style: preserve-3d; }
+        .step-2 { left: calc(50% - 160px); transform: translateX(-50%); height: 150px; background: linear-gradient(to bottom, #bdc3c7, #7f8c8d); transform-style: preserve-3d; }
+        .step-3 { left: calc(50% + 160px); transform: translateX(-50%); height: 100px; background: linear-gradient(to bottom, #cd7f32, #a04000); transform-style: preserve-3d; }
         .podium-runner { position: absolute; transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; transform-style: preserve-3d; }
         .podium-name { background: rgba(0,0,0,0.8); color: white; padding: 4px 12px; border-radius: 8px; font-size: 20px; font-weight: bold; white-space: nowrap; margin-bottom: -20px; z-index: 10; border: 2px solid #555; }
     </style>
@@ -133,7 +135,6 @@
         <h2>대회 방 생성</h2>
         <input type="text" id="dcUrl" placeholder="디시인사이드 게시글 주소를 입력하세요">
         <button onclick="extractParticipants()">참가자 추출</button>
-        <div id="lobby-status" style="margin-top: 10px; color: #fbc531; font-weight: bold;"></div>
         <div id="filter-box"></div>
         <div id="setup-box" style="display:none; margin-top:20px;">
             <div class="option-group" style="border-bottom: 2px dashed #718093; padding-bottom: 15px;">
@@ -143,35 +144,13 @@
                     <button onclick="applyTimeFilter()" style="margin-top: 10px; font-size: 14px; background: #e53935;">시간 필터 적용</button>
                 </div>
             </div>
-            <div style="margin: 10px 0; padding: 10px; background: #1e272e; border-radius: 5px; color: #0be881; font-weight: bold;">🗼 맵: 도쿄 경기장 (2,000m) 도심 레이싱</div>
-            <select id="bgmSelect">
-                <option value="none">🔇 BGM 없음</option>
-                <option value="random">🔀 랜덤 BGM</option>
-                <option value="SKY HiGH Remix.mp3">SKY HiGH Remix</option>
-                <option value="CIDER BANG! Remix.mp3">CIDER BANG! Remix</option>
-                <option value="우주미아 Remix.mp3">우주미아 Remix</option>
-                <option value="Ballin Remix.mp3">Ballin Remix</option>
-                <option value="HEADLINE.mp3">HEADLINE</option>
-                <option value="We Ride.mp3">We Ride</option>
-                <option value="WAKTA!.mp3">WAKTA!</option>
-                <option value="스키!.mp3">스키!</option>
-                <option value="FINISH LINE.mp3">FINISH LINE (아세토 고갯길배틀)</option>
-                <option value="Boosting Higher.mp3">Boosting Higher (아세토 고갯길배틀)</option>
-                <option value="데자부.mp3">데자부</option>
-                <option value="왁스라다 리믹스.mp3">왁스라다</option>
-                <option value="지구용사 우왁굳.mp3">지구용사 우왁굳</option>
-                <option value="융터르.mp3">융터르</option>
-                <option value="꾀꼬리.mp3">꾀꼬리 (파이널 로맨스)</option>
-                <option value="멋쟁이 신사 쿤미옌.mp3">멋쟁이 신사 쿤미옌 (파이널 로맨스)</option>
-                <option value="아니아니아닌데.mp3">아니아니아닌데 (파이널 로맨스)</option>
-                <option value="종천지모 Megamix.mp3">종천지모 Megamix</option>
-            </select>
             <div class="option-group">
                 <label><input type="checkbox" id="allowCustomChat">💬 관객석 커스텀(자유) 채팅 허용</label>
             </div>
             <input type="text" id="datetimeInput" placeholder="시작 시간 예약 (클릭)">
             <br>
             <button onclick="createRoomFinal()" style="background:#e84118; margin-top: 10px;">방 만들기</button>
+            <div id="lobby-status" style="margin-top: 10px; color: #fbc531; font-weight: bold;"></div>
         </div>
     </div>
 
@@ -203,21 +182,22 @@
         
         <div id="spectator-area">
             <div id="commentary-board"></div>
-            
+        </div>
+        
+        <div id="chat-controls">
             <div class="chat-macros">
-                    <button onclick="sendChat('ㅎㅇ')">ㅎㅇ</button>
-                    <button onclick="sendChat('샤욘아!')">샤욘아!</button>
-                    <button onclick="sendChat('가즈아아아')">가즈아아아</button>
-                    <button onclick="sendChat('떨린다')">떨린다</button>
-                    <button onclick="sendChat('어흐')">어흐</button>
-                    <button onclick="sendChat('젠황')">젠황</button>
-                    <button onclick="sendChat('ㅅㅂ')">ㅅㅂ</button>
-                    <button onclick="sendChat('주작')">주작</button>
-                </div>
-                <div id="custom-chat-box">
-                    <input type="text" id="customChatInput" placeholder="자유 채팅 입력..." maxlength="20">
-                    <button onclick="sendCustomChat()">전송</button>
-                </div>
+                <button onclick="sendChat('ㅎㅇ')">ㅎㅇ</button>
+                <button onclick="sendChat('샤욘아!')">샤욘아!</button>
+                <button onclick="sendChat('가즈아아아')">가즈아아아</button>
+                <button onclick="sendChat('떨린다')">떨린다</button>
+                <button onclick="sendChat('어흐')">어흐</button>
+                <button onclick="sendChat('젠황')">젠황</button>
+                <button onclick="sendChat('ㅅㅂ')">ㅅㅂ</button>
+                <button onclick="sendChat('주작')">주작</button>
+            </div>
+            <div id="custom-chat-box">
+                <input type="text" id="customChatInput" placeholder="자유 채팅 입력..." maxlength="20">
+                <button onclick="sendCustomChat()">전송</button>
             </div>
         </div>
     </div>
@@ -282,7 +262,7 @@
         AUDIO_FX.applause.volume = 0.4;
         AUDIO_FX.buff.volume = 0.15;    
         AUDIO_FX.debuff.volume = 0.15;  
-        AUDIO_FX.run.loop = true; AUDIO_FX.run.volume = 0.8; 
+        AUDIO_FX.run.loop = true; AUDIO_FX.run.volume = 0.9; 
         let globalBgmAudio = null;
         let runAudios = []; 
 
@@ -379,7 +359,7 @@
             cutin.style.display = 'flex';
             
             let voiceAudio = new Audio(`assets/voice/${voiceFile}`);
-            voiceAudio.volume = 0.4; 
+            voiceAudio.volume = 0.5; 
             voiceAudio.play().catch(e => console.log("음성 재생 불가"));
             
             if(globalBgmAudio) {
@@ -493,11 +473,15 @@
             const timeInput = document.getElementById('datetimeInput').value;
             if(!timeInput) { alert("시간을 예약하세요."); return; }
             const scheduled = Math.floor(new Date(timeInput.replace(' ', 'T')).getTime() / 1000);
-            let chosenBgm = document.getElementById('bgmSelect').value;
-            if (chosenBgm === 'random') {
-                const opts = Array.from(document.getElementById('bgmSelect').options).map(o=>o.value).filter(v=>v!=='none'&&v!=='random');
-                chosenBgm = opts[Math.floor(Math.random() * opts.length)];
-            }
+            
+            const bgmList = [
+                "SKY HiGH Remix.mp3", "CIDER BANG! Remix.mp3", "우주미아 Remix.mp3", "Ballin Remix.mp3",
+                "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", 
+                "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3",
+                "융터르.mp3", "꾀꼬리.mp3", "멋쟁이 신사 쿤미옌.mp3", "아니아니아닌데.mp3", "종천지모 Megamix.mp3"
+            ];
+            let chosenBgm = bgmList[Math.floor(Math.random() * bgmList.length)];
+            
             document.getElementById('lobby-status').innerText = "방 만드는 중...";
             try {
                 const res = await fetch(`${API_BASE}/create_room_final`, {
@@ -665,6 +649,7 @@
                 const rBase = document.createElement('div'); rBase.className = 'runner-base'; rBase.id = `runner-${p.id}`;
                 rBase.style.transform = `translate3d(${spawnX}px, ${spawnY}px, 0)`;
 
+                // 💡 [찌그러짐 원천 차단] 3D 스케일 제거 + 원본 박스 크기 유지
                 rBase.innerHTML = `
                     <div class="sprite-wrapper">
                         <div class="flip-wrapper">
@@ -776,47 +761,45 @@
                 let focusX = smoothCenterX; let focusY = smoothCenterY;
                 let targetZoom = conf.zoom;
 
-                // 💡 [기획 반영] 카메라 4번: 한 명씩 비출 때 실시간 정렬된 타겟 배열 사용!
-                // 덜덜거림 방지를 위해, 가장 처음에 잡은 기준 배열로 먼저 순서를 고정한 후, 
-                // 다음 사람에게 넘어가는 순간에만 순위를 재평가해서 타겟을 부드럽게 전환합니다.
-                
+                // 💡 [기획 반영] 카메라 4번 실시간 훑기 로직 (덜덜거림 완전 박멸)
                 if (isCut) {
-                    window.baseSweepOrder = [...(runnerPositions || preShowRunners)].sort((a, b) => b.dist - a.dist);
-                    window.lastSweepIndex = -1;
+                    window.sweepTargets = [...(runnerPositions || preShowRunners)].sort((a, b) => b.dist - a.dist);
+                    window.currentSweepIdx = 0;
                 }
-                let targets = window.baseSweepOrder || runnerPositions;
-
+                
                 if (t < 0.7) {
                     let scanT = t / 0.7; 
-                    let floatIdx = scanT * (targets.length - 1);
-                    if(floatIdx >= 0 && targets.length > 0) {
-                        let idx1 = Math.floor(floatIdx); 
-                        let idx2 = Math.ceil(floatIdx);
+                    let floatIdx = scanT * (window.sweepTargets.length - 1);
+                    if(floatIdx >= 0 && window.sweepTargets.length > 0) {
+                        let intIdx = Math.floor(floatIdx);
                         
-                        // 인덱스가 바뀔 때마다 실시간으로 현재 순위를 반영해 배열 업데이트
-                        if (idx1 !== window.lastSweepIndex && runnerPositions) {
-                            window.baseSweepOrder = [...runnerPositions].sort((a, b) => b.dist - a.dist);
-                            targets = window.baseSweepOrder;
-                            window.lastSweepIndex = idx1;
+                        // 타겟이 다음 선수로 바뀔 때마다 실시간으로 배열 순위를 갱신하여 덜덜거림 방지
+                        if (intIdx > window.currentSweepIdx && runnerPositions) {
+                            let currentRankings = [...runnerPositions].sort((a, b) => b.dist - a.dist);
+                            for(let k = intIdx; k < currentRankings.length; k++) {
+                                window.sweepTargets[k] = currentRankings[k];
+                            }
+                            window.currentSweepIdx = intIdx;
                         }
-
-                        let w = floatIdx - idx1; 
-                        let r1 = targets[idx1]; let r2 = targets[idx2];
+                        
+                        let idx2 = Math.ceil(floatIdx);
+                        let w = floatIdx - intIdx; 
+                        let r1 = window.sweepTargets[intIdx]; 
+                        let r2 = window.sweepTargets[idx2];
                         if (r1 && r2) {
                             focusX = r1.worldX * (1 - w) + r2.worldX * w;
                             focusY = r1.worldY * (1 - w) + r2.worldY * w;
                         }
                     }
                 } else {
-                    // 상위 4명 비출 때도 실시간 정렬
-                    let topTargets = runnerPositions ? [...runnerPositions].sort((a, b) => b.dist - a.dist) : targets;
-                    let topCount = Math.min(4, topTargets.length);
+                    let currentRankings = runnerPositions ? [...runnerPositions].sort((a, b) => b.dist - a.dist) : window.sweepTargets;
+                    let topCount = Math.min(4, currentRankings.length);
                     if(topCount > 0) {
                         let sumX = 0, sumY = 0;
-                        for(let i = 0; i < topCount; i++) { sumX += topTargets[i].worldX; sumY += topTargets[i].worldY; }
+                        for(let i = 0; i < topCount; i++) { sumX += currentRankings[i].worldX; sumY += currentRankings[i].worldY; }
                         let avgX = sumX / topCount; let avgY = sumY / topCount;
                         let backT = (t - 0.7) / 0.3; let backE = easeOut(backT); 
-                        let lastR = topTargets[topTargets.length - 1];
+                        let lastR = window.sweepTargets[window.sweepTargets.length - 1]; // 마지막에 비춘 선수 위치에서부터 부드럽게 이동
                         focusX = lastR.worldX * (1 - backE) + avgX * backE;
                         focusY = lastR.worldY * (1 - backE) + avgY * backE;
                         targetZoom = conf.zoom - (1.3 * backE);
@@ -910,6 +893,8 @@
                     if(timeLeft <= 10) cache.nameTag.style.opacity = '0'; 
 
                     cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
+                    
+                    // 💡 [완벽한 빌보딩] 역방향 회전만으로 어떤 앵글에서도 주자가 항상 정면을 보도록 처리
                     cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
                 });
 
@@ -1042,6 +1027,7 @@
                             cache.flipWrap.style.transform = 'scaleX(-1)';
                         }
 
+                        // 💡 [완벽한 빌보딩] 3D 스케일 제거 + 카메라 정면 고정
                         cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
                         
                         if(speed > 1.0) {
@@ -1232,7 +1218,7 @@
                 let rDiv = document.createElement('div');
                 rDiv.className = 'podium-runner';
                 
-                let pSkin = p.skin ? (p.skin.startsWith('http') ? p.skin : `assets/skin/${p.skin}`) : 'assets/skin/skin01.png';
+                let pSkin = p.skin ? (p.skin.startsWith('http') ? p.skin : `assets/skin/${p.skin}`) : 'assets/skin/runner.png';
                 let pHue = p.hue || 0;
 
                 rDiv.innerHTML = `
