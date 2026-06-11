@@ -6,12 +6,20 @@
     <title>왁마갤 무스메 : 갸샤욘 레이싱</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #0f1115; padding: 10px 0; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; overflow-x: hidden; }
+        /* 💡 경기천년제목 폰트 적용 */
+        @font-face {
+            font-family: 'GyeonggiTitleM';
+            src: url('assets/Title_Medium.woff') format('woff'), 
+                 url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_one@1.0/GyeonggiTitleM.woff') format('woff');
+            font-weight: normal; font-style: normal;
+        }
+
+        body { font-family: 'GyeonggiTitleM', 'Malgun Gothic', sans-serif; background-color: #0f1115; padding: 10px 0; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; overflow-x: hidden; }
         h1 { text-align: center; margin-bottom: 5px; color: #fbc531; font-size: 24px; }
         
         #lobby-panel { width: 90%; max-width: 650px; background-color: #2f3640; border-radius: 10px; padding: 20px; box-sizing: border-box; text-align: center; margin-top: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        #lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; }
-        button { padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #00a8ff; color: white; border: none; border-radius: 8px; transition: 0.2s; }
+        #lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; font-family: 'GyeonggiTitleM'; }
+        button { font-family: 'GyeonggiTitleM'; padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #00a8ff; color: white; border: none; border-radius: 8px; transition: 0.2s; }
         button:hover { background-color: #0097e6; }
         
         #filter-box { display: none; background: #1e272e; padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 250px; overflow-y: auto; text-align: left; border: 1px solid #718093; }
@@ -26,59 +34,30 @@
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; z-index: 1; }
         #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; }
         
-        /* 💡 타이머 전광판 UI (우측 상단) */
-        #timer-box { 
-            position: absolute; top: 15px; right: 20px; z-index: 90; 
-            background: rgba(0,0,0,0.7); padding: 6px 15px; border-radius: 8px; 
-            color: #fbc531; font-weight: bold; font-size: 20px; 
-            border: 2px solid #e1b12c; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); 
-        }
+        #timer-box { position: absolute; top: 15px; right: 20px; z-index: 90; background: rgba(0,0,0,0.7); padding: 6px 15px; border-radius: 8px; color: #fbc531; font-weight: bold; font-size: 20px; border: 2px solid #e1b12c; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
 
-        /* 💡 미니맵: 전체 배경 박스 제거, 투명한 공간에서 달리기 */
-        #integrated-minimap {
-            position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
-            width: 80%; display: flex; flex-direction: column; align-items: center;
-            z-index: 80; opacity: 0; transition: top 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in-out;
-        }
+        /* 💡 미니맵: 배경 박스 제거하고 투명하게 */
+        #integrated-minimap { position: absolute; top: -80px; left: 50%; transform: translateX(-50%); width: 80%; display: flex; flex-direction: column; align-items: center; z-index: 80; opacity: 0; transition: top 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in-out; }
         #integrated-minimap.show { top: 20px; opacity: 1; }
         
-        /* 💡 유성 궤적 게이지 바 및 중반/종반 선 복구 */
         #minimap-progress-track { width: 100%; height: 4px; background: rgba(0,0,0,0.6); border-radius: 2px; position: relative; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.8); overflow: visible; }
         #leader-trail { position: absolute; top: -1px; height: 6px; width: 0%; background: linear-gradient(90deg, transparent, #0be881, #fff); box-shadow: 2px 0 10px #0be881, 2px 0 5px #fff; border-radius: 3px; transition: left 0.1s linear, width 0.1s linear; }
         
         .minimap-marker { position: absolute; top: -4px; height: 12px; width: 2px; background: rgba(255,255,255,0.8); }
         .minimap-marker span { position: absolute; top: -18px; left: -12px; font-size: 11px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; white-space: nowrap;}
-        .minimap-start { left: 0%; }
-        .minimap-mid1 { left: 16.6%; } /* 중반 시작 */
-        .minimap-mid2 { left: 66.6%; } /* 종반 시작 */
-        .minimap-goal { left: 100%; }
+        .minimap-start { left: 0%; } .minimap-mid1 { left: 16.6%; } .minimap-mid2 { left: 66.6%; } .minimap-goal { left: 100%; }
         
-        /* 💡 마군 뷰 (배경 없음, 오각형 화살표 아이콘) */
-        #minimap-pack-view { width: 100%; height: 35px; position: relative; background: transparent; border: none; }
-        .minimap-runner-icon { 
-            position: absolute; width: 16px; height: 16px; 
-            clip-path: polygon(0% 0%, 75% 0%, 100% 50%, 75% 100%, 0% 100%);
-            filter: drop-shadow(1px 1px 2px black);
-            transform: translate(-50%, -50%); transition: left 0.1s linear, top 0.1s linear, transform 0.3s; 
-            display: flex; justify-content: center; align-items: center;
-        }
+        /* 마군 뷰 (배경 없음, 오각형 화살표 아이콘) */
+        #minimap-pack-view { width: 100%; height: 35px; position: relative; }
+        .minimap-runner-icon { position: absolute; width: 16px; height: 16px; clip-path: polygon(0% 0%, 75% 0%, 100% 50%, 75% 100%, 0% 100%); filter: drop-shadow(1px 1px 2px black); transform: translate(-50%, -50%); transition: left 0.1s linear, top 0.1s linear, transform 0.3s; z-index: 82; display: flex; justify-content: center; align-items: center; }
         .minimap-runner-icon span { color: #fff; font-size: 10px; font-weight: 900; margin-right: 3px; text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000; }
         
-        /* 💡 필살기 발동 시 미니맵 아이콘 거대화 하이라이트 */
-        .minimap-runner-icon.ult-highlight {
-            transform: translate(-50%, -50%) scale(2.0);
-            filter: drop-shadow(0 0 5px #fbc531) drop-shadow(0 0 3px #fff);
-        }
+        /* 💡 필살기 발동 시 미니맵 하이라이트 */
+        .minimap-runner-icon.ult-highlight { transform: translate(-50%, -50%) scale(1.6); z-index: 100; filter: drop-shadow(0 0 8px #fbc531) drop-shadow(0 0 3px #fff); }
 
-        /* 💡 2줄 구성 스킬 로그 팝업 (왼쪽 박스형, 높이 제한 해제로 4개 지원) */
-        #skill-log-box { position: absolute; top: 70px; left: 15px; width: 280px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-        .skill-log-item { 
-            background: linear-gradient(90deg, rgba(0,0,0,0.85), rgba(0,0,0,0.2)); 
-            border-left: 4px solid #FFD700; border-radius: 8px; padding: 6px 12px;
-            display: flex; align-items: center; gap: 12px;
-            animation: slideInLeft 0.3s ease-out forwards, fadeOut 0.5s ease-in 3.5s forwards;
-            opacity: 0.7; transform: scale(0.9); transform-origin: left bottom; transition: all 0.3s ease;
-        }
+        /* 💡 2줄 구성 스킬 로그 팝업 (최대 4개) */
+        #skill-log-box { position: absolute; top: 70px; left: 15px; width: 280px; height: 350px; display: flex; flex-direction: column; gap: 8px; z-index: 80; pointer-events: none; overflow: hidden; justify-content: flex-start; }
+        .skill-log-item { background: linear-gradient(90deg, rgba(0,0,0,0.85), rgba(0,0,0,0.2)); border-left: 4px solid #FFD700; border-radius: 8px; padding: 6px 12px; display: flex; align-items: center; gap: 12px; animation: slideInLeft 0.3s ease-out forwards, fadeOut 0.5s ease-in 3.5s forwards; opacity: 0.7; transform: scale(0.9); transform-origin: left bottom; transition: all 0.3s ease; }
         .skill-log-item:last-child { opacity: 1.0; transform: scale(1.1); }
         .skill-log-item img { width: 40px; height: 40px; border-radius: 8px; border: 2px solid #FFD700; background-color: #222; object-fit: cover; }
         .skill-text-container { display: flex; flex-direction: column; gap: 2px; text-shadow: 1px 1px 2px #000; }
@@ -87,83 +66,52 @@
         @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
 
-        /* 💡 z-index를 박멸하고 오직 translateZ를 이용한 완벽한 3D 빌보딩 설계 */
-        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; }
-        .billboard-wrapper { position: absolute; left: 0; bottom: 0; transform-style: preserve-3d; }
-        
-        /* 주자 이미지 원본 비율 보존 (80x80 고정) */
-        .sprite-wrapper { position: absolute; bottom: 0; left: -40px; width: 80px; height: 80px; transform-origin: bottom center; transform-style: preserve-3d; transform: translateZ(0px); }
-        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; transform-style: preserve-3d; } 
-        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.6)); transform-style: preserve-3d; }
-        
-        /* 몸 중앙 방사형 아우라 (Z축 뒤로 배치) */
-        .energy-aura {
-            position: absolute; bottom: 40px; left: 0px; transform: translate(-50%, 50%) translateZ(-10px);
-            width: 150px; height: 150px; border-radius: 50%;
-            mix-blend-mode: screen; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-        }
+        .energy-aura { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; border-radius: 50%; mix-blend-mode: screen; opacity: 0; pointer-events: none; z-index: 15; transition: opacity 0.3s ease; }
         .energy-aura.buff { background: radial-gradient(circle, rgba(0,255,255,0.7) 0%, rgba(0,255,255,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; }
         .energy-aura.debuff { background: radial-gradient(circle, rgba(138,43,226,0.7) 0%, rgba(138,43,226,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; mix-blend-mode: multiply; }
         .energy-aura.debuff-mix { background: radial-gradient(circle, rgba(200,200,255,0.7) 0%, rgba(200,200,255,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; }
-        @keyframes pulseAura { 0% { transform: translate(-50%, 50%) translateZ(-10px) scale(0.85); opacity: 0.6; } 100% { transform: translate(-50%, 50%) translateZ(-10px) scale(1.15); opacity: 1.0; } }
+        @keyframes pulseAura { 0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1.0; } }
 
-        /* 상태 팝업 아이콘 (Z축 가장 앞으로 배치) */
-        .status-popup-icon {
-            position: absolute; bottom: 40px; left: 0px; 
-            width: 160px; height: auto; pointer-events: none; border-radius: 12px;
-            animation: popUpFadeBody 1.2s ease-out forwards;
-        }
-        @keyframes popUpFadeBody {
-            0% { transform: translate(-50%, 50%) translateZ(15px) scale(0.5); opacity: 0; }
-            15% { transform: translate(-50%, -20%) translateZ(15px) scale(1.1); opacity: 1; }
-            80% { transform: translate(-50%, -50%) translateZ(15px) scale(1.0); opacity: 1; }
-            100% { transform: translate(-50%, -80%) translateZ(15px) scale(0.8); opacity: 0; }
-        }
+        /* 💡 팝업 아이콘 크기 알맞게 조정 (100px) */
+        .status-popup-icon { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); width: 100px; height: auto; z-index: 30; pointer-events: none; border-radius: 12px; animation: popUpFadeBody 1.2s ease-out forwards; }
+        @keyframes popUpFadeBody { 0% { transform: translate(-50%, 0px) scale(0.5); opacity: 0; } 15% { transform: translate(-50%, -30px) scale(1.1); opacity: 1; } 80% { transform: translate(-50%, -50px) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -70px) scale(0.8); opacity: 0; } }
+
+        /* 💡 [찌그러짐 원천 차단 완벽 설계] */
+        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; z-index: 5; }
+        /* 1. 3D 회전을 담당하는 래퍼 (크기 조절 없음) */
+        .sprite-wrapper { position: absolute; bottom: 0; left: -60px; width: 120px; height: 120px; transform-origin: bottom center; transform-style: preserve-3d; }
+        /* 2. 크기(2/3 사이즈)와 좌우 반전을 담당하는 래퍼 (3D 연산과 완벽 분리!) */
+        .flip-wrapper { width: 100%; height: 100%; transform-origin: bottom center; transform: scale(0.66); transition: transform 0.2s; position: relative; z-index: 10; transform-style: preserve-3d; } 
+        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.6)); position: relative; z-index: 5; transform-style: preserve-3d; }
         
-        /* 땀방울 이펙트 */
-        .sweat-mark {
-            position: absolute; top: -10px; right: -20px; width: 30px; height: 30px; opacity: 0; pointer-events: none;
-            transform: translateZ(2px);
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300a8ff"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>');
-            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.8)); transition: opacity 0.3s;
-        }
+        .sweat-mark { position: absolute; top: -10px; right: 0px; width: 40px; height: 40px; z-index: 20; opacity: 0; pointer-events: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300a8ff"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>'); filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.8)); transition: opacity 0.3s; }
         .sweat-mark.show-sweat { opacity: 1; animation: sweatDrop 1.5s infinite; }
-        @keyframes sweatDrop { 0% { transform: translateY(0) translateZ(2px) scale(1); opacity: 1; } 100% { transform: translateY(20px) translateZ(2px) scale(0.5); opacity: 0; } }
+        @keyframes sweatDrop { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(20px) scale(0.5); opacity: 0; } }
 
-        /* 느낌표 이펙트 */
-        .panic-mark { position: absolute; bottom: 80px; left: 0; transform: translateX(-50%) translateZ(6px); font-size: 60px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 2px 2px 4px black; }
-        .startled .panic-mark { opacity: 1; animation: floatUpChat 0.5s forwards; }
-
-        /* 닉네임 태그 */
-        .name-tag { position: absolute; bottom: 90px; left: 0; transform: translateX(-50%) translateZ(5px); font-size: 24px; font-weight: bold; background: rgba(0,0,0,0.8); color: white; padding: 4px 10px; border-radius: 8px; white-space: nowrap; }
-
-        /* 달리기 애니메이션 */
         @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-10px) rotateZ(4deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-10px) rotateZ(-4deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         .running { animation: runCycle 0.6s infinite linear; }
+        
         @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.1) translateY(-40px) rotateZ(10deg); filter: brightness(1.5); } 100% { transform: scale(1) translateY(0); } }
         .startled .sprite-anim { animation: startleJump 0.4s ease-out; }
+        .panic-mark { position: absolute; top: -60px; left: 30px; font-size: 60px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 4px 4px 6px black; transform-origin: bottom center; }
+        .startled .panic-mark { opacity: 1; animation: floatUpChat 0.5s forwards; }
         
-        .status-badge { display: none !important; } 
-        .hp-bar { display: none !important; }
+        /* 💡 닉네임 태그 페이드 아웃 효과 적용 */
+        .name-tag { font-size: 30px; font-weight: bold; background: rgba(0,0,0,0.8); color: white; padding: 4px 12px; border-radius: 10px; position: absolute; top: -40px; left: -10px; white-space: nowrap; z-index: 15; transition: opacity 0.5s ease; opacity: 1; }
+        .status-badge, .hp-bar { display: none !important; } 
         
-        /* 💡 관중석(채팅창) 크기 확장 (300px) */
-        #spectator-area { width: 100%; height: 300px; border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; background: linear-gradient(to bottom, #111, #222); margin-top: 5px; }
-        #spectator-area::before { content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 120%; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><path d="M5,20 Q10,15 15,20 Q20,10 25,20 Q30,12 35,20 Q40,5 45,20 Q50,15 55,20 Q60,10 65,20 Q70,5 75,20 Q80,18 85,20 Q90,8 95,20 Z" fill="rgba(0,0,0,0.8)"/></svg>'); background-size: cover; background-position: bottom; background-repeat: repeat-x; opacity: 0.8; z-index: 1; pointer-events: none; }
+        /* 💡 관중석(채팅창) 실루엣 연출 및 크기 조정 */
+        #spectator-area { width: 100%; height: 300px; border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; background: linear-gradient(to bottom, #111, #222); z-index: 60; margin-top: 5px; }
+        #spectator-area::before { content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background-image: url('assets/ChatGPT%20Image%202026%EB%85%84%206%EC%9B%94%2011%EC%9D%BC%20%EC%98%A4%ED%9B%84%2009_31_27.png'); background-size: cover; background-position: center bottom; opacity: 0.6; z-index: 1; pointer-events: none; }
 
-        /* 💡 다이나믹 중계창 (관중석 내부 상단 1/3 부분 배치) */
-        #commentary-board { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 33%; 
-            display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; 
-            padding: 10px 20px; box-sizing: border-box; pointer-events: none; z-index: 70; 
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); 
-        }
-        .msg-line { font-size: 18px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.75); padding: 8px 15px; border-radius: 8px; border-left: 6px solid #3498db; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); opacity: 0.6; transform: scale(0.9); transform-origin: left bottom; transition: all 0.3s ease; white-space: nowrap; margin-top: 5px; }
+        /* 💡 다이나믹 중계창을 관중석 상단 1/3 부분 배치 */
+        #commentary-board { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 90%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; pointer-events: none; z-index: 70; }
+        .msg-line { font-size: 18px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.75); padding: 8px 20px; border-radius: 8px; border-left: 6px solid #3498db; box-shadow: 0 4px 10px rgba(0,0,0,0.5); opacity: 0.5; transform: scale(0.85); transition: all 0.3s ease; white-space: nowrap; margin-top: 5px; }
         .msg-line:last-child { opacity: 1.0; transform: scale(1.0); font-size: 20px; border-left-color: #e74c3c; color: #f1c40f; } 
-        @keyframes fadeInMsg { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
 
-        /* 채팅 랜덤 표시 (흰 테두리 글자만) */
-        .chat-bubble { position: absolute; color: #fff; font-size: 16px; font-weight: 900; white-space: nowrap; z-index: 10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 5px rgba(0,0,0,0.8); animation: popChat 2.5s ease-in-out forwards; transform: translateX(-50%); pointer-events: none; }
-        @keyframes popChat { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.5); } 10% { opacity: 1; transform: translate(-50%, 0) scale(1.2); } 20% { transform: translate(-50%, 0) scale(1.0); } 80% { opacity: 1; transform: translate(-50%, -5px); } 100% { opacity: 0; transform: translate(-50%, -15px); } }
+        /* 💡 채팅 랜덤 표시 (검은 텍스트 + 흰 테두리) */
+        .chat-bubble { position: absolute; color: #000; font-size: 16px; font-weight: 900; white-space: nowrap; z-index: 10; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 5px rgba(255,255,255,0.8); animation: popChatFixed 2.5s ease-in-out forwards; pointer-events: none; }
+        @keyframes popChatFixed { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
         
         #chat-controls { display: flex; justify-content: center; gap: 15px; align-items: center; z-index: 20; padding: 0 10px; margin-top: auto; }
         .chat-macros { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
@@ -189,7 +137,6 @@
         .podium-runner { position: absolute; transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; transform-style: preserve-3d; }
         .podium-name { background: rgba(0,0,0,0.8); color: white; padding: 4px 12px; border-radius: 8px; font-size: 20px; font-weight: bold; white-space: nowrap; margin-bottom: -20px; z-index: 10; border: 2px solid #555; }
 
-        /* 필살기 만화 집중선 이펙트 */
         #ult-edge-effect { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; background: repeating-conic-gradient( from 0deg at 50% 50%, transparent 0deg, transparent 1deg, rgba(255, 255, 255, 0.8) 1.2deg, rgba(255, 255, 255, 0.8) 1.5deg, transparent 1.7deg ); -webkit-mask-image: radial-gradient(circle at center, transparent 40%, black 100%); mask-image: radial-gradient(circle at center, transparent 40%, black 100%); animation: focusFlicker 0.1s infinite alternate; }
         @keyframes focusFlicker { 0% { transform: scale(1.0); opacity: 0.8; } 100% { transform: scale(1.05); opacity: 1.0; } }
     </style>
@@ -239,7 +186,8 @@
                 <label><input type="checkbox" id="allowCustomChat">💬 관객석 커스텀(자유) 채팅 허용</label>
             </div>
             <input type="text" id="datetimeInput" placeholder="시작 시간 예약 (클릭)">
-            <br><button onclick="createRoomFinal()" style="background:#e84118; margin-top: 10px;">방 개설 및 서버 연산 시작</button>
+            <br>
+            <button onclick="createRoomFinal()" style="background:#e84118; margin-top: 10px;">방 만들기</button>
         </div>
     </div>
 
@@ -336,21 +284,21 @@
 
         const domCache = new Map();
         
+        // 💡 오디오 볼륨 황금비율 유지
         const AUDIO_FX = {
             lobby: new Audio('assets/sounds/lobby_bgm.mp3'),
             whistle: new Audio('assets/sounds/whistle.mp3'),
             applause: new Audio('assets/sounds/applause.mp3'),
             buff: new Audio('assets/sounds/buff.mp3'),
-            debuff: new Audio('assets/sounds/debuff.mp3'),
-            run: new Audio('assets/sounds/run.mp3')
+            debuff: new Audio('assets/sounds/debuff.mp3')
         };
         AUDIO_FX.lobby.loop = true; AUDIO_FX.lobby.volume = 0.15;
         AUDIO_FX.whistle.volume = 0.1; 
         AUDIO_FX.applause.volume = 0.3;
         AUDIO_FX.buff.volume = 0.05;    
         AUDIO_FX.debuff.volume = 0.05;  
-        AUDIO_FX.run.loop = true; AUDIO_FX.run.volume = 0.9; 
         let globalBgmAudio = null;
+        let runAudios = []; // 💡 최대 5개 발소리 스택
 
         const POPUP_MAP = {
             "목표 속도 증가": "SPD_UP.png", "현재 속도 증가": "SPD_UP.png", "속도 증가": "SPD_UP.png",
@@ -379,7 +327,14 @@
         let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
         let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
 
-        // 💡 팝업 큐 프로세서
+        // 💡 [링크 복사 기능 추가]
+        function copyLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert("방 링크가 복사되었습니다!");
+            });
+        }
+
+        // 팝업 큐 프로세서
         function processPopupQueue(runnerIdStr) {
             let cache = domCache.get(runnerIdStr);
             if (!cache || cache.isPopupPlaying || cache.popupQueue.length === 0) return;
@@ -397,8 +352,8 @@
             icon.className = 'status-popup-icon';
             icon.src = `assets/skills/${POPUP_MAP[nextPopup.type] || 'SPD_UP.png'}`;
             icon.onerror = function() { this.style.display='none'; };
-            // 💡 3D 래퍼에 종속시켜 회전の影響 없이 깔끔하게 표시
-            cache.billboard.appendChild(icon);
+            // 💡 3D 래퍼(wrapper)에 종속시켜 빌보딩 효과를 함께 받게 함
+            cache.wrapper.appendChild(icon);
 
             let isBuff = nextPopup.type.includes("증가") || nextPopup.type.includes("회복");
             if(isBuff && AUDIO_FX.buff) AUDIO_FX.buff.play().catch(e=>{});
@@ -412,7 +367,7 @@
             setTimeout(() => { if (icon.parentNode) icon.remove(); }, 1200);
         }
 
-        // 스킬 로그 UI (왼쪽 4칸 유지)
+        // 스킬 로그 팝업 (최대 4개 유지)
         function spawnSkillLog(runnerName, skillName, skillIcon) {
             let logBox = document.getElementById('skill-log-box');
             if(logBox.childElementCount >= 4) {
@@ -478,7 +433,6 @@
             line.className = 'msg-line' + (highlight ? ' highlight' : '');
             line.innerText = `▶ ${text}`;
             board.appendChild(line);
-            // 2줄까지만 유지
             if(board.childElementCount > 2) board.removeChild(board.firstChild);
         }
 
@@ -563,7 +517,7 @@
                 const opts = Array.from(document.getElementById('bgmSelect').options).map(o=>o.value).filter(v=>v!=='none'&&v!=='random');
                 chosenBgm = opts[Math.floor(Math.random() * opts.length)];
             }
-            document.getElementById('lobby-status').innerText = "서버 엔진 연산 중...";
+            document.getElementById('lobby-status').innerText = "방 만드는 중...";
             try {
                 const res = await fetch(`${API_BASE}/create_room_final`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -572,7 +526,14 @@
                 const data = await res.json();
                 if(data.success) {
                     const roomUrl = window.location.origin + window.location.pathname + '?room=' + data.room_id;
-                    document.getElementById('lobby-panel').innerHTML = `<h2>🎉 방 생성 완료!</h2><input type="text" value="${roomUrl}" readonly style="width:100%;"><button onclick="window.location.href='${roomUrl}'">입장하기</button>`;
+                    document.getElementById('lobby-panel').innerHTML = `
+                        <h2>🎉 방 생성 완료!</h2>
+                        <input type="text" value="${roomUrl}" readonly style="width:100%;">
+                        <div style="margin-top: 15px;">
+                            <button onclick="copyLink('${roomUrl}')" style="background:#f39c12; margin-right:10px;">🔗 링크 복사</button>
+                            <button onclick="window.location.href='${roomUrl}'">입장하기</button>
+                        </div>
+                    `;
                 } else alert("방 생성 실패: " + data.message);
             } catch(e) { alert("서버 연결 실패 또는 에러 발생: " + e.message); console.error(e); }
         }
@@ -703,6 +664,7 @@
                 finalWorldY += backwardY;
                 
                 let gatherY = finalWorldY + 400 + Math.random() * 500;
+                
                 let behavior = 'ready'; let r = Math.random();
                 if (r < 0.3) behavior = 'wander'; else if (r < 0.6) behavior = 'chat'; 
                 
@@ -722,14 +684,14 @@
                 const rBase = document.createElement('div'); rBase.className = 'runner-base'; rBase.id = `runner-${p.id}`;
                 rBase.style.transform = `translate3d(${spawnX}px, ${spawnY}px, 0)`;
 
-                // 💡 [찌그러짐 원천 차단 구조] billboard-wrapper를 도입하여 3D 평면을 수직으로 돌려세움
+                // 💡 [찌그러짐 원천 차단] 고해상도 박스(120px)를 회전시킨 후, 내부에서 2/3 비율로 ScaleX/Y를 개별 적용하여 찌그러짐을 완벽히 방지!
                 rBase.innerHTML = `
-                    <div class="billboard-wrapper" id="billboard-${p.id}">
+                    <div class="sprite-wrapper">
                         <div class="energy-aura" id="aura-${p.id}"></div>
-                        <div class="sprite-wrapper">
+                        <div class="flip-wrapper">
                             <svg class="sweat-mark" viewBox="0 0 24 24"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>
                             <div class="panic-mark">!</div>
-                            <div class="flip-wrapper"><div class="sprite-anim" style="background-image: url('${pSkin}'); filter: hue-rotate(${pHue}deg);"></div></div>
+                            <div class="sprite-anim" style="background-image: url('${pSkin}'); filter: hue-rotate(${pHue}deg);"></div>
                         </div>
                         <div class="name-tag">${p.name}</div>
                     </div>
@@ -748,7 +710,6 @@
 
                 domCache.set(String(p.id), {
                     base: rBase,
-                    billboard: rBase.querySelector('.billboard-wrapper'), // 💡 빌보딩 타겟 캐싱
                     dot: dot,
                     wrapper: rBase.querySelector('.sprite-wrapper'),
                     sprite: rBase.querySelector('.sprite-anim'),
@@ -769,7 +730,7 @@
         function spawnChatBubble(msg) {
             const bubble = document.createElement('div'); bubble.className = 'chat-bubble'; bubble.innerText = msg;
             let randomX = 10 + Math.random() * 80;
-            let randomY = 10 + Math.random() * 50;
+            let randomY = 10 + Math.random() * 80;
             bubble.style.left = `${randomX}%`; 
             bubble.style.bottom = `${randomY}%`;
             document.getElementById('spectator-area').appendChild(bubble);
@@ -837,26 +798,32 @@
                 let focusX = smoothCenterX; let focusY = smoothCenterY;
                 let targetZoom = conf.zoom;
 
+                // 💡 [카메라 4 덜덜거림 버그 수정]
+                if (isCut) {
+                    window.sweepOrder = [...(runnerPositions || preShowRunners)].sort((a, b) => b.dist - a.dist);
+                }
+                let targets = window.sweepOrder || runnerPositions;
+
                 if (t < 0.7) {
                     let scanT = t / 0.7; 
-                    let floatIdx = scanT * (runnerPositions.length - 1);
-                    if(floatIdx >= 0) {
+                    let floatIdx = scanT * (targets.length - 1);
+                    if(floatIdx >= 0 && targets.length > 0) {
                         let idx1 = Math.floor(floatIdx); let idx2 = Math.ceil(floatIdx);
                         let w = floatIdx - idx1; 
-                        let r1 = runnerPositions[idx1]; let r2 = runnerPositions[idx2];
+                        let r1 = targets[idx1]; let r2 = targets[idx2];
                         if (r1 && r2) {
                             focusX = r1.worldX * (1 - w) + r2.worldX * w;
                             focusY = r1.worldY * (1 - w) + r2.worldY * w;
                         }
                     }
                 } else {
-                    let topCount = Math.min(4, runnerPositions.length);
+                    let topCount = Math.min(4, targets.length);
                     if(topCount > 0) {
                         let sumX = 0, sumY = 0;
-                        for(let i = 0; i < topCount; i++) { sumX += runnerPositions[i].worldX; sumY += runnerPositions[i].worldY; }
+                        for(let i = 0; i < topCount; i++) { sumX += targets[i].worldX; sumY += targets[i].worldY; }
                         let avgX = sumX / topCount; let avgY = sumY / topCount;
                         let backT = (t - 0.7) / 0.3; let backE = easeOut(backT); 
-                        let lastR = runnerPositions[runnerPositions.length - 1];
+                        let lastR = targets[targets.length - 1];
                         focusX = lastR.worldX * (1 - backE) + avgX * backE;
                         focusY = lastR.worldY * (1 - backE) + avgY * backE;
                         targetZoom = conf.zoom - (1.3 * backE);
@@ -939,19 +906,26 @@
                             cache.sprite.className = 'sprite-anim';
                             cache.sprite.style.animationDuration = '0s';
                         }
-                        cache.flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
                     } else {
                         cache.sprite.className = 'sprite-anim'; cache.sprite.style.animationDuration = '0s'; 
                         r.currX = r.targetX; r.currY = r.targetY;
                         if(r.panicked) cache.base.classList.remove('startled'); 
-                        if(r.behavior === 'chat') cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
-                        if(timeLeft <= 10) cache.flipWrap.style.transform = 'scaleX(1)'; 
+                        if(r.behavior === 'chat' && timeLeft > 10) dx = r.chatZone.x - r.currX;
                     }
                     
+                    if(timeLeft <= 10) {
+                        cache.nameTag.style.opacity = '0'; 
+                        dx = -1; 
+                    }
+
                     cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
                     
-                    // 💡 [완벽한 빌보딩] Z축 회전을 먼저 취소하고, X축을 -90도로 세워 정면을 보게 한 뒤 카메라 X각도를 계산하여 완벽히 일어서게 만듦
-                    cache.billboard.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
+                    // 💡 [찌그러짐 원천 차단] 3D 로컬 좌표계 역방향 회전.
+                    cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
+                    
+                    // 💡 Scale 및 좌우 반전은 flipWrap 내부에서 2D로만 처리 (3D와 분리)
+                    let flipScaleX = (dx > 0) ? -0.66 : 0.66;
+                    cache.flipWrap.style.transform = `scaleX(${flipScaleX}) scaleY(0.66)`;
                 });
 
                 let newCamId = "1";
@@ -989,9 +963,16 @@
                 if(cache) {
                     cache.base.classList.remove('startled'); 
                     cache.base.style.transform = `translate3d(${r.finalX}px, ${r.finalY}px, 0)`; 
-                    cache.flipWrap.style.transform = 'scaleX(-1)'; 
                 }
             });
+
+            // 💡 [기획 반영] 오디오 5개 레이어 분리 재생
+            let numAudios = Math.min(5, roomData.participants.length);
+            for(let i=0; i<numAudios; i++) {
+                let a = new Audio('assets/sounds/run.mp3');
+                a.loop = true; a.volume = 0.8;
+                runAudios.push(a);
+            }
 
             if (roomData.bgm && roomData.bgm !== 'none') {
                 globalBgmAudio = new Audio(`assets/bgm/${roomData.bgm}`); globalBgmAudio.loop = true; globalBgmAudio.volume = 0.4;
@@ -1003,7 +984,9 @@
                 AUDIO_FX.whistle.play().catch(e=>{});
                 postCommentary("게이트가 열렸습니다! 레이스 스타트!", true);
             }
-            AUDIO_FX.run.play().catch(e=>{});
+            
+            runAudios.forEach((a, i) => { setTimeout(() => { a.play().catch(e=>{}); }, i * 150); });
+
             isPlaying = true; requestAnimationFrame(renderLoop);
         }
 
@@ -1015,7 +998,8 @@
                 else {
                     let m = Math.floor(diff / 60).toString().padStart(2, '0'); let s = (diff % 60).toString().padStart(2, '0');
                     document.getElementById('main-timer').innerText = `T - ${m}:${s}`;
-                    if (diff === 60) postCommentary("경기 시작 1분 전입니다. 선수들이 출발을 준비합니다.");
+                    
+                    if (diff === 60) postCommentary("경기 시작 1분 전입니다. 선수들이 몸을 풉니다.");
                     if (diff === 30) postCommentary("선수들의 긴장된 표정이 카메라에 잡힙니다.");
                     if (diff === 10) postCommentary("경기 시작 10초 전! 주자들이 스타트 라인으로 이동합니다!", true);
                 }
@@ -1035,6 +1019,8 @@
 
                 if (timeTarget < lastRenderedTimeTarget) triggeredSkillsLog.clear();
                 lastRenderedTimeTarget = timeTarget;
+
+                document.getElementById('main-timer').innerText = `RACE - ${timeTarget.toFixed(1)}s`;
 
                 let leaderDist = -1; 
                 let nextRDataMap = new Map();
@@ -1063,15 +1049,11 @@
                     let cache = domCache.get(id);
                     if (cache) {
                         cache.base.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; 
-                        
-                        if (activeCamId === "5" || activeCamId === "ULT") {
-                            cache.flipWrap.style.transform = 'scaleX(1)';
-                        } else {
-                            cache.flipWrap.style.transform = 'scaleX(-1)';
-                        }
 
-                        // 💡 [완벽한 빌보딩] 3D 스케일 제거 + 카메라 정면 고정
-                        cache.billboard.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
+                        // 💡 [찌그러짐 방지] 3D 회전 후 스케일 조정 (분리 연산)
+                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
+                        let flipScaleX = (activeCamId === "5" || activeCamId === "ULT") ? 0.66 : -0.66;
+                        cache.flipWrap.style.transform = `scaleX(${flipScaleX}) scaleY(0.66)`;
                         
                         if(speed > 1.0) {
                             cache.sprite.className = 'sprite-anim running';
@@ -1229,7 +1211,7 @@
         }
 
         function showPodium() {
-            AUDIO_FX.run.pause();
+            runAudios.forEach(a => a.pause());
             AUDIO_FX.whistle.play().catch(e=>{});
             setTimeout(() => { AUDIO_FX.applause.play().catch(e=>{}); }, 1000);
             
