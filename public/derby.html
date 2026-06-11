@@ -21,20 +21,88 @@
         .option-group label { display: inline-flex; align-items: center; cursor: pointer; font-weight: bold; color: #ffeb3b; }
         .option-group input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; accent-color: #e84118; cursor: pointer; }
         
-        #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; }
+        #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; position: relative; }
         #header-area { display: flex; flex-direction: column; gap: 5px; background: #2f3640; padding: 10px; border-radius: 8px; }
         #timer-box { display: flex; justify-content: space-between; align-items: center; color: #fbc531; font-weight: bold; font-size: 18px; }
-        
-        #minimap-container { width: 100%; height: 30px; background-color: rgba(0,0,0,0.8); border: 2px solid #718093; border-radius: 15px; position: relative; overflow: hidden; }
-        .minimap-dot { position: absolute; width: 12px; height: 12px; background-color: #fff; border: 2px solid #000; border-radius: 50%; z-index: 5; margin-top: 7px; transform: translateX(-50%); }
         
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; }
         #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; }
         
+        #integrated-minimap {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            width: 80%; height: 40px; background: rgba(0,0,0,0.7);
+            border: 2px solid #555; border-radius: 20px; z-index: 80;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .minimap-line { position: absolute; top: 20px; left: 5%; width: 90%; height: 2px; background: rgba(255,255,255,0.3); }
+        .minimap-marker { position: absolute; top: -5px; height: 12px; width: 2px; background: rgba(255,255,255,0.8); }
+        .minimap-marker span { position: absolute; top: -15px; left: -10px; font-size: 10px; color: #fff; font-weight: bold; }
+        .minimap-start { left: 0%; }
+        .minimap-mid1 { left: 16.6%; }
+        .minimap-mid2 { left: 66.6%; }
+        .minimap-goal { left: 100%; }
+        .minimap-runner-icon {
+            position: absolute; width: 10px; height: 10px; border-radius: 50%;
+            border: 1px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.8);
+            transform: translate(-50%, -50%); transition: left 0.1s linear; z-index: 82;
+        }
+        #leader-trail {
+            position: absolute; height: 4px; background: linear-gradient(to right, transparent, #FFD700);
+            transform: translateY(-50%); z-index: 81; border-radius: 2px; top: 20px; transition: width 0.1s linear, left 0.1s linear;
+        }
+
+        #skill-log-box {
+            position: absolute; top: 70px; left: 15px;
+            width: 250px; display: flex; flex-direction: column; gap: 5px;
+            z-index: 80; pointer-events: none;
+        }
+        .skill-log-item {
+            background: linear-gradient(90deg, rgba(0,0,0,0.8), rgba(0,0,0,0.3));
+            border-left: 4px solid #FFD700; color: #fff;
+            padding: 6px 10px; border-radius: 4px; font-size: 14px; font-weight: bold;
+            display: flex; align-items: center; gap: 8px;
+            animation: slideInLeft 0.3s ease-out forwards, fadeOut 0.5s ease-in 2.5s forwards;
+            text-shadow: 1px 1px 2px #000;
+        }
+        .skill-log-item img { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #FFD700; background-color: #222; }
+        @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+
+        /* 💡 버프/디버프 에네르기 아우라 CSS */
+        .energy-aura {
+            position: absolute; bottom: 0; left: 50%; width: 150px; height: 300px;
+            transform: translateX(-50%); pointer-events: none; z-index: -1; opacity: 0;
+            border-radius: 50% 50% 0 0; mix-blend-mode: screen; transition: opacity 0.2s;
+        }
+        .energy-aura.buff {
+            background: linear-gradient(to top, transparent, rgba(0,255,255,0.8), transparent);
+            animation: auraUp 0.6s infinite linear; opacity: 0.8;
+        }
+        .energy-aura.debuff {
+            background: linear-gradient(to bottom, transparent, rgba(138,43,226,0.8), transparent);
+            animation: auraDown 0.6s infinite linear; opacity: 0.8; mix-blend-mode: multiply;
+        }
+        .energy-aura.debuff-mix { background: linear-gradient(to top, rgba(138,43,226,0.8), rgba(0,255,255,0.8), transparent); }
+        @keyframes auraUp { 0% { background-position: 0 100%; } 100% { background-position: 0 0; } }
+        @keyframes auraDown { 0% { background-position: 0 0; } 100% { background-position: 0 100%; } }
+
+        /* 💡 [기획 반영] 몸 가운데서 나타나는 상태 팝업 (Top 40%로 조정하여 가슴 위치) */
+        .status-popup-icon {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            width: 80px; height: auto; z-index: 20; pointer-events: none;
+            animation: popUpFadeBody 1.2s ease-out forwards;
+        }
+        @keyframes popUpFadeBody {
+            0% { transform: translate(-50%, 0%) scale(0.5); opacity: 0; }
+            15% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            80% { transform: translate(-50%, -80%) scale(1.0); opacity: 1; }
+            100% { transform: translate(-50%, -100%) scale(0.8); opacity: 0; }
+        }
+
         .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; z-index: 5; }
         .sprite-wrapper { position: absolute; bottom: 0; left: -150px; width: 300px; height: 300px; transform-origin: bottom center; will-change: transform; }
-        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; } 
-        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transform-origin: bottom center; filter: drop-shadow(10px 10px 20px rgba(0,0,0,0.6)); }
+        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; } 
+        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transform-origin: bottom center; filter: drop-shadow(10px 10px 20px rgba(0,0,0,0.6)); position: relative; z-index: 5; }
         
         @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-15px) rotateZ(4deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-15px) rotateZ(-4deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         .running { animation: runCycle 0.6s infinite linear; }
@@ -46,45 +114,19 @@
         .startled .panic-mark { opacity: 1; animation: floatUpChat 0.5s forwards; }
         
         .name-tag { font-size: 55px; font-weight: bold; background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 15px; position: absolute; top: -80px; left: 25px; white-space: nowrap; }
-        .status-badge { font-size: 45px; font-weight: bold; position: absolute; top: -160px; left: 25px; padding: 10px 20px; border-radius: 12px; color: white; opacity: 0; }
-        .show-badge { opacity: 1; }
-        
+        .status-badge { display: none !important; } 
         .hp-bar { display: none !important; }
         
-        .b-spurt { background: #e84118; animation: pulse 0.5s infinite alternate; }
-        .b-kakari { background: #d63031; animation: shake 0.3s infinite; }
-        .b-pk { background: #8e44ad; }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
-        .aura-spurt { filter: drop-shadow(0 0 40px #ff3f34) brightness(1.3) !important; }
-        .aura-kakari { filter: drop-shadow(0 0 40px #d63031) brightness(1.2) hue-rotate(280deg) !important; }
-
-        .skill-popup {
-            position: absolute;
-            top: -120px; left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.8), transparent);
-            color: #FFD700; font-weight: bold; text-shadow: 2px 2px 4px #000;
-            white-space: nowrap; pointer-events: none; z-index: 999;
-            animation: skillFloatUp 1.5s ease-out forwards;
-            display: flex; align-items: center; gap: 8px; padding: 4px 15px; font-size: 26px;
-        }
-        .skill-popup img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #FFD700; background-color: #222; }
-        @keyframes skillFloatUp {
-            0% { opacity: 0; transform: translate(-50%, 20px) scale(0.8); }
-            15% { opacity: 1; transform: translate(-50%, 0px) scale(1.1); }
-            30% { transform: translate(-50%, 0px) scale(1.0); }
-            100% { opacity: 0; transform: translate(-50%, -100px) scale(1.0); }
-        }
+        #commentary-board { background: #fff; color: #000; border-radius: 8px; padding: 10px 15px; height: 80px; overflow-y: hidden; font-weight: bold; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); display: flex; flex-direction: column; justify-content: flex-end; }
+        .msg-line { font-size: 16px; color: #111; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; animation: fadeInMsg 0.3s; }
+        .msg-line.highlight { color: #e53935; font-size: 18px; font-weight: 900; }
+        @keyframes fadeInMsg { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        #commentary-board { background: #fff; color: #000; border-radius: 8px; padding: 10px 15px; height: 25px; overflow: hidden; font-weight: bold; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); display: flex; align-items: center; }
-        .msg-line { font-size: 16px; color: #e53935; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #spectator-area { width: 100%; height: 250px; background: url('https://www.transparenttextures.com/patterns/black-scales.png'), linear-gradient(to bottom, #2d3436, #1e272e); border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; }
+        .chat-bubble { position: absolute; background: rgba(255, 255, 255, 0.95); color: #000; padding: 8px 14px; border-radius: 12px; border-bottom-left-radius: 0; font-size: 14px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 10; animation: floatUpChat 3s ease-out forwards; transform: translateX(-50%); pointer-events: none; }
+        @keyframes floatUpChat { 0% { bottom: 10%; opacity: 0; transform: translateX(-50%) scale(0.8); } 15% { bottom: 20%; opacity: 1; transform: translateX(-50%) scale(1); } 80% { bottom: 70%; opacity: 0.8; } 100% { bottom: 90%; opacity: 0; } }
         
-        #spectator-area { width: 100%; height: 180px; background: url('https://www.transparenttextures.com/patterns/black-scales.png'), linear-gradient(to bottom, #2d3436, #1e272e); border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; }
-        .chat-bubble { position: absolute; background: rgba(255, 255, 255, 0.95); color: #000; padding: 6px 12px; border-radius: 12px; border-bottom-left-radius: 0; font-size: 13px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 10; animation: floatUpChat 2.5s ease-out forwards; transform: translateX(-50%); pointer-events: none; }
-        @keyframes floatUpChat { 0% { bottom: 10%; opacity: 0; transform: translateX(-50%) scale(0.8); } 15% { bottom: 30%; opacity: 1; transform: translateX(-50%) scale(1); } 80% { bottom: 70%; opacity: 0.8; } 100% { bottom: 90%; opacity: 0; } }
-        
-        #chat-controls { display: flex; justify-content: center; gap: 15px; align-items: center; z-index: 20; padding: 0 10px; }
+        #chat-controls { display: flex; justify-content: center; gap: 15px; align-items: center; z-index: 20; padding: 0 10px; margin-top: auto; }
         .chat-macros { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
         .chat-macros button { padding: 6px 12px; font-size: 13px; background: #dfe6e9; color: #2d3436; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         .chat-macros button:hover { background: #ffeaa7; transform: translateY(-2px); }
@@ -98,7 +140,8 @@
         
         #podium-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 50px; animation: fadeIn 1s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .podium-title { position: absolute; top: 40px; font-size: 50px; font-weight: 900; color: #FFD700; text-shadow: 0 0 20px #FF8C00, 3px 3px 5px #000; animation: floatUpChat 1s ease-out forwards; }
+        .podium-title { position: absolute; top: 40px; font-size: 50px; font-weight: 900; color: #FFD700; text-shadow: 0 0 20px #FF8C00, 3px 3px 5px #000; animation: floatUpTitle 1s ease-out forwards; }
+        @keyframes floatUpTitle { 0% { transform: translateY(20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
         #podium-container { position: relative; width: 800px; height: 350px; }
         .podium-step { position: absolute; bottom: 0; width: 160px; display: flex; justify-content: center; align-items: flex-start; padding-top: 10px; font-size: 50px; font-weight: 900; color: rgba(255,255,255,0.8); text-shadow: 2px 2px 4px #000; border-top-left-radius: 10px; border-top-right-radius: 10px; box-shadow: inset 0 10px 20px rgba(255,255,255,0.2), 0 10px 20px rgba(0,0,0,0.8); }
         .step-1 { left: 50%; transform: translateX(-50%); height: 220px; background: linear-gradient(to bottom, #f1c40f, #e67e22); z-index: 3; }
@@ -107,15 +150,6 @@
         .podium-runner { position: absolute; transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; }
         .podium-name { background: rgba(0,0,0,0.8); color: white; padding: 4px 12px; border-radius: 8px; font-size: 20px; font-weight: bold; white-space: nowrap; margin-bottom: -20px; z-index: 10; border: 2px solid #555; }
 
-        #camera-debugger { position: fixed; top: 10px; right: 10px; width: 340px; background: rgba(20, 20, 20, 0.95); padding: 15px; border: 2px solid #00e5ff; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); color: white; z-index: 9999; display: none; text-align: left; font-size: 13px; }
-        #camera-debugger h3 { margin: 0 0 10px 0; color: #00e5ff; font-size: 16px; border-bottom: 1px solid #555; padding-bottom: 5px; }
-        .debug-row { margin-bottom: 10px; }
-        .debug-row label { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; }
-        .debug-row input[type="range"] { width: 100%; cursor: pointer; }
-        #cam-select { width: 100%; padding: 5px; background: #353b48; color: white; border: 1px solid #718093; font-weight: bold; margin-bottom: 10px; }
-        #config-output { width: 100%; height: 60px; background: #111; color: #0be881; border: 1px solid #555; margin-top: 10px; font-size: 11px; padding: 5px; box-sizing: border-box; resize: none; font-family: monospace; }
-
-        /* 💡 만화적 연출 집중선 (Focus Lines) 효과 */
         #ult-edge-effect {
             display: none;
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -141,34 +175,6 @@
 <body>
 
     <h1>🏁 왁마갤 무스메 <span style="font-size: 16px; color:#dcdde1; font-weight:normal;">- 시네마틱 디렉터 컷 -</span></h1>
-
-    <div id="camera-debugger">
-        <h3>🎥 멀티캠 디버거</h3>
-        <select id="cam-select">
-            <option value="1">1. 프리쇼 (입장 대기 뷰)</option>
-            <option value="1.5">1.5 프리쇼 (인터뷰 줌인 뷰)</option>
-            <option value="2">2. 출발 직선 뷰 (0~200m)</option>
-            <option value="3">3. 1코너 뷰 (200~400m)</option>
-            <option value="4">4. 백 스트레치 뷰 (400~950m)</option>
-            <option value="5">5. 3코너 뷰 (950~1225m)</option>
-            <option value="6">6. 최종 코너 뷰 (1225~1475m)</option>
-            <option value="7">7. 최종 직선 뷰 (1475~1950m)</option>
-            <option value="8">8. 결승선 픽스 뷰 (1950m~)</option>
-            <option value="ULT">ULT. 필살기 카메라 (셀카)</option>
-        </select>
-        <div style="margin-bottom: 10px;">
-            <label style="cursor: pointer; color: #ffeb3b; font-size: 14px; font-weight: bold;">
-                <input type="checkbox" id="enable-debug-cam" style="width: 15px; height: 15px;"> 현재 선택된 카메라 강제 고정
-            </label>
-        </div>
-        <div class="debug-row"><label>X축 오프셋 <span id="val-x">0</span>px</label><input type="range" id="slider-x" min="-4000" max="4000" step="10" value="0"></div>
-        <div class="debug-row"><label>Y축 오프셋 <span id="val-y">0</span>px</label><input type="range" id="slider-y" min="-4000" max="4000" step="10" value="0"></div>
-        <div class="debug-row"><label>RotX (밀착) <span id="val-rotx">85</span>도</label><input type="range" id="slider-rotx" min="0" max="90" step="1" value="85"></div>
-        <div class="debug-row"><label>RotZ (측면) <span id="val-rotz">0</span>도</label><input type="range" id="slider-rotz" min="-360" max="360" step="1" value="0"></div>
-        <div class="debug-row"><label>Zoom <span id="val-zoom">4.0</span>배</label><input type="range" id="slider-zoom" min="0.1" max="10.0" step="0.05" value="4.0"></div>
-        <div style="font-size: 11px; margin-top: 5px;">현재 카메라 JSON 데이터 (복사해서 알려주세요)</div>
-        <textarea id="config-output" readonly></textarea>
-    </div>
 
     <div id="lobby-panel">
         <h2>대회 방 생성</h2>
@@ -221,24 +227,39 @@
                 <span id="camera-status" style="color: #0be881; font-size: 14px;">🎥 대기 중</span>
                 <div style="font-size: 22px;">⏳ <span id="main-timer">대기 중</span></div>
             </div>
-            <div id="minimap-container"></div>
         </div>
         <div id="screen-container">
             <div id="world"></div>
+            
+            <div id="integrated-minimap">
+                <div class="minimap-line">
+                    <div class="minimap-marker minimap-start"><span>START</span></div>
+                    <div class="minimap-marker minimap-mid1"><span>중반</span></div>
+                    <div class="minimap-marker minimap-mid2"><span>종반</span></div>
+                    <div class="minimap-marker minimap-goal"><span>GOAL</span></div>
+                    <div id="leader-trail"></div>
+                    <div id="minimap-runners"></div>
+                </div>
+            </div>
+
+            <div id="skill-log-box"></div>
+
             <div id="ult-edge-effect"></div>
             <div id="ult-cutin">
                 <div id="ult-cutin-bg"><div style="font-size: 30px; font-weight: bold; color: white;">🔥 [라스트 스퍼트!] 🔥</div><div id="ult-user" class="cutin-name">닉네임</div></div>
             </div>
         </div>
-        <div id="commentary-board"><div id="commentary-text" class="msg-line">▶ 관객 입장이 완료되었습니다. 프리쇼가 진행 중입니다!</div></div>
+        <div id="commentary-board"></div>
         <div id="spectator-area">
             <div id="chat-controls">
                 <div class="chat-macros">
                     <button onclick="sendChat('ㅎㅇ')">ㅎㅇ</button>
-                    <button onclick="sendChat('샤욘아!')">샤욘아!</button>
-                    <button onclick="sendChat('가즈아아아')">가즈아아아</button>
                     <button onclick="sendChat('떨린다')">떨린다</button>
+                    <button onclick="sendChat('가즈아아아')">가즈아아아</button>
+                    <button onclick="sendChat('샤욘아!')">샤욘아!</button>
+                    <button onclick="sendChat('ㅅㅂ')">ㅅㅂ</button>
                     <button onclick="sendChat('주작')">주작</button>
+                    <button onclick="sendChat('떨린다')">젠황</button>
                 </div>
                 <div id="custom-chat-box">
                     <input type="text" id="customChatInput" placeholder="자유 채팅 입력..." maxlength="20">
@@ -261,7 +282,6 @@
 
         let roomData = null;
         let isPreShow = false; let isPlaying = false; 
-        let isPaused = false;
         let currentPlaybackTime = 0.0; let maxFrames = 0;
         const DT = 1 / 15.0; 
 
@@ -270,7 +290,7 @@
         const CX = 14000;          
         const CY = 6000;           
 
-        let smoothCenterX = 0, smoothCenterY = 0, smoothCenterAngle = -Math.PI/2;
+        let smoothCenterX = 0, smoothCenterY = 0;
         let activeCamId = null; 
         let camStartTime = 0; 
         
@@ -280,7 +300,6 @@
         let preShowRunners = []; let currentExtractedList = []; let excludedNames = []; let rawParticipants = [];
         let preShowFocusId = null; let lastPreShowZoomTime = 0;
 
-        let lastPreShowTimestamp = 0;
         let lastRenderTimestamp = 0;
         let triggeredSkillsLog = new Map();
         let lastRenderedTimeTarget = -1;
@@ -294,8 +313,27 @@
         let baseCamStartTime = 0;
 
         const domCache = new Map();
+        
+        const AUDIO_FX = {
+            lobby: new Audio('대기실.mp3'),
+            whistle: new Audio('whistle.mp3'),
+            applause: new Audio('winner.mp3'),
+            buff: new Audio('buff.mp3'),
+            debuff: new Audio('debuff.mp3'),
+            run: new Audio('run.mp3')
+        };
+        AUDIO_FX.lobby.loop = true; AUDIO_FX.lobby.volume = 0.15;
+        AUDIO_FX.run.loop = true; AUDIO_FX.run.volume = 0.3;
+        let globalBgmAudio = null;
 
-        // 💡 [최종 반영] 세팅
+        // 💡 [기획 반영] 팝업 매핑 설정
+        const POPUP_MAP = {
+            "목표 속도 증가": "SPD_UP.png", "현재 속도 증가": "SPD_UP.png", "속도 증가": "SPD_UP.png",
+            "가속도 증가": "ACC_UP.png", "지구력 회복": "ST_UP.png", "파워 증가": "POW_UP.png", "근성 증가": "GT_UP.png",
+            "목표 속도 감소": "SPD_DOWN.png", "속도 감소": "SPD_DOWN.png",
+            "가속도 감소": "ACC_DOWN.png", "지구력 감소": "ST_DOWN.png", "파워 감소": "POW_DOWN.png", "근성 감소": "GT_DOWN.png"
+        };
+
         let CAM_SETTINGS = {
             "1": { offsetX: -500, offsetY: -500, rotX: 45, rotZ: 62, zoom: 0.5 },
             "1.5": { offsetX: -150, offsetY: 0, rotX: 80, rotZ: -90, zoom: 3.5 },
@@ -309,60 +347,47 @@
             "ULT": { offsetX: 1800, offsetY: 0, rotX: 89, rotZ: 90, zoom: 4.5 }
         };
 
-        window.addEventListener('keydown', function(e) {
-            if (e.target.tagName === 'INPUT') return; 
-            if (e.code === 'Space' && (isPlaying || isPreShow)) {
-                isPaused = !isPaused; 
-                e.preventDefault(); 
-                showCommentary(isPaused ? "⏸️ [디렉터 모드] 레이스 일시정지 (카메라 디버그 활성화)" : "▶️ 레이스 재개");
-            }
-        });
-
-        const camSelect = document.getElementById('cam-select');
-        const configOutput = document.getElementById('config-output');
-        const sliders = { x: document.getElementById('slider-x'), y: document.getElementById('slider-y'), rotx: document.getElementById('slider-rotx'), rotz: document.getElementById('slider-rotz'), zoom: document.getElementById('slider-zoom') };
-
-        function updateSlidersFromConfig(camId) {
-            let conf = CAM_SETTINGS[camId];
-            if (!conf) return;
-            sliders.x.value = conf.offsetX; document.getElementById('val-x').innerText = conf.offsetX;
-            sliders.y.value = conf.offsetY; document.getElementById('val-y').innerText = conf.offsetY;
-            sliders.rotx.value = conf.rotX; document.getElementById('val-rotx').innerText = conf.rotX;
-            sliders.rotz.value = conf.rotZ; document.getElementById('val-rotz').innerText = conf.rotZ;
-            sliders.zoom.value = conf.zoom; document.getElementById('val-zoom').innerText = conf.zoom;
-            configOutput.value = JSON.stringify(conf);
-        }
-
-        if(camSelect) {
-            camSelect.addEventListener('change', (e) => { updateSlidersFromConfig(e.target.value); });
-            Object.keys(sliders).forEach(key => {
-                if(sliders[key]) {
-                    sliders[key].addEventListener('input', (e) => {
-                        document.getElementById('val-' + key).innerText = e.target.value;
-                        let camId = camSelect.value;
-                        if(!CAM_SETTINGS[camId]) return;
-                        CAM_SETTINGS[camId] = { ...CAM_SETTINGS[camId], offsetX: parseFloat(sliders.x.value), offsetY: parseFloat(sliders.y.value), rotX: parseFloat(sliders.rotx.value), rotZ: parseFloat(sliders.rotz.value), zoom: parseFloat(sliders.zoom.value) };
-                        configOutput.value = JSON.stringify(CAM_SETTINGS[camId]);
-                    });
-                }
-            });
-            updateSlidersFromConfig("1");
-        }
-
         const easeIn = (t) => t * t;
         const easeOut = (t) => t * (2 - t);
 
         let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
         let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
 
-        function spawnSkillEffect(runnerId, skillName, skillIcon) {
+        // 💡 [큐 시스템] 대상의 팝업을 순서대로 몸 중앙에 띄움
+        function processPopupQueue(runnerId) {
             let cache = domCache.get(runnerId);
-            if (!cache) return;
-            let pop = document.createElement('div');
-            pop.className = 'skill-popup';
-            pop.innerHTML = `<img src="assets/skills/${skillIcon}" onerror="this.style.display='none'"> <span>${skillName}</span>`;
-            if (cache.wrapper) cache.wrapper.appendChild(pop);
-            setTimeout(() => { if (pop.parentNode) pop.remove(); }, 1500);
+            if (!cache || cache.isPopupPlaying || cache.popupQueue.length === 0) return;
+
+            cache.popupQueue.sort((a, b) => a.seq - b.seq);
+            let nextPopup = cache.popupQueue.shift();
+            
+            cache.isPopupPlaying = true;
+            let icon = document.createElement('img');
+            icon.className = 'status-popup-icon';
+            icon.src = `assets/skills/${POPUP_MAP[nextPopup.type] || 'SPD_UP.png'}`;
+            icon.onerror = function() { this.style.display='none'; };
+            cache.wrapper.appendChild(icon);
+
+            let isBuff = nextPopup.type.includes("증가") || nextPopup.type.includes("회복");
+            if(isBuff && AUDIO_FX.buff) AUDIO_FX.buff.play().catch(e=>{});
+            else if(!isBuff && AUDIO_FX.debuff) AUDIO_FX.debuff.play().catch(e=>{});
+
+            setTimeout(() => {
+                cache.isPopupPlaying = false;
+                processPopupQueue(runnerId);
+            }, 600); 
+
+            setTimeout(() => { if (icon.parentNode) icon.remove(); }, 1200);
+        }
+
+        // 왼쪽 스킬 알림 박스
+        function spawnSkillLog(runnerName, skillName, skillIcon) {
+            let logBox = document.getElementById('skill-log-box');
+            let logItem = document.createElement('div');
+            logItem.className = 'skill-log-item';
+            logItem.innerHTML = `<img src="assets/skills/${skillIcon}" onerror="this.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='"> <span>${runnerName} - ${skillName}</span>`;
+            logBox.appendChild(logItem);
+            setTimeout(() => { if (logItem.parentNode) logItem.remove(); }, 3000);
         }
 
         function triggerUltimate(runnerId, ultName, voiceFile) {
@@ -377,7 +402,20 @@
             
             let voiceAudio = new Audio(`assets/voice/${voiceFile}`);
             voiceAudio.play().catch(e => console.log("음성 재생 불가"));
-            showCommentary(`💥 [필살기 발동!] ${rName} - ${ultName}`);
+            
+            if(globalBgmAudio) {
+                globalBgmAudio.volume = 0.05;
+                setTimeout(() => {
+                    let v = 0.05;
+                    let fade = setInterval(() => {
+                        v += 0.05;
+                        globalBgmAudio.volume = Math.min(v, 0.4);
+                        if(v >= 0.4) clearInterval(fade);
+                    }, 200);
+                }, 3000);
+            }
+
+            postCommentary(`💥 [필살기 발동!] ${rName} - ${ultName}`, true);
 
             setTimeout(() => {
                 cutin.style.display = 'none';
@@ -385,6 +423,16 @@
                 ultActive = true;     
                 ultCamEndTime = currentPlaybackTime + 3.0; 
             }, 2000);
+        }
+
+        let lastCommentaryDist = -1;
+        function postCommentary(text, highlight = false) {
+            let board = document.getElementById('commentary-board');
+            let line = document.createElement('div');
+            line.className = 'msg-line' + (highlight ? ' highlight' : '');
+            line.innerText = `▶ ${text}`;
+            board.appendChild(line);
+            if(board.childElementCount > 4) board.removeChild(board.firstChild);
         }
 
         function getTrackCoordinates(d) {
@@ -489,7 +537,6 @@
 
             document.getElementById('lobby-panel').style.display = 'none';
             document.getElementById('game-ui').style.display = 'flex'; 
-            if(document.getElementById('camera-debugger')) document.getElementById('camera-debugger').style.display = 'block';
 
             try {
                 const res = await fetch(`${API_BASE}/room/${roomId}`);
@@ -505,12 +552,20 @@
                 drawTrackCanvas(); initPreShowDOM(); 
                 
                 const nowSec = Date.now() / 1000;
-                if (roomData.scheduled_time - nowSec > 0) { isPreShow = true; requestAnimationFrame(preShowLoop); startCountdown(); } 
-                else startGame(); 
-
+                let timeDiff = nowSec - roomData.scheduled_time;
+                
+                if (timeDiff < 0) { 
+                    isPreShow = true; 
+                    AUDIO_FX.lobby.play().catch(e=>{});
+                    requestAnimationFrame(preShowLoop); 
+                    startCountdown(); 
+                } else { 
+                    currentPlaybackTime = timeDiff;
+                    if (currentPlaybackTime > (maxFrames * DT)) currentPlaybackTime = maxFrames * DT;
+                    startGame(true); 
+                }
             } catch(e) { 
-                alert(`데이터 로딩 실패!\n에러 내용: ${e.message}\n(F12 콘솔을 확인해주세요)`);
-                console.error("초기화 에러 상세:", e);
+                alert(`데이터 로딩 실패!\n에러 내용: ${e.message}`);
             }
         };
 
@@ -539,7 +594,6 @@
             ctx.stroke();
 
             let trackPathCoords = [];
-            // 💡 50m 늘려서 2050m까지만 그립니다
             for(let i=0; i<=2050; i+=10) {
                 let p = getTrackCoordinates(i);
                 let cx = p.x * VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
@@ -569,7 +623,6 @@
             ctx.stroke(); 
             ctx.setLineDash([]);
 
-            // 💡 [골인 라인 렌더링] 2000m 지점에 눈에 확 띄게 두꺼운 선 추가
             let finishP = getTrackCoordinates(2000);
             let fInX = (finishP.x*VISUAL_SCALE + CX) + Math.cos(finishP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
             let fInY = (finishP.y*VISUAL_SCALE + CY) + Math.sin(finishP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
@@ -609,7 +662,6 @@
         }
 
         function initPreShowDOM() {
-            const skinList = ['ti.png', 'nin.png', 'vic.png', 'cho.png', 'shal.png', 'skin01.png', 'skin02.png', 'skin03.png', 'skin04.png', 'skin05.png', 'skin06.png', 'skin07.png', 'skin08.png', 'skin21.png', 'skin22.png', 'skin23.png', 'skin24.png', 'skin25.png', 'skin31.png', 'skin32.png', 'skin33.png', 'skin34.png', 'skin35.png', 'skin36.png', 'skin41.png', 'skin42.png', 'skin43.png', 'skin51.png', 'skin52.png', 'skin53.png', 'skin54.png', 'skin55.png', 'skin61.png', 'skin62.png', 'skin63.png', 'skin64.png']; 
             let startPos = getTrackCoordinates(0);
             const chatZones = [
                 {x: startPos.x*VISUAL_SCALE+CX + 100, y: startPos.y*VISUAL_SCALE+CY + 600},
@@ -617,6 +669,9 @@
                 {x: startPos.x*VISUAL_SCALE+CX + 300, y: startPos.y*VISUAL_SCALE+CY + 1000}
             ]; 
             
+            let minimapContainer = document.getElementById('minimap-runners');
+            const COLORS = ['#ff7675', '#74b9ff', '#55efc4', '#ffeaa7', '#fab1a0', '#fd79a8', '#a29bfe', '#00cec9', '#fdcb6e', '#e17055'];
+
             roomData.participants.forEach((p, idx) => {
                 let row = Math.floor(idx / 18);
                 let col = idx % 18;
@@ -645,32 +700,37 @@
                     chatPosSet: false
                 });
 
-                let randomSkin = skinList[Math.floor(Math.random() * skinList.length)];
-                let randomHue = Math.random() < 0.3 ? Math.floor(Math.random() * 360) : 0;
-                
-                p.skin = randomSkin;
-                p.hue = randomHue;
+                let pSkin = p.skin || 'skin01.png';
+                let pHue = p.hue || 0;
                 
                 const rBase = document.createElement('div'); rBase.className = 'runner-base'; rBase.id = `runner-${p.id}`;
                 rBase.innerHTML = `
                     <div class="sprite-wrapper" style="transform: scale(0.35);">
                         <div class="panic-mark">!</div>
-                        <div class="flip-wrapper"><div class="sprite-anim" style="background-image: url('${randomSkin}'); filter: hue-rotate(${randomHue}deg);"></div></div>
-                        <div class="name-tag">${p.name}</div><div class="status-badge"></div>
+                        <div class="energy-aura" id="aura-${p.id}"></div>
+                        <div class="flip-wrapper"><div class="sprite-anim" style="background-image: url('assets/${pSkin}'); filter: hue-rotate(${pHue}deg);"></div></div>
+                        <div class="name-tag">${p.name}</div>
                     </div>
                 `;
                 document.getElementById('world').appendChild(rBase);
-                const dot = document.createElement('div'); dot.className = 'minimap-dot'; dot.id = `dot-${p.id}`;
-                document.getElementById('minimap-container').appendChild(dot);
+
+                const dot = document.createElement('div'); 
+                dot.className = 'minimap-runner-icon'; 
+                dot.id = `dot-${p.id}`;
+                dot.style.background = COLORS[idx % COLORS.length];
+                dot.style.top = `${10 + (p.id % 20)}px`;
+                minimapContainer.appendChild(dot);
 
                 domCache.set(p.id, {
                     base: rBase,
                     dot: dot,
                     wrapper: rBase.querySelector('.sprite-wrapper'),
                     sprite: rBase.querySelector('.sprite-anim'),
-                    badge: rBase.querySelector('.status-badge'),
                     flipWrap: rBase.querySelector('.flip-wrapper'),
-                    nameTag: rBase.querySelector('.name-tag')
+                    nameTag: rBase.querySelector('.name-tag'),
+                    aura: rBase.querySelector('.energy-aura'),
+                    popupQueue: [],
+                    isPopupPlaying: false
                 });
             });
         }
@@ -681,65 +741,25 @@
         function spawnChatBubble(msg) {
             const bubble = document.createElement('div'); bubble.className = 'chat-bubble'; bubble.innerText = msg;
             bubble.style.left = `${10 + Math.random() * 80}%`; document.getElementById('spectator-area').appendChild(bubble);
-            setTimeout(() => { if(bubble.parentNode) bubble.remove(); }, 2500);
+            setTimeout(() => { if(bubble.parentNode) bubble.remove(); }, 3000);
         }
-        function showCommentary(text) { document.getElementById('commentary-text').innerText = `▶ ${text}`; }
 
         function startCountdown() {
             let timer = setInterval(() => {
                 const nowSec = Date.now() / 1000;
                 let diff = Math.floor(roomData.scheduled_time - nowSec);
-                if (diff <= 0) { clearInterval(timer); startGame(); } 
+                if (diff <= 0) { clearInterval(timer); startGame(false); } 
                 else {
                     let m = Math.floor(diff / 60).toString().padStart(2, '0'); let s = (diff % 60).toString().padStart(2, '0');
                     document.getElementById('main-timer').innerText = `T - ${m}:${s}`;
-                    if (diff === 60) showCommentary("주자들이 경기장으로 속속 입장하고 있습니다.");
-                    if (diff === 30) showCommentary("선수들의 긴장된 표정이 카메라에 잡힙니다.");
-                    if (diff === 10) showCommentary("경기 시작 10초 전! 주자들이 스타트 라인으로 이동합니다!");
+                    if (diff === 60) postCommentary("주자들이 경기장으로 속속 입장하고 있습니다.");
+                    if (diff === 30) postCommentary("선수들의 긴장된 표정이 카메라에 잡힙니다.");
+                    if (diff === 10) postCommentary("경기 시작 10초 전! 주자들이 스타트 라인으로 이동합니다!", true);
                 }
             }, 1000);
         }
 
         function applyCamera(camId, isCut, timeTarget, runnerPositions, baseCamStart) {
-            let isDebug = document.getElementById('enable-debug-cam') && document.getElementById('enable-debug-cam').checked;
-            
-            if (isDebug) {
-                let manualCam = CAM_SETTINGS[document.getElementById('cam-select').value];
-                if (!manualCam) return;
-                
-                targetCam.rotX = manualCam.rotX; 
-                targetCam.rotZ = manualCam.rotZ; 
-                targetCam.zoom = manualCam.zoom;
-                
-                let focusX = smoothCenterX; let focusY = smoothCenterY;
-                let debugCamId = document.getElementById('cam-select').value;
-                
-                if (debugCamId === "1" || debugCamId === "1.5") {
-                    let startPos = getTrackCoordinates(0);
-                    focusX = startPos.x*VISUAL_SCALE + CX;
-                    focusY = startPos.y*VISUAL_SCALE + CY;
-                    if (debugCamId === "1.5" && preShowFocusId) {
-                        let focusR = preShowRunners.find(r => r.id === preShowFocusId);
-                        if (focusR) { focusX = focusR.currX; focusY = focusR.currY; }
-                    }
-                } else if (debugCamId === "ULT" && typeof runnerPositions !== 'undefined' && runnerPositions) {
-                    let uData = runnerPositions.find(r => r.id === ultUserId);
-                    if (uData) { focusX = uData.worldX; focusY = uData.worldY; }
-                }
-
-                targetCam.x = -focusX + manualCam.offsetX;
-                targetCam.y = -focusY + manualCam.offsetY;
-
-                currentCam.x += (targetCam.x - currentCam.x) * 0.1; 
-                currentCam.y += (targetCam.y - currentCam.y) * 0.1;
-                currentCam.rotX += (targetCam.rotX - currentCam.rotX) * 0.1; 
-                currentCam.rotZ += (targetCam.rotZ - currentCam.rotZ) * 0.1;
-                currentCam.zoom += (targetCam.zoom - currentCam.zoom) * 0.1;
-                
-                document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
-                return;
-            }
-
             if (camId === "ULT") {
                 let conf = CAM_SETTINGS["ULT"];
                 let focusX = smoothCenterX; let focusY = smoothCenterY;
@@ -771,7 +791,6 @@
             }
 
             let startPos = getTrackCoordinates(0);
-            // 💡 [카메라 7번 애니메이션 연속성 보장]
             let elapsed = timeTarget - (baseCamStart !== undefined ? baseCamStart : camStartTime); 
             let t = 0; let e = 0;
             let conf = CAM_SETTINGS[camId];
@@ -780,7 +799,6 @@
                 let nowSec = Date.now() / 1000;
                 let timeLeft = roomData.scheduled_time - nowSec;
                 if (timeLeft <= 10 && timeLeft > 0) {
-                    // 💡 [기획 반영] 시작 10초 전에 0.5초만에 확! 줌(0.8) 땡기기
                     t = Math.min(1.0, Math.max(0, (10 - timeLeft) / 0.5));
                     e = easeOut(t);
                     targetCam.zoom = conf.zoom + (0.8 - conf.zoom) * e;
@@ -844,83 +862,79 @@
             if (delta > 0.1) delta = 0.1; 
 
             if (isPreShow) {
-                if (!isPaused) {
-                    const nowSec = Date.now() / 1000;
-                    let timeLeft = roomData.scheduled_time - nowSec;
+                const nowSec = Date.now() / 1000;
+                let timeLeft = roomData.scheduled_time - nowSec;
 
-                    if (timeLeft <= 60) {
-                        preShowRunners.forEach(r => {
-                            let cache = domCache.get(r.id);
-                            if (!cache) return;
-                            let speed = 100; 
-                            
-                            if (timeLeft <= 10 && !r.panicked) { r.panicked = true; r.targetX = r.finalX; r.targetY = r.finalY; cache.base.classList.add('startled'); }
-                            if (r.panicked) speed = 350; 
+                if (timeLeft <= 60) {
+                    preShowRunners.forEach(r => {
+                        let cache = domCache.get(r.id);
+                        if (!cache) return;
+                        let speed = 100; 
+                        
+                        if (timeLeft <= 10 && !r.panicked) { r.panicked = true; r.targetX = r.finalX; r.targetY = r.finalY; cache.base.classList.add('startled'); }
+                        if (r.panicked) speed = 350; 
 
-                            if (!r.panicked && timeLeft > 10) {
-                                if (r.behavior === 'wander') {
-                                    r.timer -= delta;
-                                    if (r.timer <= 0) { r.targetX = r.finalX - 300 + Math.random() * 600; r.targetY = r.gatherY - 200 + Math.random() * 400; r.timer = 2 + Math.random() * 4; }
-                                } else if (r.behavior === 'chat') {
-                                    if (!r.chatPosSet) {
-                                        r.targetX = r.chatZone.x + (Math.random() * 150 - 75); 
-                                        r.targetY = r.chatZone.y + (Math.random() * 150 - 75);
-                                        r.chatPosSet = true;
-                                    }
-                                    if (Math.random() < 0.01) { 
-                                        cache.wrapper.style.transform = 'translateY(-30px) scale(0.35)'; 
-                                        setTimeout(() => { cache.wrapper.style.transform = 'scale(0.35)'; }, 200); 
-                                    }
+                        if (!r.panicked && timeLeft > 10) {
+                            if (r.behavior === 'wander') {
+                                r.timer -= delta;
+                                if (r.timer <= 0) { r.targetX = r.finalX - 300 + Math.random() * 600; r.targetY = r.gatherY - 200 + Math.random() * 400; r.timer = 2 + Math.random() * 4; }
+                            } else if (r.behavior === 'chat') {
+                                if (!r.chatPosSet) {
+                                    r.targetX = r.chatZone.x + (Math.random() * 150 - 75); 
+                                    r.targetY = r.chatZone.y + (Math.random() * 150 - 75);
+                                    r.chatPosSet = true;
+                                }
+                                if (Math.random() < 0.01) { 
+                                    cache.wrapper.style.transform = 'translateY(-30px) scale(0.35)'; 
+                                    setTimeout(() => { cache.wrapper.style.transform = 'scale(0.35)'; }, 200); 
                                 }
                             }
-
-                            let dx = r.targetX - r.currX; let dy = r.targetY - r.currY; let dist = Math.sqrt(dx*dx + dy*dy);
-                            if (dist > 5) {
-                                r.currX += (dx / dist) * speed * delta; r.currY += (dy / dist) * speed * delta;
-                                if (r.panicked) cache.sprite.classList.add('running'); else cache.sprite.classList.remove('running');
-                                cache.flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
-                            } else {
-                                cache.sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
-                                if(r.panicked) cache.base.classList.remove('startled'); 
-                                if(r.behavior === 'chat') cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
-                                if(timeLeft <= 10) cache.flipWrap.style.transform = 'scaleX(1)'; 
-                            }
-                            cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
-                            cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.35)`;
-                        });
-                    }
-
-                    let newCamId = "1";
-                    // 💡 [기획 반영] 시작 전 11초에 1.5 카메라에서 1 카메라로 전환!
-                    if (timeLeft <= 30 && timeLeft > 11) {
-                        newCamId = "1.5";
-                        if (Date.now() - lastPreShowZoomTime > 4000) {
-                            preShowFocusId = preShowRunners[Math.floor(Math.random() * preShowRunners.length)].id;
-                            lastPreShowZoomTime = Date.now();
-                            activeCamId = null; 
                         }
-                        if(preShowFocusId) document.getElementById('camera-status').innerText = `🎥 [카메라 1.5] 선수 줌인 인터뷰 뷰`;
-                    } else {
-                        document.getElementById('camera-status').innerText = "🎥 [카메라 1] 프리쇼 앵글";
-                    }
 
-                    let isCut = false;
-                    if (activeCamId !== newCamId) { isCut = true; activeCamId = newCamId; camStartTime = Date.now() / 1000; }
-                    
-                    applyCamera(activeCamId, isCut, Date.now() / 1000);
-                } else {
-                    applyCamera(activeCamId, false, Date.now() / 1000);
+                        let dx = r.targetX - r.currX; let dy = r.targetY - r.currY; let dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist > 5) {
+                            r.currX += (dx / dist) * speed * delta; r.currY += (dy / dist) * speed * delta;
+                            if (r.panicked) cache.sprite.classList.add('running'); else cache.sprite.classList.remove('running');
+                            cache.flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
+                        } else {
+                            cache.sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
+                            if(r.panicked) cache.base.classList.remove('startled'); 
+                            if(r.behavior === 'chat') cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
+                            if(timeLeft <= 10) cache.flipWrap.style.transform = 'scaleX(1)'; 
+                        }
+                        cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
+                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.35)`;
+                    });
                 }
+
+                let newCamId = "1";
+                if (timeLeft <= 30 && timeLeft > 11) {
+                    newCamId = "1.5";
+                    if (Date.now() - lastPreShowZoomTime > 4000) {
+                        preShowFocusId = preShowRunners[Math.floor(Math.random() * preShowRunners.length)].id;
+                        lastPreShowZoomTime = Date.now();
+                        activeCamId = null; 
+                    }
+                    if(preShowFocusId) document.getElementById('camera-status').innerText = `🎥 [카메라 1.5] 선수 줌인 인터뷰 뷰`;
+                } else {
+                    document.getElementById('camera-status').innerText = "🎥 [카메라 1] 프리쇼 앵글";
+                }
+
+                let isCut = false;
+                if (activeCamId !== newCamId) { isCut = true; activeCamId = newCamId; camStartTime = Date.now() / 1000; }
+                
+                applyCamera(activeCamId, isCut, Date.now() / 1000);
                 requestAnimationFrame(preShowLoop);
             }
         }
 
-        function startGame() {
+        function startGame(isLateJoin = false) {
             isPreShow = false; 
             lastRenderTimestamp = performance.now(); 
             activeCamId = "2"; camStartTime = 0;
             
             document.getElementById('camera-status').innerText = "🎥 [카메라 2] 출발 직선 뷰";
+            AUDIO_FX.lobby.pause();
             
             preShowRunners.forEach(r => {
                 let cache = domCache.get(r.id);
@@ -932,13 +946,16 @@
             });
 
             if (roomData.bgm && roomData.bgm !== 'none') {
-                let globalBgmAudio = new Audio(roomData.bgm); globalBgmAudio.loop = true; globalBgmAudio.volume = 0.4;
+                globalBgmAudio = new Audio(roomData.bgm); globalBgmAudio.loop = true; globalBgmAudio.volume = 0.4;
                 globalBgmAudio.play().catch(e => {
-                    showCommentary("🔇 화면을 한 번 클릭하면 재생됩니다!");
                     document.body.addEventListener('click', () => { globalBgmAudio.play(); }, { once: true });
                 });
             }
-            showCommentary("게이트가 열렸습니다! 레이스 스타트!");
+            if(!isLateJoin) {
+                AUDIO_FX.whistle.play().catch(e=>{});
+                postCommentary("게이트가 열렸습니다! 레이스 스타트!", true);
+            }
+            AUDIO_FX.run.play().catch(e=>{});
             isPlaying = true; requestAnimationFrame(renderLoop);
         }
 
@@ -976,38 +993,52 @@
                 let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                 let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
-                runnerPositions.push({ id: id, dist: dist, worldX: worldX, worldY: worldY });
+                runnerPositions.push({ id: id, dist: dist, lane: lane, worldX: worldX, worldY: worldY });
 
                 if (dist > leaderDist) { leaderDist = dist; }
 
                 let cache = domCache.get(id);
                 if (cache) {
                     cache.base.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; 
-                    // 미니맵은 최대 2000 고정 (2000 넘어가면 끝점에 붙게)
                     cache.dot.style.left = `${(Math.min(dist, 2000) / 2000) * 100}%`;
                     
-                    if (activeCamId === "5" || activeCamId === "ULT" || (document.getElementById('enable-debug-cam') && document.getElementById('enable-debug-cam').checked && document.getElementById('cam-select').value === "5")) {
-                        cache.flipWrap.style.transform = 'scaleX(1)';
-                    } else {
-                        cache.flipWrap.style.transform = 'scaleX(-1)';
-                    }
+                    if (activeCamId === "5" || activeCamId === "ULT") cache.flipWrap.style.transform = 'scaleX(1)';
+                    else cache.flipWrap.style.transform = 'scaleX(-1)';
 
                     cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.35)`;
                     
                     if(speed > 1.0 && !states.includes("Exhaust")) cache.sprite.className = 'sprite-anim running'; else cache.sprite.className = 'sprite-anim';
                     if (states.includes("Exhaust")) { cache.sprite.classList.add('exhausted'); } 
-                    else if (states.includes("Spurt")) {
-                        cache.sprite.classList.add('aura-spurt'); cache.badge.className = 'status-badge b-spurt show-badge'; cache.badge.innerText = '🔥 스퍼트';
-                    } else if (states.includes("Kakari")) { cache.sprite.classList.add('aura-kakari'); cache.badge.className = 'status-badge b-kakari show-badge'; cache.badge.innerText = '💢 흥분'; } 
-                    else if (states.includes("PaceDown")) { cache.badge.className = 'status-badge b-pk show-badge'; cache.badge.innerText = '🛡️ 킵'; } 
-                    else if (states.includes("PaceUp") || states.includes("PaceUpEx")) { cache.badge.className = 'status-badge b-pk show-badge'; cache.badge.innerText = '🔺 가속'; cache.badge.style.background = '#0984e3'; }
-                    else if (states.includes("Overtake")) { cache.badge.className = 'status-badge b-pk show-badge'; cache.badge.innerText = '⚡ 추월'; cache.badge.style.background = '#d63031'; }
-                    else cache.badge.className = 'status-badge';
+
+                    // 💡 [기획 반영] 에네르기 버프/디버프 연출
+                    let hasBuff = false; let hasDebuff = false;
+                    
+                    if (states.includes("PaceDown") || states.includes("Exhaust") || states.includes("AuraDebuff")) hasDebuff = true;
+                    if (states.includes("Spurt") || states.includes("PaceUp") || states.includes("PaceUpEx") || states.includes("Overtake") || states.includes("AuraBuff")) hasBuff = true;
+
+                    if (hasBuff && !hasDebuff) cache.aura.className = 'energy-aura buff';
+                    else if (hasDebuff && !hasBuff) cache.aura.className = 'energy-aura debuff';
+                    else if (hasBuff && hasDebuff) cache.aura.className = 'energy-aura buff debuff-mix'; 
+                    else cache.aura.className = 'energy-aura';
                 }
                 
                 if (states && states.length > 0) {
                     states.forEach(st => {
-                        if (st.startsWith("SKILL|")) {
+                        // 💡 [기획 반영] 팝업 시스템 (몸 가운데서 차례대로)
+                        if (st.startsWith("POPUP|")) {
+                            let parts = st.split("|");
+                            let pType = parts[1]; let pSeq = parseInt(parts[2]);
+                            let uniqueKey = `POPUP-${id}-${pType}-${pSeq}-${frameIdx}`;
+                            
+                            if (!triggeredSkillsLog.has(uniqueKey)) {
+                                triggeredSkillsLog.set(uniqueKey, timeTarget);
+                                if (cache) {
+                                    cache.popupQueue.push({ type: pType, seq: pSeq });
+                                    processPopupQueue(id);
+                                }
+                            }
+                        }
+                        else if (st.startsWith("SKILL|")) {
                             let parts = st.split("|");
                             let sName = parts[1]; let sIcon = parts[2];
                             let uniqueKey = `${id}-${sName}`;
@@ -1015,7 +1046,7 @@
                             
                             if (timeTarget - lastTriggerTime > 1.5) {
                                 triggeredSkillsLog.set(uniqueKey, timeTarget);
-                                spawnSkillEffect(id, sName, sIcon);
+                                spawnSkillLog(cache.nameTag.innerText, sName, sIcon);
                             }
                         }
                         else if (st.startsWith("ULT|")) {
@@ -1025,6 +1056,7 @@
                             
                             if (!triggeredSkillsLog.has(uniqueKey)) {
                                 triggeredSkillsLog.set(uniqueKey, timeTarget);
+                                spawnSkillLog(cache.nameTag.innerText, ultName, '고유.png');
                                 triggerUltimate(id, ultName, voiceFile);
                             }
                         }
@@ -1032,12 +1064,42 @@
                 }
             });
 
-            if (leaderDist >= 2000 && !window.hasAnnouncedFinish) {
-                window.hasAnnouncedFinish = true;
-                showCommentary(`🏁 선두 결승선 통과! 레이스 종료 대기 중...`);
+            let sorted = [...runnerPositions].sort((a, b) => b.dist - a.dist);
+            if (sorted.length > 0) {
+                sorted.forEach(rPos => {
+                    let cache = domCache.get(rPos.id);
+                    if (cache) {
+                        let pctDist = (rPos.dist / 2000) * 100;
+                        cache.dot.style.left = `${pctDist}%`;
+                        
+                        if (rPos.id === sorted[0].id) {
+                            let trail = document.getElementById('leader-trail');
+                            trail.style.left = `${pctDist - 10}%`; 
+                            trail.style.width = `10%`; 
+                        }
+                    }
+                });
             }
 
-            let sorted = [...runnerPositions].sort((a, b) => b.dist - a.dist);
+            let cDist = Math.floor(leaderDist / 100) * 100;
+            if (cDist >= 200 && !window.commentaryLog.has(cDist)) {
+                window.commentaryLog.add(cDist);
+                if (cDist === 400) postCommentary("1코너를 돌아 백 스트레치로 향합니다!");
+                else if (cDist === 900) postCommentary("레이스 중반! 주자들이 자리싸움을 벌입니다.");
+                else if (cDist === 1300) postCommentary("3코너 돌입! 이제 승부의 윤곽이 드러나기 시작합니다!", true);
+                else if (cDist === 1500) postCommentary("최종 직선 구간! 라스트 스퍼트가 시작됩니다!!", true);
+                else if (cDist === 1800) postCommentary("남은 거리 200미터! 결승선이 코앞입니다!");
+                
+                if (sorted.length > 2 && cDist < 1500 && cDist > 500) {
+                    if (sorted[0].dist - sorted[1].dist > 15) postCommentary("선두가 크게 격차를 벌리며 도망칩니다!");
+                    else if (sorted[0].dist - sorted[sorted.length-1].dist < 20) postCommentary("대형 마군 형성! 한 치 앞을 알 수 없는 혼전입니다.");
+                }
+            }
+
+            if (leaderDist >= 2000 && !window.hasAnnouncedFinish) {
+                window.hasAnnouncedFinish = true;
+                postCommentary(`🏁 선두 결승선 통과!`, true);
+            }
 
             let centerPos = getTrackCoordinates(leaderDist);
             let leaderWorldX = centerPos.x * VISUAL_SCALE + CX + Math.cos(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
@@ -1048,8 +1110,8 @@
             smoothCenterY += (leaderWorldY - smoothCenterY) * 0.05;
             
             let d = leaderDist; 
-            
             let bCamId = "2"; let statusText = "";
+            
             if (d <= 200) { bCamId = "2"; statusText = "🎥 [카메라 2] 출발 직선 뷰"; }
             else if (d <= 400) { bCamId = "3"; statusText = "🎥 [카메라 3] 1코너 진입 뷰"; }
             else if (d <= 950) { bCamId = "4"; statusText = "🎥 [카메라 4] 백 스트레치 뷰"; }
@@ -1077,16 +1139,15 @@
             let isCut = false;
             if (activeCamId !== newCamId) {
                 isCut = true; activeCamId = newCamId; 
-                // 💡 [버그 픽스] 필살기에서 복귀 시 카메라 애니메이션이 리셋되지 않고 베이스 시간에 맞춰 연속재생되도록
-                camStartTime = timeTarget; 
+                if (newCamId === "ULT" || activeCamId === "ULT") camStartTime = timeTarget; 
             }
 
-            let isDebug = document.getElementById('enable-debug-cam') && document.getElementById('enable-debug-cam').checked;
+            let elapsed = timeTarget - baseCamStartTime; 
+            let t = 0; let e = 0;
             
-            if (!isDebug && activeCamId === "4") {
+            if (activeCamId === "4") {
                 let conf = CAM_SETTINGS["4"];
-                let elapsed = timeTarget - baseCamStartTime; 
-                let t = Math.min(1.0, elapsed / 24.0); let e = easeIn(t);
+                t = Math.min(1.0, elapsed / 24.0); e = easeIn(t);
                 
                 let focusX = smoothCenterX;
                 let focusY = smoothCenterY;
@@ -1111,7 +1172,6 @@
                     let lastR = sorted[sorted.length - 1];
                     focusX = lastR.worldX * (1 - backE) + avgX * backE;
                     focusY = lastR.worldY * (1 - backE) + avgY * backE;
-                    
                     targetZoom = conf.zoom - (1.3 * backE);
                 }
 
@@ -1137,6 +1197,10 @@
         }
 
         function showPodium() {
+            AUDIO_FX.run.pause();
+            AUDIO_FX.whistle.play().catch(e=>{});
+            setTimeout(() => { AUDIO_FX.applause.play().catch(e=>{}); }, 1000);
+            
             let screen = document.getElementById('podium-screen');
             if(!screen) {
                 screen = document.createElement('div');
@@ -1152,7 +1216,6 @@
                 document.getElementById('screen-container').appendChild(screen);
             }
             
-            // 💡 마지막 프레임 기준으로 등수 매기기
             let lastFrame = roomData.replay_data[maxFrames - 1].r;
             let sorted = [...lastFrame].sort((a,b) => b[1] - a[1]);
             let container = screen.querySelector('#podium-container');
@@ -1166,7 +1229,7 @@
                 rDiv.className = 'podium-runner';
                 rDiv.innerHTML = `
                     <div class="podium-name">${p.name}</div>
-                    <div class="sprite-anim" style="width:256px; height:256px; background-image: url('${p.skin}'); filter: hue-rotate(${p.hue}deg);"></div>
+                    <div class="sprite-anim" style="width:256px; height:256px; background-image: url('assets/${p.skin}'); filter: hue-rotate(${p.hue}deg);"></div>
                 `;
                 
                 if (idx === 0) {
@@ -1178,7 +1241,6 @@
                 } else if (idx === 2) {
                     rDiv.style.bottom = '100px'; rDiv.style.left = 'calc(50% + 160px)'; rDiv.style.transform = 'translateX(-50%) scale(0.5)'; rDiv.style.zIndex = '8';
                 } else {
-                    // 💡 [기획 반영] 우승대 밑에서 둘러싸고 축하해주는 나머지 주자들
                     let isLeft = (idx % 2 === 0);
                     let offsetX = isLeft ? (-300 - Math.random() * 120) : (300 + Math.random() * 120);
                     let ry = 0 + Math.random() * 40; 
@@ -1203,16 +1265,13 @@
             if (delta > 0.1) delta = 0.1; 
             
             if (isPlaying) { 
-                if (!isPaused && !isUltPausing) {
-                    currentPlaybackTime += delta; 
-                }
+                currentPlaybackTime += delta; 
                 renderFrameAtTime(currentPlaybackTime); 
                 requestAnimationFrame(renderLoop);
             }
 
             let exactFrame = currentPlaybackTime / DT;
             let frameIdx = Math.floor(exactFrame);
-            
             if (frameIdx >= maxFrames - 2 && isPlaying) { 
                 isPlaying = false; 
                 showPodium();
