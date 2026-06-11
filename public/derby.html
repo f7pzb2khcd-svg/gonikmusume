@@ -22,13 +22,14 @@
         .option-group input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; accent-color: #e84118; cursor: pointer; }
         
         #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; position: relative; }
-        #header-area { display: flex; flex-direction: column; gap: 5px; background: #2f3640; padding: 10px; border-radius: 8px; z-index: 10; }
-        #timer-box { display: flex; justify-content: space-between; align-items: center; color: #fbc531; font-weight: bold; font-size: 18px; }
+        
+        /* 💡 타이머 등 상단 헤더 영역 완전히 제거 */
+        #header-area { display: none; }
         
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; }
         #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; }
         
-        /* 다이나믹 미니맵 */
+        /* 💡 다이나믹 미니맵 (선두 유성 궤적 형태로 변경) */
         #integrated-minimap {
             position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
             width: 80%; display: flex; flex-direction: column; align-items: center;
@@ -36,15 +37,15 @@
         }
         #integrated-minimap.show { top: 20px; opacity: 1; }
         
-        /* 유성 궤적 게이지 */
-        #minimap-progress-track { width: 100%; height: 6px; background: rgba(0,0,0,0.4); border-radius: 3px; position: relative; margin-bottom: 15px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); overflow: visible; }
-        #leader-trail { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: linear-gradient(90deg, transparent, #0be881, #fff); box-shadow: 0 0 15px #0be881, 0 0 5px #fff; border-radius: 3px; transition: width 0.1s linear; }
+        #minimap-progress-track { width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; position: relative; margin-bottom: 15px; overflow: visible; }
+        /* 전체를 채우는게 아니라 꼬리가 달린 짧은 유성처럼 표시 */
+        #leader-trail { position: absolute; top: -1px; height: 6px; width: 0%; background: linear-gradient(90deg, transparent, #0be881, #fff); box-shadow: 2px 0 10px #0be881, 2px 0 5px #fff; border-radius: 3px; transition: left 0.1s linear, width 0.1s linear; }
         
-        .minimap-marker { position: absolute; top: -4px; height: 14px; width: 2px; background: rgba(255,255,255,0.5); }
-        .minimap-marker span { position: absolute; top: -18px; left: -15px; font-size: 11px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+        .minimap-marker { position: absolute; top: -4px; height: 12px; width: 2px; background: rgba(255,255,255,0.8); }
+        .minimap-marker span { position: absolute; top: -18px; left: -12px; font-size: 11px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; }
         .minimap-start { left: 0%; }
-        .minimap-mid1 { left: 16.6%; }
-        .minimap-mid2 { left: 66.6%; }
+        .minimap-mid1 { left: 16.6%; } /* 중반 시작 */
+        .minimap-mid2 { left: 66.6%; } /* 종반 시작 */
         .minimap-goal { left: 100%; }
         
         /* 마군 뷰 (오각형 화살표 아이콘) */
@@ -59,51 +60,55 @@
             z-index: 82;
             display: flex; justify-content: center; align-items: center;
         }
-        .minimap-runner-icon span {
-            color: #fff; font-size: 9px; font-weight: 900; 
-            margin-right: 2px; 
-            text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000; 
-        }
+        .minimap-runner-icon span { color: #fff; font-size: 9px; font-weight: 900; margin-right: 2px; text-shadow: 1px 1px 1px #000, -1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000; }
 
-        /* 왼쪽 스킬 발동 팝업 로그 */
-        #skill-log-box { position: absolute; top: 80px; left: 15px; width: 250px; display: flex; flex-direction: column; gap: 5px; z-index: 80; pointer-events: none; }
-        .skill-log-item { background: linear-gradient(90deg, rgba(0,0,0,0.8), rgba(0,0,0,0.3)); border-left: 4px solid #FFD700; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 8px; animation: slideInLeft 0.3s ease-out forwards, fadeOut 0.5s ease-in 2.5s forwards; text-shadow: 1px 1px 2px #000; }
-        .skill-log-item img { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #FFD700; background-color: #222; }
+        /* 💡 2줄 구성 및 동적 크기 스킬 로그 팝업 */
+        #skill-log-box { position: absolute; top: 80px; left: 15px; width: 280px; display: flex; flex-direction: column; gap: 8px; z-index: 80; pointer-events: none; }
+        .skill-log-item { 
+            background: linear-gradient(90deg, rgba(0,0,0,0.8), rgba(0,0,0,0.2)); 
+            border-left: 4px solid #FFD700; border-radius: 4px; padding: 6px 12px;
+            display: flex; align-items: center; gap: 12px;
+            animation: slideInLeft 0.3s ease-out forwards, fadeOut 0.5s ease-in 3.5s forwards;
+            opacity: 0.5; transform: scale(0.85); transform-origin: left bottom; transition: all 0.3s ease;
+        }
+        /* 새롭게 들어온 가장 최근 스킬은 크고 선명하게 */
+        .skill-log-item:last-child { opacity: 1.0; transform: scale(1.1); }
+        .skill-log-item img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #FFD700; background-color: #222; }
+        .skill-text-container { display: flex; flex-direction: column; line-height: 1.2; text-shadow: 1px 1px 2px #000; }
+        .skill-runner-name { font-size: 13px; color: #ddd; font-weight: bold; }
+        .skill-name { font-size: 17px; color: #FFD700; font-weight: 900; }
         @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
 
-        /* 방사형 에네르기 아우라 */
+        /* 💡 에너지 아우라를 캐릭터 앞(z-index: 15)으로 빼고 반투명(screen) 처리 */
         .energy-aura {
             position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
             width: 250px; height: 250px; border-radius: 50%;
-            mix-blend-mode: screen; opacity: 0; pointer-events: none; z-index: 4; transition: opacity 0.3s ease;
+            mix-blend-mode: screen; opacity: 0; pointer-events: none; z-index: 15; transition: opacity 0.3s ease;
         }
         .energy-aura.buff {
-            background: radial-gradient(circle, rgba(0,255,255,0.7) 0%, rgba(0,255,255,0) 65%);
+            background: radial-gradient(circle, rgba(0,255,255,0.6) 0%, rgba(0,255,255,0) 65%);
             animation: pulseAura 1s infinite alternate; opacity: 1;
         }
         .energy-aura.debuff {
-            background: radial-gradient(circle, rgba(138,43,226,0.7) 0%, rgba(138,43,226,0) 65%);
+            background: radial-gradient(circle, rgba(138,43,226,0.6) 0%, rgba(138,43,226,0) 65%);
             animation: pulseAura 1s infinite alternate; opacity: 1; mix-blend-mode: multiply;
         }
         .energy-aura.debuff-mix {
-            background: radial-gradient(circle, rgba(200,200,255,0.7) 0%, rgba(200,200,255,0) 65%);
+            background: radial-gradient(circle, rgba(200,200,255,0.6) 0%, rgba(200,200,255,0) 65%);
             animation: pulseAura 1s infinite alternate; opacity: 1;
         }
-        @keyframes pulseAura {
-            0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; }
-            100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1.0; }
-        }
+        @keyframes pulseAura { 0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1.0; } }
 
-        /* 팝업 아이콘 (가슴 중앙) */
+        /* 💡 버프 팝업 아이콘 크기 2배 (80px -> 160px) 및 위상 조정 */
         .status-popup-icon {
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            width: 80px; height: auto; z-index: 20; pointer-events: none;
+            position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
+            width: 160px; height: auto; z-index: 30; pointer-events: none;
             animation: popUpFadeBody 1.2s ease-out forwards;
         }
         @keyframes popUpFadeBody {
             0% { transform: translate(-50%, 0%) scale(0.5); opacity: 0; }
-            15% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            15% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
             80% { transform: translate(-50%, -70%) scale(1.0); opacity: 1; }
             100% { transform: translate(-50%, -100%) scale(0.8); opacity: 0; }
         }
@@ -113,9 +118,18 @@
         .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; z-index: 10; } 
         .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transform-origin: bottom center; filter: drop-shadow(10px 10px 20px rgba(0,0,0,0.6)); position: relative; z-index: 5; }
         
+        /* 💡 땀방울(지구력 소진) 이펙트 SVG */
+        .sweat-mark {
+            position: absolute; top: 20px; right: 80px; width: 35px; height: 35px; z-index: 20; opacity: 0; pointer-events: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300e5ff"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>');
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.8)); transition: opacity 0.3s;
+        }
+        .sweat-mark.show-sweat { opacity: 1; animation: sweatDrop 1s infinite; }
+        @keyframes sweatDrop { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(20px) scale(0.5); opacity: 0; } }
+
+        /* 💡 달리기 애니메이션 공통 정의 (속도는 JS에서 직접 제어) */
         @keyframes runCycle { 0% { transform: translateY(0px) rotateZ(0deg); } 25% { transform: translateY(-15px) rotateZ(4deg); } 50% { transform: translateY(0px) rotateZ(0deg); } 75% { transform: translateY(-15px) rotateZ(-4deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         .running { animation: runCycle 0.6s infinite linear; }
-        .exhausted { transform: translateY(20px) rotateZ(-15deg); filter: grayscale(100%) brightness(0.6) !important; }
         
         @keyframes startleJump { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.1) translateY(-60px) rotateZ(10deg); filter: brightness(1.5); } 100% { transform: scale(1) translateY(0); } }
         .startled .sprite-anim { animation: startleJump 0.4s ease-out; }
@@ -126,21 +140,21 @@
         .status-badge { display: none !important; } 
         .hp-bar { display: none !important; }
         
-        /* 다이나믹 중계창 */
-        #commentary-board { background: transparent; color: #fff; padding: 10px 15px; height: 100px; overflow-y: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; }
-        .msg-line { font-size: 18px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 8px; border-left: 5px solid #3498db; width: fit-content; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: fadeInMsg 0.3s forwards; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
-        .msg-line.highlight { color: #f1c40f; font-size: 20px; border-left-color: #e74c3c; }
-        @keyframes fadeInMsg { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        /* 💡 다이나믹 중계창 UI 동적 크기 조절 (새로운게 더 크고 진함) */
+        #commentary-board { background: transparent; padding: 10px 15px; height: 120px; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; pointer-events: none; }
+        .msg-line { 
+            font-weight: bold; color: #fff; background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 8px; border-left: 5px solid #3498db; 
+            width: fit-content; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); 
+            opacity: 0.5; transform: scale(0.85); transform-origin: left bottom; transition: all 0.3s ease;
+        }
+        .msg-line:last-child { opacity: 1.0; transform: scale(1.05); font-size: 20px; } /* 가장 최신 중계는 크게 */
+        .msg-line.highlight { color: #f1c40f; border-left-color: #e74c3c; }
         
         /* 관중석(채팅창) 실루엣 연출 및 크기 축소 */
         #spectator-area { width: 100%; height: 200px; border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; background: linear-gradient(to bottom, #111, #222); }
-        #spectator-area::before {
-            content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 120%;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><path d="M5,20 Q10,15 15,20 Q20,10 25,20 Q30,12 35,20 Q40,5 45,20 Q50,15 55,20 Q60,10 65,20 Q70,5 75,20 Q80,18 85,20 Q90,8 95,20 Z" fill="rgba(0,0,0,0.8)"/></svg>');
-            background-size: cover; background-position: bottom; background-repeat: repeat-x; opacity: 0.8; z-index: 1; pointer-events: none;
-        }
+        #spectator-area::before { content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 120%; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><path d="M5,20 Q10,15 15,20 Q20,10 25,20 Q30,12 35,20 Q40,5 45,20 Q50,15 55,20 Q60,10 65,20 Q70,5 75,20 Q80,18 85,20 Q90,8 95,20 Z" fill="rgba(0,0,0,0.8)"/></svg>'); background-size: cover; background-position: bottom; background-repeat: repeat-x; opacity: 0.8; z-index: 1; pointer-events: none; }
 
-        /* 채팅 랜덤 표시 (흰 테두리) */
+        /* 채팅 박스 제거, 글자(흰색 테두리)만 랜덤 표시 */
         .chat-bubble { position: absolute; color: #fff; font-size: 16px; font-weight: 900; white-space: nowrap; z-index: 10; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 5px rgba(0,0,0,0.8); animation: popChat 2.5s ease-in-out forwards; transform: translateX(-50%); pointer-events: none; }
         @keyframes popChat { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.5); } 10% { opacity: 1; transform: translate(-50%, 0) scale(1.2); } 20% { transform: translate(-50%, 0) scale(1.0); } 80% { opacity: 1; transform: translate(-50%, -5px); } 100% { opacity: 0; transform: translate(-50%, -15px); } }
         
@@ -223,12 +237,6 @@
     </div>
 
     <div id="game-ui">
-        <div id="header-area">
-            <div id="timer-box">
-                <span id="camera-status" style="color: #0be881; font-size: 14px;">🎥 대기 중</span>
-                <div style="font-size: 22px;">⏳ <span id="main-timer">대기 중</span></div>
-            </div>
-        </div>
         <div id="screen-container">
             <div id="world"></div>
             
@@ -315,7 +323,7 @@
 
         const domCache = new Map();
         
-        // 💡 오디오 경로를 assets/sounds 및 assets/voice, bgm은 assets/bgm 으로 통일
+        // 💡 [기획 반영] 오디오 밸런스 조정 완료
         const AUDIO_FX = {
             lobby: new Audio('assets/sounds/lobby_bgm.mp3'),
             whistle: new Audio('assets/sounds/whistle.mp3'),
@@ -325,7 +333,11 @@
             run: new Audio('assets/sounds/run.mp3')
         };
         AUDIO_FX.lobby.loop = true; AUDIO_FX.lobby.volume = 0.15;
-        AUDIO_FX.run.loop = true; AUDIO_FX.run.volume = 0.3;
+        AUDIO_FX.whistle.volume = 0.2; // 확 줄임
+        AUDIO_FX.applause.volume = 0.4;
+        AUDIO_FX.buff.volume = 0.2;    // 확 줄임
+        AUDIO_FX.debuff.volume = 0.2;  // 확 줄임
+        AUDIO_FX.run.loop = true; AUDIO_FX.run.volume = 0.8; // 확 키움
         let globalBgmAudio = null;
 
         const POPUP_MAP = {
@@ -335,7 +347,7 @@
             "가속도 감소": "ACC_DOWN.png", "지구력 감소": "ST_DOWN.png", "파워 감소": "POW_DOWN.png", "근성 감소": "GT_DOWN.png"
         };
 
-        // 💡 [카메라 세팅] 디버그 모드가 없어도 이 설정대로 작동합니다.
+        // 카메라는 수정하신 값 그대로 유지
         let CAM_SETTINGS = {
             "1": { offsetX: -500, offsetY: -500, rotX: 45, rotZ: 62, zoom: 0.5 },
             "1.5": { offsetX: -150, offsetY: 0, rotX: 80, rotZ: -90, zoom: 3.5 },
@@ -386,18 +398,25 @@
             setTimeout(() => { if (icon.parentNode) icon.remove(); }, 1200);
         }
 
+        // 💡 [기획 반영] 2줄 포맷 로그 스킬 UI (닉네임 작게, 스킬명 크게)
         function spawnSkillLog(runnerName, skillName, skillIcon) {
             let logBox = document.getElementById('skill-log-box');
             let logItem = document.createElement('div');
             logItem.className = 'skill-log-item';
-            logItem.innerHTML = `<img src="assets/skills/${skillIcon}" onerror="this.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='"> <span>${runnerName} - ${skillName}</span>`;
+            logItem.innerHTML = `
+                <img src="assets/skills/${skillIcon}" onerror="this.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='"> 
+                <div class="skill-text-container">
+                    <div class="skill-runner-name">${runnerName}</div>
+                    <div class="skill-name">${skillName}</div>
+                </div>
+            `;
             logBox.appendChild(logItem);
-            setTimeout(() => { if (logItem.parentNode) logItem.remove(); }, 3000);
+            setTimeout(() => { if (logItem.parentNode) logItem.remove(); }, 3500);
         }
 
-        // 💡 [버그 픽스] 중복 필살기 처리 가드 적용
         function triggerUltimate(runnerIdStr, ultName, voiceFile) {
-            if (isUltPausing || ultActive) return;
+            // 중복 방어
+            if (isUltPausing || ultActive) return; 
             isUltPausing = true; 
             ultUserId = runnerIdStr;
             let cache = domCache.get(runnerIdStr);
@@ -432,13 +451,13 @@
             }, 2000);
         }
 
-        let lastCommentaryDist = -1;
         function postCommentary(text, highlight = false) {
             let board = document.getElementById('commentary-board');
             let line = document.createElement('div');
             line.className = 'msg-line' + (highlight ? ' highlight' : '');
             line.innerText = `▶ ${text}`;
             board.appendChild(line);
+            // 💡 2줄까지만 보이도록 수정
             if(board.childElementCount > 2) board.removeChild(board.firstChild);
         }
 
@@ -684,10 +703,12 @@
                 const rBase = document.createElement('div'); rBase.className = 'runner-base'; rBase.id = `runner-${p.id}`;
                 rBase.style.transform = `translate3d(${spawnX}px, ${spawnY}px, 0)`;
 
+                // 💡 [기획 반영] 체력 고갈 시 땀방울(💦) 이펙트 추가, 아우라를 sprite-wrapper 바깥으로 분리 (z-index 관리용)
                 rBase.innerHTML = `
+                    <div class="energy-aura" id="aura-${p.id}"></div>
                     <div class="sprite-wrapper" style="transform: scale(0.35);">
+                        <svg class="sweat-mark" viewBox="0 0 24 24"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>
                         <div class="panic-mark">!</div>
-                        <div class="energy-aura" id="aura-${p.id}"></div>
                         <div class="flip-wrapper"><div class="sprite-anim" style="background-image: url('${pSkin}'); filter: hue-rotate(${pHue}deg);"></div></div>
                         <div class="name-tag">${p.name}</div>
                     </div>
@@ -713,6 +734,7 @@
                     flipWrap: rBase.querySelector('.flip-wrapper'),
                     nameTag: rBase.querySelector('.name-tag'),
                     aura: rBase.querySelector('.energy-aura'),
+                    sweat: rBase.querySelector('.sweat-mark'),
                     popupQueue: [],
                     isPopupPlaying: false
                 });
@@ -862,10 +884,17 @@
                     let dx = r.targetX - r.currX; let dy = r.targetY - r.currY; let dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist > 5) {
                         r.currX += (dx / dist) * speed * delta; r.currY += (dy / dist) * speed * delta;
-                        if (r.panicked) cache.sprite.classList.add('running'); else cache.sprite.classList.remove('running');
+                        if (r.panicked) {
+                            cache.sprite.className = 'sprite-anim running';
+                            cache.sprite.style.animationDuration = '0.4s';
+                        } else {
+                            cache.sprite.className = 'sprite-anim';
+                            cache.sprite.style.animationDuration = '0s';
+                        }
                         cache.flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
                     } else {
-                        cache.sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
+                        cache.sprite.className = 'sprite-anim'; cache.sprite.style.animationDuration = '0s'; 
+                        r.currX = r.targetX; r.currY = r.targetY;
                         if(r.panicked) cache.base.classList.remove('startled'); 
                         if(r.behavior === 'chat') cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
                         if(timeLeft <= 10) cache.flipWrap.style.transform = 'scaleX(1)'; 
@@ -883,9 +912,6 @@
                         lastPreShowZoomTime = Date.now();
                         activeCamId = null; 
                     }
-                    if(preShowFocusId) document.getElementById('camera-status').innerText = `🎥 [카메라 1.5] 선수 줌인 인터뷰 뷰`;
-                } else {
-                    document.getElementById('camera-status').innerText = "🎥 [카메라 1] 프리쇼 앵글";
                 }
 
                 let isCut = false;
@@ -896,17 +922,15 @@
             }
         }
 
-        // 💡 [버그 픽스] 중계 로그 변수 및 완료 플래그 강제 초기화! (레이스 멈춤 100% 방지)
-        // 💡 [버그 픽스] lastRenderTimestamp 초기화 (performance.now() 와의 불일치 해소)
+        // 💡 [버그 픽스] 중복 없이 안전하게 시작 로직 구성
         function startGame(isLateJoin = false) {
             window.commentaryLog = new Set();
             window.hasAnnouncedFinish = false;
             
             isPreShow = false; 
-            lastRenderTimestamp = 0; 
+            lastRenderTimestamp = 0; // null 대신 안전하게 0
             activeCamId = "2"; camStartTime = 0;
             
-            document.getElementById('camera-status').innerText = "🎥 [카메라 2] 출발 직선 뷰";
             AUDIO_FX.lobby.pause();
             document.getElementById('integrated-minimap').classList.add('show');
             
@@ -939,8 +963,6 @@
                 let diff = Math.floor(roomData.scheduled_time - nowSec);
                 if (diff <= 0) { clearInterval(timer); startGame(false); } 
                 else {
-                    let m = Math.floor(diff / 60).toString().padStart(2, '0'); let s = (diff % 60).toString().padStart(2, '0');
-                    document.getElementById('main-timer').innerText = `T - ${m}:${s}`;
                     if (diff === 60) postCommentary("주자들이 경기장으로 속속 입장하고 있습니다.");
                     if (diff === 30) postCommentary("선수들의 긴장된 표정이 카메라에 잡힙니다.");
                     if (diff === 10) postCommentary("경기 시작 10초 전! 주자들이 스타트 라인으로 이동합니다!", true);
@@ -961,8 +983,6 @@
 
                 if (timeTarget < lastRenderedTimeTarget) triggeredSkillsLog.clear();
                 lastRenderedTimeTarget = timeTarget;
-
-                document.getElementById('main-timer').innerText = `RACE - ${timeTarget.toFixed(1)}s`;
 
                 let leaderDist = -1; 
                 let nextRDataMap = new Map();
@@ -997,8 +1017,18 @@
 
                         cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.35)`;
                         
-                        if(speed > 1.0 && !states.includes("Exhaust")) cache.sprite.className = 'sprite-anim running'; else cache.sprite.className = 'sprite-anim';
-                        if (states.includes("Exhaust")) { cache.sprite.classList.add('exhausted'); } 
+                        // 💡 [기획 반영] 지구력 달면 속도 느려지고 땀 흘림 / 스퍼트시 애니메이션 가속!
+                        if(speed > 1.0) {
+                            cache.sprite.className = 'sprite-anim running';
+                            if (states.includes("Spurt")) cache.sprite.style.animationDuration = '0.35s';
+                            else if (states.includes("Exhaust")) cache.sprite.style.animationDuration = '1.2s';
+                            else cache.sprite.style.animationDuration = '0.6s';
+                        } else {
+                            cache.sprite.className = 'sprite-anim';
+                        }
+
+                        if (states.includes("Exhaust")) cache.sweat.classList.add('show-sweat');
+                        else cache.sweat.classList.remove('show-sweat');
 
                         let hasBuff = false; let hasDebuff = false;
                         if (states.includes("PaceDown") || states.includes("Exhaust") || states.includes("AuraDebuff")) hasDebuff = true;
@@ -1051,10 +1081,16 @@
                     }
                 });
 
+                // 💡 [기획 반영] 게이지 바 꼬리 달린 유성 방식으로 수정 (15% 길이로 졸졸 따라다님)
                 let sorted = [...runnerPositions].sort((a, b) => b.dist - a.dist);
                 if (sorted.length > 0) {
                     let leaderPct = Math.min(100, Math.max(0, (sorted[0].dist / 2000) * 100));
-                    document.getElementById('leader-trail').style.width = `${leaderPct}%`;
+                    let trailWidth = 15; // 유성 꼬리 길이
+                    let trailLeft = Math.max(0, leaderPct - trailWidth);
+                    
+                    let trailElem = document.getElementById('leader-trail');
+                    trailElem.style.left = `${trailLeft}%`;
+                    trailElem.style.width = `${leaderPct - trailLeft}%`;
 
                     let maxD = sorted[0].dist;
                     let minD = sorted[sorted.length-1].dist;
@@ -1100,15 +1136,15 @@
                 smoothCenterY += (leaderWorldY - smoothCenterY) * 0.05;
                 
                 let d = leaderDist; 
-                let bCamId = "2"; let statusText = "";
+                let bCamId = "2";
                 
-                if (d <= 200) { bCamId = "2"; statusText = "🎥 [카메라 2] 출발 직선 뷰"; }
-                else if (d <= 400) { bCamId = "3"; statusText = "🎥 [카메라 3] 1코너 진입 뷰"; }
-                else if (d <= 950) { bCamId = "4"; statusText = "🎥 [카메라 4] 백 스트레치 뷰"; }
-                else if (d <= 1225) { bCamId = "5"; statusText = "🎥 [카메라 5] 3코너 진입 뷰"; }
-                else if (d <= 1475) { bCamId = "6"; statusText = "🎥 [카메라 6] 최종 코너 뷰"; }
-                else if (d <= 1950) { bCamId = "7"; statusText = "🎥 [카메라 7] 최종 직선 뷰"; }
-                else { bCamId = "8"; statusText = "🎥 [카메라 8] 결승선 고정 뷰"; }
+                if (d <= 200) { bCamId = "2"; }
+                else if (d <= 400) { bCamId = "3"; }
+                else if (d <= 950) { bCamId = "4"; }
+                else if (d <= 1225) { bCamId = "5"; }
+                else if (d <= 1475) { bCamId = "6"; }
+                else if (d <= 1950) { bCamId = "7"; }
+                else { bCamId = "8"; }
 
                 if (baseCamId !== bCamId) {
                     baseCamId = bCamId;
@@ -1117,14 +1153,12 @@
 
                 let newCamId = bCamId;
                 if (ultActive && currentPlaybackTime <= ultCamEndTime) {
-                    newCamId = "ULT"; statusText = "🎥 [필살기] 셀프 카메라 모드";
+                    newCamId = "ULT";
                     document.getElementById('ult-edge-effect').style.display = 'block';
                 } else {
                     ultActive = false; 
                     document.getElementById('ult-edge-effect').style.display = 'none';
                 }
-
-                document.getElementById('camera-status').innerText = statusText;
 
                 let isCut = false;
                 if (activeCamId !== newCamId) {
@@ -1135,8 +1169,8 @@
                 let elapsed = timeTarget - baseCamStartTime; 
                 let t = 0; let e = 0;
                 
-                let conf = CAM_SETTINGS[activeCamId];
                 if (activeCamId === "4") {
+                    let conf = CAM_SETTINGS["4"];
                     t = Math.min(1.0, elapsed / 24.0); e = easeIn(t);
                     
                     let focusX = smoothCenterX;
@@ -1255,6 +1289,7 @@
             screen.style.display = 'flex';
         }
 
+        // 💡 [버그 픽스] 안전한 타이밍에 루프 종료 판정 (중복 실행/프리징 방지)
         function renderLoop(timestamp) {
             if (!lastRenderTimestamp) lastRenderTimestamp = timestamp;
             let delta = (timestamp - lastRenderTimestamp) / 1000;
@@ -1263,7 +1298,6 @@
             
             if (!isPlaying) return;
 
-            // 💡 [버그 픽스] isPaused 삭제 완료. 필살기 시간정지만 체크
             if (!isUltPausing) {
                 currentPlaybackTime += delta; 
             }
@@ -1271,11 +1305,10 @@
 
             let exactFrame = currentPlaybackTime / DT;
             let frameIdx = Math.floor(exactFrame);
-            // 💡 [버그 픽스] 조건이 만족되면 requestAnimationFrame을 호출하지 않고 return으로 종료!
             if (frameIdx >= maxFrames - 2) { 
                 isPlaying = false; 
                 showPodium();
-                return;
+                return; 
             }
             requestAnimationFrame(renderLoop);
         }
