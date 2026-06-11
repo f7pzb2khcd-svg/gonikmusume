@@ -933,7 +933,7 @@
                         if(timeLeft <= 10) cache.flipWrap.style.transform = 'scaleX(1)'; 
                     }
                     
-                    cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
+                    cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0) scale(${1 / currentCam.zoom})`;
                     
                     // 💡 [찌그러짐 원천 차단] 3D 로컬 좌표계 정렬 (스케일 미사용)
                     cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
@@ -1057,7 +1057,7 @@
                         }
 
                         // 💡 [찌그러짐 방지] JS에서 스케일 조작을 버리고 회전 보정만 처리
-                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
+                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(${1 / currentCam.zoom})`;
                         
                         // 지치면 느리게, 스퍼트면 아주 빠르게
                         if(speed > 1.0) {
