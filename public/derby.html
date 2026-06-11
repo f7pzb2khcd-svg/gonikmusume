@@ -62,24 +62,31 @@
         @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
 
-        /* 💡 [기획 반영] 에네르기 아우라도 2/3 스케일 적용 (scale(0.66)) */
         .energy-aura { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0.66); width: 150px; height: 150px; border-radius: 50%; mix-blend-mode: screen; opacity: 0; pointer-events: none; z-index: 15; transition: opacity 0.3s ease; }
         .energy-aura.buff { background: radial-gradient(circle, rgba(0,255,255,0.7) 0%, rgba(0,255,255,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; }
         .energy-aura.debuff { background: radial-gradient(circle, rgba(138,43,226,0.7) 0%, rgba(138,43,226,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; mix-blend-mode: multiply; }
         .energy-aura.debuff-mix { background: radial-gradient(circle, rgba(200,200,255,0.7) 0%, rgba(200,200,255,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; }
         @keyframes pulseAura { 0% { transform: translate(-50%, -50%) scale(0.56); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(0.76); opacity: 1.0; } }
 
-        /* 💡 [기획 반영] 팝업 아이콘 크기를 알맞게 축소하고, 애니메이션 좌표를 줄어든 주자 크기에 맞게 교정 */
-        .status-popup-icon { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%) scale(0.66); width: 120px; height: auto; z-index: 30; pointer-events: none; border-radius: 12px; animation: popUpFadeBody 1.2s ease-out forwards; }
-        @keyframes popUpFadeBody { 0% { transform: translate(-50%, 0px) scale(0.33); opacity: 0; } 15% { transform: translate(-50%, -30px) scale(0.73); opacity: 1; } 80% { transform: translate(-50%, -50px) scale(0.66); opacity: 1; } 100% { transform: translate(-50%, -70px) scale(0.53); opacity: 0; } }
+        .status-popup-icon { position: absolute; left: 50%; bottom: 80px; transform: translateX(-50%); width: 80px; height: auto; z-index: 30; pointer-events: none; border-radius: 8px; animation: popUpFadeBody 1.2s ease-out forwards; }
+        @keyframes popUpFadeBody { 0% { transform: translate(-50%, 0px) scale(0.5); opacity: 0; } 15% { transform: translate(-50%, -20px) scale(1.1); opacity: 1; } 80% { transform: translate(-50%, -30px) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -40px) scale(0.8); opacity: 0; } }
 
         .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; z-index: 5; }
         
-        /* 💡 [해상도 문제 완벽 해결] 고해상도 박스(300px)를 회전시킨 후, 내부에서 2/3 비율로 스케일 조정 (분리 연산) */
-        /* 도트 깨짐 방지를 위해 기본 크기를 키우고 scale3d를 적용하는 순서를 올바르게 수정 */
-        .sprite-wrapper { position: absolute; bottom: 0; left: -150px; width: 300px; height: 300px; transform-origin: bottom center; transform-style: preserve-3d; }
-        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; z-index: 10; transform-style: preserve-3d; } 
-        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.6)); position: relative; z-index: 5; transform-style: preserve-3d; }
+        .sprite-wrapper { 
+            position: absolute; bottom: 0; left: -40px; 
+            width: 80px; height: 80px;
+            transform-origin: bottom center; transform-style: preserve-3d; 
+        }
+        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; z-index: 10; transform-style: preserve-3d; }
+        .sprite-anim { 
+            width: 100%; height: 100%; 
+            background-size: contain; 
+            background-repeat: no-repeat; background-position: center bottom; 
+            transform-origin: bottom center; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.6)); position: relative; z-index: 5; transform-style: preserve-3d; 
+            
+            image-rendering: auto; 
+        }
         
         .sweat-mark { position: absolute; top: -10px; right: 80px; width: 60px; height: 60px; z-index: 20; opacity: 0; pointer-events: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300a8ff"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>'); filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.8)); transition: opacity 0.3s; }
         .sweat-mark.show-sweat { opacity: 1; animation: sweatDrop 1.5s infinite; }
@@ -93,14 +100,22 @@
         .panic-mark { position: absolute; top: -60px; left: 120px; font-size: 100px; font-weight: bold; color: #ff4757; opacity: 0; text-shadow: 4px 4px 6px black; transform-origin: bottom center; }
         .startled .panic-mark { opacity: 1; animation: floatUpChat 0.5s forwards; }
         
-        /* 💡 닉네임 태그 페이드 아웃 효과 적용 */
         .name-tag { font-size: 35px; font-weight: bold; background: rgba(0,0,0,0.8); color: white; padding: 4px 12px; border-radius: 10px; position: absolute; top: -50px; left: 30px; white-space: nowrap; z-index: 15; transition: opacity 0.5s ease; opacity: 1; }
         .status-badge, .hp-bar { display: none !important; } 
         
-        /* 💡 관중석(채팅창) 실루엣 연출 및 크기 조정 */
         #spectator-area { width: 100%; height: 300px; border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; background: linear-gradient(to bottom, #111, #222); z-index: 60; margin-top: 5px; }
-        #spectator-area::before { content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background-image: url('assets/spectator_bg.png'); background-size: cover; background-position: center bottom; opacity: 0.6; z-index: 1; pointer-events: none; }
 
+        #spectator-area::before { 
+            content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; 
+            background-image: url('assets/spectator_bg.png'); 
+            
+            background-size: contain;
+            background-repeat: repeat-x;
+            background-position: center bottom;
+            
+            opacity: 0.6; z-index: 1; pointer-events: none; 
+        }
+		
         /* 💡 다이나믹 중계창을 관중석 상단 1/3 부분 배치 */
         #commentary-board { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 90%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; pointer-events: none; z-index: 70; }
         .msg-line { font-size: 18px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.75); padding: 8px 20px; border-radius: 8px; border-left: 6px solid #3498db; box-shadow: 0 4px 10px rgba(0,0,0,0.5); opacity: 0.5; transform: scale(0.85); transition: all 0.3s ease; white-space: nowrap; margin-top: 5px; }
