@@ -85,9 +85,9 @@
 
         /* 부드러운 방사형 에네르기 아우라 (z-index 15로 주자 앞 배치) */
         .energy-aura {
-            position: absolute; top: -40px; left: 0px; transform: translate(-50%, -50%);
+            position: absolute; transform: translate(-50%, -50%);
             width: 250px; height: 250px; border-radius: 50%;
-            mix-blend-mode: screen; opacity: 0; pointer-events: none; z-index: 15; transition: opacity 0.3s ease;
+            mix-blend-mode: screen; opacity: 0; pointer-events: none; z-index: 4; transition: opacity 0.3s ease;
         }
         .energy-aura.buff { background: radial-gradient(circle, rgba(0,255,255,0.6) 0%, rgba(0,255,255,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; }
         .energy-aura.debuff { background: radial-gradient(circle, rgba(138,43,226,0.6) 0%, rgba(138,43,226,0) 65%); animation: pulseAura 1s infinite alternate; opacity: 1; mix-blend-mode: multiply; }
@@ -107,9 +107,8 @@
             100% { transform: translate(-50%, -100%) scale(0.8); opacity: 0; }
         }
 
-        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: flat; z-index: 5; }
-        
-        /* 💡 [찌그러짐 완벽 해결] scale 코드를 JS에서 박멸하고, CSS 자체를 2/3 사이즈(80x80px)로 고정합니다. */
+        /* [방법1] runner-base는 #screen-container에 직접 붙고, left/top으로 위치를 잡음 */
+        .runner-base { position: absolute; width: 0px; height: 0px; z-index: 10; }
         .sprite-wrapper { position: absolute; bottom: 0; left: -40px; width: 80px; height: 80px; transform-origin: bottom center; }
         .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; z-index: 10; } 
         .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.6)); position: relative; z-index: 5; }
@@ -700,9 +699,8 @@
                 const rBase = document.createElement('div'); rBase.className = 'runner-base'; rBase.id = `runner-${p.id}`;
                 rBase.style.transform = `translate3d(${spawnX}px, ${spawnY}px, 0)`;
 
-                // 💡 [찌그러짐 원천 봉쇄] JS에서 scale()을 완전히 지우고, CSS width를 80px로 줄여 원본 비율을 보존합니다.
+                // [방법1] runner-base를 #screen-container에 직접 붙임 (3D 왜곡 완전 분리)
                 rBase.innerHTML = `
-                    <div class="energy-aura" id="aura-${p.id}"></div>
                     <div class="sprite-wrapper">
                         <svg class="sweat-mark" viewBox="0 0 24 24"><path d="M12 2.69l5.66 7c1.83 2.26 2.34 5.34.8 7.82-1.34 2.16-3.8 3.49-6.46 3.49-2.65 0-5.11-1.33-6.46-3.49-1.54-2.48-1.03-5.56.8-7.82l5.66-7z"/></svg>
                         <div class="panic-mark">!</div>
@@ -710,7 +708,14 @@
                         <div class="name-tag">${p.name}</div>
                     </div>
                 `;
-                document.getElementById('world').appendChild(rBase);
+
+                // 아우라는 runner-base와 별도로 #screen-container에 붙임
+                const auraEl = document.createElement('div');
+                auraEl.className = 'energy-aura';
+                auraEl.id = `aura-${p.id}`;
+
+                document.getElementById('screen-container').appendChild(auraEl);
+                document.getElementById('screen-container').appendChild(rBase);
 
                 const dot = document.createElement('div'); 
                 dot.className = 'minimap-runner-icon'; 
@@ -730,7 +735,7 @@
                     sprite: rBase.querySelector('.sprite-anim'),
                     flipWrap: rBase.querySelector('.flip-wrapper'),
                     nameTag: rBase.querySelector('.name-tag'),
-                    aura: rBase.querySelector('.energy-aura'),
+                    aura: auraEl,
                     sweat: rBase.querySelector('.sweat-mark'),
                     popupQueue: [],
                     isPopupPlaying: false
@@ -874,6 +879,37 @@
             document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
         }
 
+        // [방법1] 월드 좌표 → 화면 픽셀 좌표 변환
+        // #world에 걸리는 것과 동일한 카메라 행렬을 JS로 재현합니다.
+        function worldToScreen(worldX, worldY) {
+            const container = document.getElementById('screen-container');
+            const W = container.offsetWidth;
+            const H = container.offsetHeight;
+
+            // 카메라 기준점 이동
+            let dx = worldX + currentCam.x;
+            let dy = worldY + currentCam.y;
+
+            // rotZ 회전 (Z축 = 화면 법선, 즉 평면 회전)
+            const rZ = currentCam.rotZ * Math.PI / 180;
+            let rx = dx * Math.cos(rZ) - dy * Math.sin(rZ);
+            let ry = dx * Math.sin(rZ) + dy * Math.cos(rZ);
+
+            // rotX 회전 (X축 기울기 → Y축 압축)
+            const rX = currentCam.rotX * Math.PI / 180;
+            let fy = ry * Math.cos(rX);
+
+            // zoom 적용
+            let sx = rx * currentCam.zoom;
+            let sy = fy * currentCam.zoom;
+
+            // #world의 기준점은 left:50%, top:66.6%
+            return {
+                x: W * 0.5  + sx,
+                y: H * 0.666 + sy
+            };
+        }
+
         function preShowLoop(timestamp) {
             if (!lastPreShowTimestamp) lastPreShowTimestamp = timestamp;
             let delta = (timestamp - lastPreShowTimestamp) / 1000;
@@ -924,10 +960,15 @@
                         if(timeLeft <= 10) cache.flipWrap.style.transform = 'scaleX(1)'; 
                     }
                     
-                    cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
-                    
-                    // 💡 [찌그러짐 원천 차단] CSS 너비를 80px로 줄였으므로, scale 없이 회전만 적용하여 원본 비율 완전 유지!
-                    cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg)`;
+                    cache.base.style.transform = '';
+                    let sp = worldToScreen(r.currX, r.currY);
+                    cache.base.style.left = sp.x + 'px';
+                    cache.base.style.top  = sp.y + 'px';
+                    cache.aura.style.left = sp.x + 'px';
+                    cache.aura.style.top  = (sp.y - 40) + 'px';
+
+                    // [방법1] wrapper 보정 불필요 - #world 바깥이므로 왜곡 없음
+                    cache.wrapper.style.transform = '';
                 });
 
                 let newCamId = "1";
@@ -963,8 +1004,12 @@
             preShowRunners.forEach(r => {
                 let cache = domCache.get(r.id);
                 if(cache) {
-                    cache.base.classList.remove('startled'); 
-                    cache.base.style.transform = `translate3d(${r.finalX}px, ${r.finalY}px, 0)`; 
+                    cache.base.classList.remove('startled');
+                    let sp = worldToScreen(r.finalX, r.finalY);
+                    cache.base.style.left = sp.x + 'px';
+                    cache.base.style.top  = sp.y + 'px';
+                    cache.aura.style.left = sp.x + 'px';
+                    cache.aura.style.top  = (sp.y - 40) + 'px';
                     cache.flipWrap.style.transform = 'scaleX(-1)'; 
                 }
             });
@@ -1042,16 +1087,20 @@
 
                     let cache = domCache.get(id);
                     if (cache) {
-                        cache.base.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; 
-                        
+                        // [방법1] 월드 좌표를 화면 좌표로 변환해서 직접 배치
+                        let sp = worldToScreen(worldX, worldY);
+                        cache.base.style.left = sp.x + 'px';
+                        cache.base.style.top  = sp.y + 'px';
+                        cache.aura.style.left = sp.x + 'px';
+                        cache.aura.style.top  = (sp.y - 40) + 'px';
+                        cache.base.style.transform = '';
+                        cache.wrapper.style.transform = '';
+
                         if (activeCamId === "5" || activeCamId === "ULT") {
                             cache.flipWrap.style.transform = 'scaleX(1)';
                         } else {
                             cache.flipWrap.style.transform = 'scaleX(-1)';
                         }
-
-                        // 💡 [찌그러짐 방지] JS에서 스케일을 빼고 회전만 시켜 원본 비율(2/3 크기) 완벽 보존
-                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg)`;
                         
                         // 💡 지치면 느리게, 스퍼트면 아주 빠르게
                         if(speed > 1.0) {
