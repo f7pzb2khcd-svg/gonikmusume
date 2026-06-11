@@ -107,7 +107,7 @@
             100% { transform: translate(-50%, -100%) scale(0.8); opacity: 0; }
         }
 
-        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; z-index: 5; }
+        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: flat; z-index: 5; }
         
         /* 💡 [찌그러짐 완벽 해결] scale 코드를 JS에서 박멸하고, CSS 자체를 2/3 사이즈(80x80px)로 고정합니다. */
         .sprite-wrapper { position: absolute; bottom: 0; left: -40px; width: 80px; height: 80px; transform-origin: bottom center; }
@@ -927,7 +927,7 @@
                     cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
                     
                     // 💡 [찌그러짐 원천 차단] CSS 너비를 80px로 줄였으므로, scale 없이 회전만 적용하여 원본 비율 완전 유지!
-                    cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
+                    cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg)`;
                 });
 
                 let newCamId = "1";
@@ -1051,7 +1051,7 @@
                         }
 
                         // 💡 [찌그러짐 방지] JS에서 스케일을 빼고 회전만 시켜 원본 비율(2/3 크기) 완벽 보존
-                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
+                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg)`;
                         
                         // 💡 지치면 느리게, 스퍼트면 아주 빠르게
                         if(speed > 1.0) {
