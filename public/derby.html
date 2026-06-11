@@ -28,27 +28,23 @@
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; }
         #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; }
         
+        /* 💡 수정된 중앙 집중형 미니맵 */
         #integrated-minimap {
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            width: 80%; height: 40px; background: rgba(0,0,0,0.7);
-            border: 2px solid #555; border-radius: 20px; z-index: 80;
+            position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+            width: 80%; height: 45px; background: rgba(0,0,0,0.7);
+            border: 2px solid #555; border-radius: 25px; z-index: 80;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: top 1s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 1s; opacity: 0;
         }
-        .minimap-line { position: absolute; top: 20px; left: 5%; width: 90%; height: 2px; background: rgba(255,255,255,0.3); }
-        .minimap-marker { position: absolute; top: -5px; height: 12px; width: 2px; background: rgba(255,255,255,0.8); }
-        .minimap-marker span { position: absolute; top: -15px; left: -10px; font-size: 10px; color: #fff; font-weight: bold; }
-        .minimap-start { left: 0%; }
-        .minimap-mid1 { left: 16.6%; }
-        .minimap-mid2 { left: 66.6%; }
-        .minimap-goal { left: 100%; }
+        #integrated-minimap.show { top: 15px; opacity: 1; }
+        .minimap-global-track { position: absolute; top: 10px; left: 5%; width: 90%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+        .minimap-global-fill { height: 100%; background: linear-gradient(to right, #e67e22, #f1c40f); width: 0%; transition: width 0.1s linear; position: relative;}
+        .minimap-global-head { position: absolute; right: 0; top: -3px; width: 10px; height: 10px; background: #fff; box-shadow: 0 0 10px #fff; border-radius: 50%; }
+        .minimap-pack-view { position: absolute; top: 28px; left: 5%; width: 90%; height: 10px; }
         .minimap-runner-icon {
-            position: absolute; width: 10px; height: 10px; border-radius: 50%;
+            position: absolute; width: 12px; height: 12px; border-radius: 50%;
             border: 1px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.8);
             transform: translate(-50%, -50%); transition: left 0.1s linear; z-index: 82;
-        }
-        #leader-trail {
-            position: absolute; height: 4px; background: linear-gradient(to right, transparent, #FFD700);
-            transform: translateY(-50%); z-index: 81; border-radius: 2px; top: 20px; transition: width 0.1s linear, left 0.1s linear;
         }
 
         #skill-log-box {
@@ -68,25 +64,27 @@
         @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
 
-        /* 💡 버프/디버프 에네르기 아우라 CSS */
+        /* 💡 개편된 방사형 에네르기 아우라 CSS */
         .energy-aura {
-            position: absolute; bottom: 0; left: 50%; width: 150px; height: 300px;
-            transform: translateX(-50%); pointer-events: none; z-index: -1; opacity: 0;
-            border-radius: 50% 50% 0 0; mix-blend-mode: screen; transition: opacity 0.2s;
+            position: absolute; bottom: 40px; left: 50%; width: 150px; height: 150px;
+            transform: translate(-50%, 0) scale(0); pointer-events: none; z-index: -1;
+            border-radius: 50%; mix-blend-mode: screen; transition: opacity 0.3s; opacity: 0;
         }
         .energy-aura.buff {
-            background: linear-gradient(to top, transparent, rgba(0,255,255,0.8), transparent);
-            animation: auraUp 0.6s infinite linear; opacity: 0.8;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.8) 0%, rgba(0, 200, 255, 0.4) 40%, transparent 70%);
+            animation: pulseAura 1s infinite alternate; opacity: 1;
         }
         .energy-aura.debuff {
-            background: linear-gradient(to bottom, transparent, rgba(138,43,226,0.8), transparent);
-            animation: auraDown 0.6s infinite linear; opacity: 0.8; mix-blend-mode: multiply;
+            background: radial-gradient(circle, rgba(138, 43, 226, 0.8) 0%, rgba(100, 0, 200, 0.4) 40%, transparent 70%);
+            animation: pulseAura 1s infinite alternate; opacity: 1; mix-blend-mode: multiply;
         }
-        .energy-aura.debuff-mix { background: linear-gradient(to top, rgba(138,43,226,0.8), rgba(0,255,255,0.8), transparent); }
-        @keyframes auraUp { 0% { background-position: 0 100%; } 100% { background-position: 0 0; } }
-        @keyframes auraDown { 0% { background-position: 0 0; } 100% { background-position: 0 100%; } }
+        .energy-aura.debuff-mix {
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.8) 0%, rgba(138, 43, 226, 0.5) 50%, transparent 70%);
+            animation: pulseAura 1s infinite alternate; opacity: 1;
+        }
+        @keyframes pulseAura { 0% { transform: translate(-50%, 0) scale(0.8); opacity: 0.6; } 100% { transform: translate(-50%, 0) scale(1.2); opacity: 1; } }
 
-        /* 💡 [기획 반영] 몸 가운데서 나타나는 상태 팝업 (Top 40%로 조정하여 가슴 위치) */
+        /* 💡 몸 가운데서 나타나는 상태 아이콘 팝업 (Top 40%) */
         .status-popup-icon {
             position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
             width: 80px; height: auto; z-index: 20; pointer-events: none;
@@ -95,7 +93,7 @@
         @keyframes popUpFadeBody {
             0% { transform: translate(-50%, 0%) scale(0.5); opacity: 0; }
             15% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-            80% { transform: translate(-50%, -80%) scale(1.0); opacity: 1; }
+            80% { transform: translate(-50%, -70%) scale(1.0); opacity: 1; }
             100% { transform: translate(-50%, -100%) scale(0.8); opacity: 0; }
         }
 
@@ -123,7 +121,7 @@
         @keyframes fadeInMsg { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
         #spectator-area { width: 100%; height: 250px; background: url('https://www.transparenttextures.com/patterns/black-scales.png'), linear-gradient(to bottom, #2d3436, #1e272e); border-radius: 12px; border: 2px solid #353b48; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 10px; box-sizing: border-box; }
-        .chat-bubble { position: absolute; background: rgba(255, 255, 255, 0.95); color: #000; padding: 8px 14px; border-radius: 12px; border-bottom-left-radius: 0; font-size: 14px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 10; animation: floatUpChat 3s ease-out forwards; transform: translateX(-50%); pointer-events: none; }
+        .chat-bubble { position: absolute; background: rgba(255, 255, 255, 0.95); color: #000; padding: 8px 14px; border-radius: 12px; border-bottom-left-radius: 0; font-size: 13px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 10; animation: floatUpChat 3s ease-out forwards; transform: translateX(-50%); pointer-events: none; }
         @keyframes floatUpChat { 0% { bottom: 10%; opacity: 0; transform: translateX(-50%) scale(0.8); } 15% { bottom: 20%; opacity: 1; transform: translateX(-50%) scale(1); } 80% { bottom: 70%; opacity: 0.8; } 100% { bottom: 90%; opacity: 0; } }
         
         #chat-controls { display: flex; justify-content: center; gap: 15px; align-items: center; z-index: 20; padding: 0 10px; margin-top: auto; }
@@ -150,6 +148,14 @@
         .podium-runner { position: absolute; transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; }
         .podium-name { background: rgba(0,0,0,0.8); color: white; padding: 4px 12px; border-radius: 8px; font-size: 20px; font-weight: bold; white-space: nowrap; margin-bottom: -20px; z-index: 10; border: 2px solid #555; }
 
+        #camera-debugger { position: fixed; top: 10px; right: 10px; width: 340px; background: rgba(20, 20, 20, 0.95); padding: 15px; border: 2px solid #00e5ff; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); color: white; z-index: 9999; display: none; text-align: left; font-size: 13px; }
+        #camera-debugger h3 { margin: 0 0 10px 0; color: #00e5ff; font-size: 16px; border-bottom: 1px solid #555; padding-bottom: 5px; }
+        .debug-row { margin-bottom: 10px; }
+        .debug-row label { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 3px; }
+        .debug-row input[type="range"] { width: 100%; cursor: pointer; }
+        #cam-select { width: 100%; padding: 5px; background: #353b48; color: white; border: 1px solid #718093; font-weight: bold; margin-bottom: 10px; }
+        #config-output { width: 100%; height: 60px; background: #111; color: #0be881; border: 1px solid #555; margin-top: 10px; font-size: 11px; padding: 5px; box-sizing: border-box; resize: none; font-family: monospace; }
+
         #ult-edge-effect {
             display: none;
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -175,6 +181,34 @@
 <body>
 
     <h1>🏁 왁마갤 무스메 <span style="font-size: 16px; color:#dcdde1; font-weight:normal;">- 시네마틱 디렉터 컷 -</span></h1>
+
+    <div id="camera-debugger">
+        <h3>🎥 멀티캠 디버거</h3>
+        <select id="cam-select">
+            <option value="1">1. 프리쇼 (입장 대기 뷰)</option>
+            <option value="1.5">1.5 프리쇼 (인터뷰 줌인 뷰)</option>
+            <option value="2">2. 출발 직선 뷰 (0~200m)</option>
+            <option value="3">3. 1코너 뷰 (200~400m)</option>
+            <option value="4">4. 백 스트레치 뷰 (400~950m)</option>
+            <option value="5">5. 3코너 뷰 (950~1225m)</option>
+            <option value="6">6. 최종 코너 뷰 (1225~1475m)</option>
+            <option value="7">7. 최종 직선 뷰 (1475~1950m)</option>
+            <option value="8">8. 결승선 픽스 뷰 (1950m~)</option>
+            <option value="ULT">ULT. 필살기 카메라 (셀카)</option>
+        </select>
+        <div style="margin-bottom: 10px;">
+            <label style="cursor: pointer; color: #ffeb3b; font-size: 14px; font-weight: bold;">
+                <input type="checkbox" id="enable-debug-cam" style="width: 15px; height: 15px;"> 현재 선택된 카메라 강제 고정
+            </label>
+        </div>
+        <div class="debug-row"><label>X축 오프셋 <span id="val-x">0</span>px</label><input type="range" id="slider-x" min="-4000" max="4000" step="10" value="0"></div>
+        <div class="debug-row"><label>Y축 오프셋 <span id="val-y">0</span>px</label><input type="range" id="slider-y" min="-4000" max="4000" step="10" value="0"></div>
+        <div class="debug-row"><label>RotX (밀착) <span id="val-rotx">85</span>도</label><input type="range" id="slider-rotx" min="0" max="90" step="1" value="85"></div>
+        <div class="debug-row"><label>RotZ (측면) <span id="val-rotz">0</span>도</label><input type="range" id="slider-rotz" min="-360" max="360" step="1" value="0"></div>
+        <div class="debug-row"><label>Zoom <span id="val-zoom">4.0</span>배</label><input type="range" id="slider-zoom" min="0.1" max="10.0" step="0.05" value="4.0"></div>
+        <div style="font-size: 11px; margin-top: 5px;">현재 카메라 JSON 데이터 (복사해서 알려주세요)</div>
+        <textarea id="config-output" readonly></textarea>
+    </div>
 
     <div id="lobby-panel">
         <h2>대회 방 생성</h2>
@@ -231,13 +265,11 @@
         <div id="screen-container">
             <div id="world"></div>
             
-            <div id="integrated-minimap">
-                <div class="minimap-line">
-                    <div class="minimap-marker minimap-start"><span>START</span></div>
-                    <div class="minimap-marker minimap-mid1"><span>중반</span></div>
-                    <div class="minimap-marker minimap-mid2"><span>종반</span></div>
-                    <div class="minimap-marker minimap-goal"><span>GOAL</span></div>
-                    <div id="leader-trail"></div>
+            <div id="integrated-minimap" class="minimap-hidden">
+                <div class="minimap-global-track">
+                    <div id="minimap-global-fill" class="minimap-global-fill"><div class="minimap-global-head"></div></div>
+                </div>
+                <div class="minimap-pack-view">
                     <div id="minimap-runners"></div>
                 </div>
             </div>
@@ -254,12 +286,10 @@
             <div id="chat-controls">
                 <div class="chat-macros">
                     <button onclick="sendChat('ㅎㅇ')">ㅎㅇ</button>
-                    <button onclick="sendChat('떨린다')">떨린다</button>
-                    <button onclick="sendChat('가즈아아아')">가즈아아아</button>
                     <button onclick="sendChat('샤욘아!')">샤욘아!</button>
-                    <button onclick="sendChat('ㅅㅂ')">ㅅㅂ</button>
+                    <button onclick="sendChat('가즈아아아')">가즈아아아</button>
+                    <button onclick="sendChat('떨린다')">떨린다</button>
                     <button onclick="sendChat('주작')">주작</button>
-                    <button onclick="sendChat('떨린다')">젠황</button>
                 </div>
                 <div id="custom-chat-box">
                     <input type="text" id="customChatInput" placeholder="자유 채팅 입력..." maxlength="20">
@@ -282,6 +312,7 @@
 
         let roomData = null;
         let isPreShow = false; let isPlaying = false; 
+        let isPaused = false;
         let currentPlaybackTime = 0.0; let maxFrames = 0;
         const DT = 1 / 15.0; 
 
@@ -315,18 +346,17 @@
         const domCache = new Map();
         
         const AUDIO_FX = {
-            lobby: new Audio('대기실.mp3'),
-            whistle: new Audio('whistle.mp3'),
-            applause: new Audio('winner.mp3'),
-            buff: new Audio('buff.mp3'),
-            debuff: new Audio('debuff.mp3'),
-            run: new Audio('run.mp3')
+            lobby: new Audio('assets/sounds/lobby_bgm.mp3'),
+            whistle: new Audio('assets/sounds/whistle.mp3'),
+            applause: new Audio('assets/sounds/applause.mp3'),
+            buff: new Audio('assets/sounds/buff.mp3'),
+            debuff: new Audio('assets/sounds/debuff.mp3'),
+            run: new Audio('assets/sounds/run.mp3')
         };
         AUDIO_FX.lobby.loop = true; AUDIO_FX.lobby.volume = 0.15;
         AUDIO_FX.run.loop = true; AUDIO_FX.run.volume = 0.3;
         let globalBgmAudio = null;
 
-        // 💡 [기획 반영] 팝업 매핑 설정
         const POPUP_MAP = {
             "목표 속도 증가": "SPD_UP.png", "현재 속도 증가": "SPD_UP.png", "속도 증가": "SPD_UP.png",
             "가속도 증가": "ACC_UP.png", "지구력 회복": "ST_UP.png", "파워 증가": "POW_UP.png", "근성 증가": "GT_UP.png",
@@ -347,13 +377,52 @@
             "ULT": { offsetX: 1800, offsetY: 0, rotX: 89, rotZ: 90, zoom: 4.5 }
         };
 
+        window.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT') return; 
+            if (e.code === 'Space' && (isPlaying || isPreShow)) {
+                isPaused = !isPaused; 
+                e.preventDefault(); 
+                showCommentary(isPaused ? "⏸️ [디렉터 모드] 레이스 일시정지 (카메라 디버그 활성화)" : "▶️ 레이스 재개");
+            }
+        });
+
+        const camSelect = document.getElementById('cam-select');
+        const configOutput = document.getElementById('config-output');
+        const sliders = { x: document.getElementById('slider-x'), y: document.getElementById('slider-y'), rotx: document.getElementById('slider-rotx'), rotz: document.getElementById('slider-rotz'), zoom: document.getElementById('slider-zoom') };
+
+        function updateSlidersFromConfig(camId) {
+            let conf = CAM_SETTINGS[camId];
+            if (!conf) return;
+            sliders.x.value = conf.offsetX; document.getElementById('val-x').innerText = conf.offsetX;
+            sliders.y.value = conf.offsetY; document.getElementById('val-y').innerText = conf.offsetY;
+            sliders.rotx.value = conf.rotX; document.getElementById('val-rotx').innerText = conf.rotX;
+            sliders.rotz.value = conf.rotZ; document.getElementById('val-rotz').innerText = conf.rotZ;
+            sliders.zoom.value = conf.zoom; document.getElementById('val-zoom').innerText = conf.zoom;
+            configOutput.value = JSON.stringify(conf);
+        }
+
+        if(camSelect) {
+            camSelect.addEventListener('change', (e) => { updateSlidersFromConfig(e.target.value); });
+            Object.keys(sliders).forEach(key => {
+                if(sliders[key]) {
+                    sliders[key].addEventListener('input', (e) => {
+                        document.getElementById('val-' + key).innerText = e.target.value;
+                        let camId = camSelect.value;
+                        if(!CAM_SETTINGS[camId]) return;
+                        CAM_SETTINGS[camId] = { ...CAM_SETTINGS[camId], offsetX: parseFloat(sliders.x.value), offsetY: parseFloat(sliders.y.value), rotX: parseFloat(sliders.rotx.value), rotZ: parseFloat(sliders.rotz.value), zoom: parseFloat(sliders.zoom.value) };
+                        configOutput.value = JSON.stringify(CAM_SETTINGS[camId]);
+                    });
+                }
+            });
+            updateSlidersFromConfig("1");
+        }
+
         const easeIn = (t) => t * t;
         const easeOut = (t) => t * (2 - t);
 
         let fpTimeCutoff = flatpickr("#timeCutoffInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
         let fpDatetime = flatpickr("#datetimeInput", { enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true });
 
-        // 💡 [큐 시스템] 대상의 팝업을 순서대로 몸 중앙에 띄움
         function processPopupQueue(runnerId) {
             let cache = domCache.get(runnerId);
             if (!cache || cache.isPopupPlaying || cache.popupQueue.length === 0) return;
@@ -380,7 +449,6 @@
             setTimeout(() => { if (icon.parentNode) icon.remove(); }, 1200);
         }
 
-        // 왼쪽 스킬 알림 박스
         function spawnSkillLog(runnerName, skillName, skillIcon) {
             let logBox = document.getElementById('skill-log-box');
             let logItem = document.createElement('div');
@@ -537,6 +605,7 @@
 
             document.getElementById('lobby-panel').style.display = 'none';
             document.getElementById('game-ui').style.display = 'flex'; 
+            if(document.getElementById('camera-debugger')) document.getElementById('camera-debugger').style.display = 'block';
 
             try {
                 const res = await fetch(`${API_BASE}/room/${roomId}`);
@@ -862,68 +931,72 @@
             if (delta > 0.1) delta = 0.1; 
 
             if (isPreShow) {
-                const nowSec = Date.now() / 1000;
-                let timeLeft = roomData.scheduled_time - nowSec;
+                if (!isPaused) {
+                    const nowSec = Date.now() / 1000;
+                    let timeLeft = roomData.scheduled_time - nowSec;
 
-                if (timeLeft <= 60) {
-                    preShowRunners.forEach(r => {
-                        let cache = domCache.get(r.id);
-                        if (!cache) return;
-                        let speed = 100; 
-                        
-                        if (timeLeft <= 10 && !r.panicked) { r.panicked = true; r.targetX = r.finalX; r.targetY = r.finalY; cache.base.classList.add('startled'); }
-                        if (r.panicked) speed = 350; 
+                    if (timeLeft <= 60) {
+                        preShowRunners.forEach(r => {
+                            let cache = domCache.get(r.id);
+                            if (!cache) return;
+                            let speed = 100; 
+                            
+                            if (timeLeft <= 10 && !r.panicked) { r.panicked = true; r.targetX = r.finalX; r.targetY = r.finalY; cache.base.classList.add('startled'); }
+                            if (r.panicked) speed = 350; 
 
-                        if (!r.panicked && timeLeft > 10) {
-                            if (r.behavior === 'wander') {
-                                r.timer -= delta;
-                                if (r.timer <= 0) { r.targetX = r.finalX - 300 + Math.random() * 600; r.targetY = r.gatherY - 200 + Math.random() * 400; r.timer = 2 + Math.random() * 4; }
-                            } else if (r.behavior === 'chat') {
-                                if (!r.chatPosSet) {
-                                    r.targetX = r.chatZone.x + (Math.random() * 150 - 75); 
-                                    r.targetY = r.chatZone.y + (Math.random() * 150 - 75);
-                                    r.chatPosSet = true;
-                                }
-                                if (Math.random() < 0.01) { 
-                                    cache.wrapper.style.transform = 'translateY(-30px) scale(0.35)'; 
-                                    setTimeout(() => { cache.wrapper.style.transform = 'scale(0.35)'; }, 200); 
+                            if (!r.panicked && timeLeft > 10) {
+                                if (r.behavior === 'wander') {
+                                    r.timer -= delta;
+                                    if (r.timer <= 0) { r.targetX = r.finalX - 300 + Math.random() * 600; r.targetY = r.gatherY - 200 + Math.random() * 400; r.timer = 2 + Math.random() * 4; }
+                                } else if (r.behavior === 'chat') {
+                                    if (!r.chatPosSet) {
+                                        r.targetX = r.chatZone.x + (Math.random() * 150 - 75); 
+                                        r.targetY = r.chatZone.y + (Math.random() * 150 - 75);
+                                        r.chatPosSet = true;
+                                    }
+                                    if (Math.random() < 0.01) { 
+                                        cache.wrapper.style.transform = 'translateY(-30px) scale(0.35)'; 
+                                        setTimeout(() => { cache.wrapper.style.transform = 'scale(0.35)'; }, 200); 
+                                    }
                                 }
                             }
-                        }
 
-                        let dx = r.targetX - r.currX; let dy = r.targetY - r.currY; let dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist > 5) {
-                            r.currX += (dx / dist) * speed * delta; r.currY += (dy / dist) * speed * delta;
-                            if (r.panicked) cache.sprite.classList.add('running'); else cache.sprite.classList.remove('running');
-                            cache.flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
-                        } else {
-                            cache.sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
-                            if(r.panicked) cache.base.classList.remove('startled'); 
-                            if(r.behavior === 'chat') cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
-                            if(timeLeft <= 10) cache.flipWrap.style.transform = 'scaleX(1)'; 
-                        }
-                        cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
-                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.35)`;
-                    });
-                }
-
-                let newCamId = "1";
-                if (timeLeft <= 30 && timeLeft > 11) {
-                    newCamId = "1.5";
-                    if (Date.now() - lastPreShowZoomTime > 4000) {
-                        preShowFocusId = preShowRunners[Math.floor(Math.random() * preShowRunners.length)].id;
-                        lastPreShowZoomTime = Date.now();
-                        activeCamId = null; 
+                            let dx = r.targetX - r.currX; let dy = r.targetY - r.currY; let dist = Math.sqrt(dx*dx + dy*dy);
+                            if (dist > 5) {
+                                r.currX += (dx / dist) * speed * delta; r.currY += (dy / dist) * speed * delta;
+                                if (r.panicked) cache.sprite.classList.add('running'); else cache.sprite.classList.remove('running');
+                                cache.flipWrap.style.transform = (dx > 0) ? 'scaleX(-1)' : 'scaleX(1)';
+                            } else {
+                                cache.sprite.classList.remove('running'); r.currX = r.targetX; r.currY = r.targetY;
+                                if(r.panicked) cache.base.classList.remove('startled'); 
+                                if(r.behavior === 'chat') cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(-1)' : 'scaleX(1)';
+                                if(timeLeft <= 10) cache.flipWrap.style.transform = 'scaleX(1)'; 
+                            }
+                            cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
+                            cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.35)`;
+                        });
                     }
-                    if(preShowFocusId) document.getElementById('camera-status').innerText = `🎥 [카메라 1.5] 선수 줌인 인터뷰 뷰`;
-                } else {
-                    document.getElementById('camera-status').innerText = "🎥 [카메라 1] 프리쇼 앵글";
-                }
 
-                let isCut = false;
-                if (activeCamId !== newCamId) { isCut = true; activeCamId = newCamId; camStartTime = Date.now() / 1000; }
-                
-                applyCamera(activeCamId, isCut, Date.now() / 1000);
+                    let newCamId = "1";
+                    if (timeLeft <= 30 && timeLeft > 11) {
+                        newCamId = "1.5";
+                        if (Date.now() - lastPreShowZoomTime > 4000) {
+                            preShowFocusId = preShowRunners[Math.floor(Math.random() * preShowRunners.length)].id;
+                            lastPreShowZoomTime = Date.now();
+                            activeCamId = null; 
+                        }
+                        if(preShowFocusId) document.getElementById('camera-status').innerText = `🎥 [카메라 1.5] 선수 줌인 인터뷰 뷰`;
+                    } else {
+                        document.getElementById('camera-status').innerText = "🎥 [카메라 1] 프리쇼 앵글";
+                    }
+
+                    let isCut = false;
+                    if (activeCamId !== newCamId) { isCut = true; activeCamId = newCamId; camStartTime = Date.now() / 1000; }
+                    
+                    applyCamera(activeCamId, isCut, Date.now() / 1000);
+                } else {
+                    applyCamera(activeCamId, false, Date.now() / 1000);
+                }
                 requestAnimationFrame(preShowLoop);
             }
         }
@@ -934,6 +1007,8 @@
             activeCamId = "2"; camStartTime = 0;
             
             document.getElementById('camera-status').innerText = "🎥 [카메라 2] 출발 직선 뷰";
+            // 💡 시작 시 미니맵 슬라이드 다운
+            document.getElementById('integrated-minimap').classList.add('show');
             AUDIO_FX.lobby.pause();
             
             preShowRunners.forEach(r => {
@@ -1000,17 +1075,18 @@
                 let cache = domCache.get(id);
                 if (cache) {
                     cache.base.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; 
-                    cache.dot.style.left = `${(Math.min(dist, 2000) / 2000) * 100}%`;
                     
-                    if (activeCamId === "5" || activeCamId === "ULT") cache.flipWrap.style.transform = 'scaleX(1)';
-                    else cache.flipWrap.style.transform = 'scaleX(-1)';
+                    if (activeCamId === "5" || activeCamId === "ULT" || (document.getElementById('enable-debug-cam') && document.getElementById('enable-debug-cam').checked && document.getElementById('cam-select').value === "5")) {
+                        cache.flipWrap.style.transform = 'scaleX(1)';
+                    } else {
+                        cache.flipWrap.style.transform = 'scaleX(-1)';
+                    }
 
                     cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg) scale(0.35)`;
                     
                     if(speed > 1.0 && !states.includes("Exhaust")) cache.sprite.className = 'sprite-anim running'; else cache.sprite.className = 'sprite-anim';
                     if (states.includes("Exhaust")) { cache.sprite.classList.add('exhausted'); } 
 
-                    // 💡 [기획 반영] 에네르기 버프/디버프 연출
                     let hasBuff = false; let hasDebuff = false;
                     
                     if (states.includes("PaceDown") || states.includes("Exhaust") || states.includes("AuraDebuff")) hasDebuff = true;
@@ -1024,7 +1100,6 @@
                 
                 if (states && states.length > 0) {
                     states.forEach(st => {
-                        // 💡 [기획 반영] 팝업 시스템 (몸 가운데서 차례대로)
                         if (st.startsWith("POPUP|")) {
                             let parts = st.split("|");
                             let pType = parts[1]; let pSeq = parseInt(parts[2]);
@@ -1066,17 +1141,23 @@
 
             let sorted = [...runnerPositions].sort((a, b) => b.dist - a.dist);
             if (sorted.length > 0) {
+                // 상단 유성 게이지 (1등 기준)
+                let leaderPct = Math.min((leaderDist / 2000) * 100, 100);
+                document.getElementById('minimap-global-fill').style.width = `${leaderPct}%`;
+
+                // 하단 클러스터 게이지 (선두-꼴찌 기준 중앙정렬)
+                let maxDist = sorted[0].dist;
+                let minDist = sorted[sorted.length - 1].dist;
+                let midDist = (maxDist + minDist) / 2;
+                let spread = Math.max(40, maxDist - minDist); 
+
                 sorted.forEach(rPos => {
                     let cache = domCache.get(rPos.id);
                     if (cache) {
-                        let pctDist = (rPos.dist / 2000) * 100;
-                        cache.dot.style.left = `${pctDist}%`;
-                        
-                        if (rPos.id === sorted[0].id) {
-                            let trail = document.getElementById('leader-trail');
-                            trail.style.left = `${pctDist - 10}%`; 
-                            trail.style.width = `10%`; 
-                        }
+                        let relPos = (rPos.dist - midDist) / spread;
+                        let pct = 50 + (relPos * 80); 
+                        pct = Math.max(5, Math.min(pct, 95));
+                        cache.dot.style.left = `${pct}%`;
                     }
                 });
             }
@@ -1145,7 +1226,9 @@
             let elapsed = timeTarget - baseCamStartTime; 
             let t = 0; let e = 0;
             
-            if (activeCamId === "4") {
+            let isDebug = document.getElementById('enable-debug-cam') && document.getElementById('enable-debug-cam').checked;
+            
+            if (!isDebug && activeCamId === "4") {
                 let conf = CAM_SETTINGS["4"];
                 t = Math.min(1.0, elapsed / 24.0); e = easeIn(t);
                 
@@ -1265,7 +1348,9 @@
             if (delta > 0.1) delta = 0.1; 
             
             if (isPlaying) { 
-                currentPlaybackTime += delta; 
+                if (!isPaused && !isUltPausing) {
+                    currentPlaybackTime += delta; 
+                }
                 renderFrameAtTime(currentPlaybackTime); 
                 requestAnimationFrame(renderLoop);
             }
