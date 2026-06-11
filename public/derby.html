@@ -110,9 +110,9 @@
         .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; z-index: 5; }
         
         /* 💡 [찌그러짐 완벽 해결] scale 코드를 JS에서 박멸하고, CSS 자체를 2/3 사이즈(80x80px)로 고정합니다. */
-        .sprite-wrapper { position: absolute; bottom: 0; left: -40px; width: 80px; height: 80px; transform-origin: bottom center; transform-style: preserve-3d; }
-        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; z-index: 10; transform-style: preserve-3d; } 
-        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.6)); position: relative; z-index: 5; transform-style: preserve-3d; }
+        .sprite-wrapper { position: absolute; bottom: 0; left: -40px; width: 80px; height: 80px; transform-origin: bottom center; }
+        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; z-index: 10; } 
+        .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.6)); position: relative; z-index: 5; }
         
         /* 크기 축소에 맞춘 땀방울(지구력 소진) 이펙트 */
         .sweat-mark {
