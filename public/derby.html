@@ -28,7 +28,12 @@
         .option-group label { display: inline-flex; align-items: center; cursor: pointer; font-weight: bold; color: #ffeb3b; }
         .option-group input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; accent-color: #e84118; cursor: pointer; }
         
-        #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; position: relative; }
+        #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; position: relative; transform-origin: top center; }
+        
+        @media (max-width: 1020px) {
+            body { align-items: flex-start; overflow-x: hidden; }
+            #game-ui { transform-origin: top left; }
+        }
         
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; }
         #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; }
@@ -514,13 +519,30 @@
             } catch(e) { lobbyStatus.innerText = "서버 연결 실패 또는 에러 발생"; console.error(e); }
         }
 
+        function scaleGameUI() {
+            const gameUi = document.getElementById('game-ui');
+            if (!gameUi || gameUi.style.display === 'none') return;
+            const vw = window.innerWidth;
+            const GAME_WIDTH = 1000;
+            if (vw < GAME_WIDTH) {
+                const scale = vw / GAME_WIDTH;
+                gameUi.style.transform = `scale(${scale})`;
+                gameUi.style.marginBottom = `${(GAME_WIDTH * scale - GAME_WIDTH) * 0.5}px`;
+            } else {
+                gameUi.style.transform = '';
+                gameUi.style.marginBottom = '';
+            }
+        }
+        window.addEventListener('resize', scaleGameUI);
+
         window.onload = async function() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomId = urlParams.get('room');
             if (!roomId) return; 
 
             document.getElementById('lobby-panel').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'flex'; 
+            document.getElementById('game-ui').style.display = 'flex';
+            scaleGameUI();
 
             try {
                 const res = await fetch(`${API_BASE}/room/${roomId}`);
@@ -913,8 +935,6 @@
                         if(r.behavior === 'chat' && !r.panicked) cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(1)' : 'scaleX(-1)';
                     }
                     
-                    if(timeLeft <= 10) cache.nameTag.style.opacity = '0'; 
-
                     cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
                     
                     // 💡 [완벽한 빌보딩] 역방향 회전만으로 어떤 앵글에서도 주자가 항상 정면을 보도록 처리
@@ -957,7 +977,6 @@
                     cache.base.classList.remove('startled'); 
                     cache.base.style.transform = `translate3d(${r.finalX}px, ${r.finalY}px, 0)`; 
                     cache.flipWrap.style.transform = 'scaleX(-1)'; 
-                    cache.nameTag.style.display = 'none';
                 }
             });
 
