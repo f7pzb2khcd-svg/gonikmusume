@@ -75,14 +75,14 @@
         @keyframes popUpFadeBody { 0% { transform: translate(-50%, 0px) scale(0.5); opacity: 0; } 15% { transform: translate(-50%, -20px) scale(1.1); opacity: 1; } 80% { transform: translate(-50%, -30px) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -40px) scale(0.8); opacity: 0; } }
 
         /* 💡 z-index를 박멸하고 오직 translateZ를 이용한 완벽한 3D 빌보딩 설계 (1.5배 크기인 120px 유지) */
-        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; will-change: transform; }
+        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; will-change: transform; contain: layout style; }
         .sprite-wrapper { position: absolute; bottom: 0; left: -60px; width: 120px; height: 120px; transform-origin: bottom center; transform-style: preserve-3d; transform: rotateZ(var(--bb-rz, 0deg)) rotateX(var(--bb-rx, 0deg)); will-change: transform; }
         
-        /* 빛나는 테두리(Glow) 효과 - z-index 제거 */
-        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s, filter 0.3s ease; position: relative; transform-style: preserve-3d; } 
-        .flip-wrapper.has-buff { filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.8)); }
-        .flip-wrapper.has-debuff { filter: drop-shadow(0 0 10px rgba(116, 185, 255, 0.8)); }
-        .flip-wrapper.has-buff.has-debuff { filter: drop-shadow(0 0 10px rgba(162, 155, 254, 0.8)); }
+        /* 빛나는 테두리(Glow) 효과 - drop-shadow 대신 outline으로 GPU 부담 제거 */
+        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; transform-style: preserve-3d; } 
+        .flip-wrapper.has-buff .sprite-anim { outline: 3px solid rgba(255, 107, 107, 0.9); border-radius: 4px; }
+        .flip-wrapper.has-debuff .sprite-anim { outline: 3px solid rgba(116, 185, 255, 0.9); border-radius: 4px; }
+        .flip-wrapper.has-buff.has-debuff .sprite-anim { outline: 3px solid rgba(162, 155, 254, 0.9); border-radius: 4px; }
 
         .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; position: relative; transform-style: preserve-3d; image-rendering: auto; }
         
@@ -255,7 +255,7 @@
         let preShowFocusId = null; let lastPreShowZoomTime = 0;
 
         let lastRenderTimestamp = 0;
-        let triggeredSkillsLog = new Map();
+        let triggeredSkillsLog = new Set();
         let lastRenderedTimeTarget = -1;
 
         let isUltPausing = false; 
@@ -317,6 +317,7 @@
             });
         }
 
+        let lastPopupSoundTime = 0;
         function processPopupQueue(runnerIdStr) {
             let cache = domCache.get(runnerIdStr);
             if (!cache || cache.isPopupPlaying || cache.popupQueue.length === 0) return;
@@ -336,9 +337,14 @@
             icon.onerror = function() { this.style.display='none'; };
             cache.wrapper.appendChild(icon);
 
+            // 오디오: 100ms 이내 중복 재생 방지
+            let now = performance.now();
             let isBuff = nextPopup.type.includes("증가") || nextPopup.type.includes("회복");
-            if(isBuff && AUDIO_FX.buff) AUDIO_FX.buff.play().catch(e=>{});
-            else if(!isBuff && AUDIO_FX.debuff) AUDIO_FX.debuff.play().catch(e=>{});
+            if (now - lastPopupSoundTime > 100) {
+                if(isBuff && AUDIO_FX.buff) AUDIO_FX.buff.play().catch(e=>{});
+                else if(!isBuff && AUDIO_FX.debuff) AUDIO_FX.debuff.play().catch(e=>{});
+                lastPopupSoundTime = now;
+            }
 
             setTimeout(() => {
                 cache.isPopupPlaying = false;
@@ -1068,8 +1074,22 @@
 
                     if (dist > leaderDist) { leaderDist = dist; }
 
+                    // 카메라 중심에서 너무 멀리 떨어진 주자는 DOM 업데이트 스킵 (프러스텀 컬링)
+                    // 레이스 초반 3초는 스타트 스킬 팝업 표시를 위해 컬링 비활성화
+                    let dxCam = worldX - smoothCenterX;
+                    let dyCam = worldY - smoothCenterY;
+                    let camDistSq = dxCam * dxCam + dyCam * dyCam;
+                    const CULL_DIST_SQ = 4000 * 4000;
+                    const doCull = currentPlaybackTime > 3.0 && smoothCenterX !== 0;
+
                     let cache = domCache.get(id);
                     if (cache) {
+                        if (doCull && camDistSq > CULL_DIST_SQ) {
+                            // 화면 밖 주자: visibility만 숨기고 나머지 스킵
+                            if (cache._visible !== false) { cache.base.style.visibility = 'hidden'; cache._visible = false; }
+                            return;
+                        }
+                        if (cache._visible !== true) { cache.base.style.visibility = ''; cache._visible = true; }
                         // position - 항상 업데이트 (매 프레임 변경됨)
                         cache.base.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; 
                         
@@ -1124,7 +1144,8 @@
                                 let uniqueKey = `POPUP-${id}-${pType}-${pSeq}-${frameIdx}`;
                                 
                                 if (!triggeredSkillsLog.has(uniqueKey)) {
-                                    triggeredSkillsLog.set(uniqueKey, true);
+                                    triggeredSkillsLog.add(uniqueKey);
+                                    if (triggeredSkillsLog.size > 5000) { let first = triggeredSkillsLog.values().next().value; triggeredSkillsLog.delete(first); }
                                     if (cache) {
                                         cache.popupQueue.push({ type: pType, seq: pSeq });
                                         processPopupQueue(id);
@@ -1137,7 +1158,7 @@
                                 let uniqueKey = `${id}-${sName}`;
                                 
                                 if (!triggeredSkillsLog.has(uniqueKey)) {
-                                    triggeredSkillsLog.set(uniqueKey, true); 
+                                    triggeredSkillsLog.add(uniqueKey); 
                                     let cName = roomData.participants.find(pt => String(pt.id) === id)?.name || "선수";
                                     spawnSkillLog(cName, sName, sIcon);
                                 }
@@ -1148,7 +1169,7 @@
                                 let uniqueKey = `ULT-${id}-${ultName}`;
                                 
                                 if (!triggeredSkillsLog.has(uniqueKey)) {
-                                    triggeredSkillsLog.set(uniqueKey, true);
+                                    triggeredSkillsLog.add(uniqueKey);
                                     let cName = roomData.participants.find(pt => String(pt.id) === id)?.name || "선수";
                                     spawnSkillLog(cName, ultName, '고유.png');
                                     triggerUltimate(id, ultName, voiceFile);
