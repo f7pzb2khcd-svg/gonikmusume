@@ -37,7 +37,11 @@
         }
         
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; }
-        #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; }
+        #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; will-change: transform; }
+        
+        @media (max-width: 1020px) {
+            #screen-container { perspective: 4000px; }
+        }
         
         #timer-box { position: absolute; top: 15px; right: 20px; z-index: 90; background: rgba(0,0,0,0.7); padding: 6px 15px; border-radius: 8px; color: #fbc531; font-weight: bold; font-size: 20px; border: 2px solid #e1b12c; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
 
@@ -71,8 +75,8 @@
         @keyframes popUpFadeBody { 0% { transform: translate(-50%, 0px) scale(0.5); opacity: 0; } 15% { transform: translate(-50%, -20px) scale(1.1); opacity: 1; } 80% { transform: translate(-50%, -30px) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -40px) scale(0.8); opacity: 0; } }
 
         /* 💡 z-index를 박멸하고 오직 translateZ를 이용한 완벽한 3D 빌보딩 설계 (1.5배 크기인 120px 유지) */
-        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; }
-        .sprite-wrapper { position: absolute; bottom: 0; left: -60px; width: 120px; height: 120px; transform-origin: bottom center; transform-style: preserve-3d; transform: translateZ(0px); }
+        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; will-change: transform; }
+        .sprite-wrapper { position: absolute; bottom: 0; left: -60px; width: 120px; height: 120px; transform-origin: bottom center; transform-style: preserve-3d; transform: rotateZ(var(--bb-rz, 0deg)) rotateX(var(--bb-rx, 0deg)); will-change: transform; }
         
         /* 빛나는 테두리(Glow) 효과 - z-index 제거 */
         .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s, filter 0.3s ease; position: relative; transform-style: preserve-3d; } 
@@ -528,7 +532,9 @@
             if (vw < GAME_WIDTH) {
                 const scale = vw / GAME_WIDTH;
                 gameUi.style.transform = `scale(${scale})`;
-                gameUi.style.marginBottom = `${(GAME_WIDTH * scale - GAME_WIDTH) * 0.5}px`;
+                // 축소된 만큼 생기는 빈 공간(아래쪽)을 당겨올림
+                const shrinkPx = GAME_WIDTH * (1 - scale);
+                gameUi.style.marginBottom = `-${shrinkPx}px`;
             } else {
                 gameUi.style.transform = '';
                 gameUi.style.marginBottom = '';
@@ -757,6 +763,8 @@
                 }
                 
                 document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
+                document.documentElement.style.setProperty('--bb-rz', `${-currentCam.rotZ}deg`);
+                document.documentElement.style.setProperty('--bb-rx', `${-currentCam.rotX}deg`);
                 return;
             }
 
@@ -882,6 +890,8 @@
             }
             
             document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
+            document.documentElement.style.setProperty('--bb-rz', `${-currentCam.rotZ}deg`);
+            document.documentElement.style.setProperty('--bb-rx', `${-currentCam.rotX}deg`);
         }
 
         function preShowLoop(timestamp) {
@@ -937,9 +947,7 @@
                     }
                     
                     cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
-                    
-                    // 💡 [완벽한 빌보딩] 역방향 회전만으로 어떤 앵글에서도 주자가 항상 정면을 보도록 처리
-                    cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
+                    // billboarding은 CSS 변수(--bb-rz, --bb-rx)로 일괄 처리됨
                 });
 
                 let newCamId = "1";
@@ -1062,37 +1070,50 @@
 
                     let cache = domCache.get(id);
                     if (cache) {
+                        // position - 항상 업데이트 (매 프레임 변경됨)
                         cache.base.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; 
                         
-                        if (activeCamId === "5" || activeCamId === "ULT") {
-                            cache.flipWrap.style.transform = 'scaleX(1)';
-                        } else {
-                            cache.flipWrap.style.transform = 'scaleX(-1)';
-                        }
+                        // flipWrap - dirty check
+                        let newFlip = (activeCamId === "5" || activeCamId === "ULT") ? 'scaleX(1)' : 'scaleX(-1)';
+                        if (cache._flip !== newFlip) { cache.flipWrap.style.transform = newFlip; cache._flip = newFlip; }
 
-                        // 💡 [완벽한 빌보딩] 3D 스케일 제거 + 카메라 정면 고정
-                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
-                        
+                        // billboarding - CSS 변수로 일괄 처리 (루프 밖에서 한 번만 적용)
+                        // (아래 루프 밖에서 처리)
+
+                        // sprite animation - dirty check
+                        let newClass, newDur;
                         if(speed > 1.0) {
-                            cache.sprite.className = 'sprite-anim running';
-                            if (states.includes("Spurt")) cache.sprite.style.animationDuration = '0.35s';
-                            else if (states.includes("Exhaust")) cache.sprite.style.animationDuration = '1.5s';
-                            else cache.sprite.style.animationDuration = '0.6s';
+                            newClass = 'sprite-anim running';
+                            if (states.includes("Spurt")) newDur = '0.35s';
+                            else if (states.includes("Exhaust")) newDur = '1.5s';
+                            else newDur = '0.6s';
                         } else {
-                            cache.sprite.className = 'sprite-anim';
+                            newClass = 'sprite-anim'; newDur = '0s';
+                        }
+                        if (cache._spriteClass !== newClass) { cache.sprite.className = newClass; cache._spriteClass = newClass; }
+                        if (cache._spriteDur !== newDur) { cache.sprite.style.animationDuration = newDur; cache._spriteDur = newDur; }
+
+                        // sweat - dirty check
+                        let newSweat = states.includes("Exhaust");
+                        if (cache._sweat !== newSweat) {
+                            if (newSweat) cache.sweat.classList.add('show-sweat');
+                            else cache.sweat.classList.remove('show-sweat');
+                            cache._sweat = newSweat;
                         }
 
-                        if (states.includes("Exhaust")) cache.sweat.classList.add('show-sweat');
-                        else cache.sweat.classList.remove('show-sweat');
-
+                        // buff/debuff aura - dirty check
                         let hasBuff = states.some(st => ["Spurt", "PaceUp", "PaceUpEx", "Overtake", "AuraBuff"].includes(st));
                         let hasDebuff = states.some(st => ["PaceDown", "Exhaust", "AuraDebuff"].includes(st));
-
-                        if (hasBuff) cache.flipWrap.classList.add('has-buff');
-                        else cache.flipWrap.classList.remove('has-buff');
-
-                        if (hasDebuff) cache.flipWrap.classList.add('has-debuff');
-                        else cache.flipWrap.classList.remove('has-debuff');
+                        if (cache._hasBuff !== hasBuff) {
+                            if (hasBuff) cache.flipWrap.classList.add('has-buff');
+                            else cache.flipWrap.classList.remove('has-buff');
+                            cache._hasBuff = hasBuff;
+                        }
+                        if (cache._hasDebuff !== hasDebuff) {
+                            if (hasDebuff) cache.flipWrap.classList.add('has-debuff');
+                            else cache.flipWrap.classList.remove('has-debuff');
+                            cache._hasDebuff = hasDebuff;
+                        }
                     }
                     
                     if (states && states.length > 0) {
@@ -1157,8 +1178,10 @@
                         if (cache) {
                             let relativePct = ((rPos.dist - packCenter) / viewSpread) * 100 + 50;
                             relativePct = Math.max(0, Math.min(100, relativePct));
-                            cache.dot.style.left = `${relativePct}%`;
-                            cache.dot.style.top = `${(rPos.lane / 1.5) * 100}%`;
+                            let newLeft = `${relativePct.toFixed(1)}%`;
+                            let newTop = `${((rPos.lane / 1.5) * 100).toFixed(1)}%`;
+                            if (cache._dotLeft !== newLeft) { cache.dot.style.left = newLeft; cache._dotLeft = newLeft; }
+                            if (cache._dotTop !== newTop) { cache.dot.style.top = newTop; cache._dotTop = newTop; }
                         }
                     });
                 }
