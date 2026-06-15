@@ -78,11 +78,19 @@
         .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; will-change: transform; contain: layout style; }
         .sprite-wrapper { position: absolute; bottom: 0; left: -60px; width: 120px; height: 120px; transform-origin: bottom center; transform-style: preserve-3d; transform: rotateZ(var(--bb-rz, 0deg)) rotateX(var(--bb-rx, 0deg)); will-change: transform; }
         
-        /* 빛나는 테두리(Glow) 효과 - will-change로 레이어 사전 할당해서 GPU 폭발 방지 */
-        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s, filter 0.3s ease; position: relative; transform-style: preserve-3d; will-change: filter; }
-        .flip-wrapper.has-buff { filter: drop-shadow(0 0 8px rgba(255, 107, 107, 0.9)); }
-        .flip-wrapper.has-debuff { filter: drop-shadow(0 0 8px rgba(116, 185, 255, 0.9)); }
-        .flip-wrapper.has-buff.has-debuff { filter: drop-shadow(0 0 8px rgba(162, 155, 254, 0.9)); }
+        /* 빛나는 테두리(Glow) 효과 - 성능 감지 후 JS로 .perf-low 클래스 부여 시 저비용 효과로 전환 */
+        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; transform-style: preserve-3d; }
+
+        /* 고성능 모드: drop-shadow (body에 .perf-low 없을 때) */
+        body:not(.perf-low) .flip-wrapper { will-change: filter; transition: transform 0.2s, filter 0.3s ease; }
+        body:not(.perf-low) .flip-wrapper.has-buff  { filter: drop-shadow(0 0 8px rgba(255, 107, 107, 0.95)); }
+        body:not(.perf-low) .flip-wrapper.has-debuff { filter: drop-shadow(0 0 8px rgba(116, 185, 255, 0.95)); }
+        body:not(.perf-low) .flip-wrapper.has-buff.has-debuff { filter: drop-shadow(0 0 8px rgba(162, 155, 254, 0.95)); }
+
+        /* 저성능 모드: name-tag 색상만 변경 (GPU 레이어 0개) */
+        body.perf-low .flip-wrapper.has-buff  .name-tag { border-color: rgba(255, 107, 107, 0.9); color: #ff6b6b; }
+        body.perf-low .flip-wrapper.has-debuff .name-tag { border-color: rgba(116, 185, 255, 0.9); color: #74b9ff; }
+        body.perf-low .flip-wrapper.has-buff.has-debuff .name-tag { border-color: rgba(162, 155, 254, 0.9); color: #a29bfe; }
 
         .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; position: relative; transform-style: preserve-3d; image-rendering: auto; }
         
@@ -267,6 +275,21 @@
         let baseCamStartTime = 0;
 
         const domCache = new Map();
+
+        // 성능 자동 감지: rAF 10프레임 평균으로 저성능 판정 시 body.perf-low 부여
+        function detectPerf(onDone) {
+            let samples = []; let last = performance.now();
+            function sample(ts) {
+                samples.push(ts - last); last = ts;
+                if (samples.length < 10) { requestAnimationFrame(sample); return; }
+                let avg = samples.reduce((a, b) => a + b) / samples.length;
+                // 평균 20ms 초과(50fps 미만) 또는 모바일이면 저성능 모드
+                let isMobile = /iPhone|Android|iPad/i.test(navigator.userAgent);
+                if (avg > 20 || isMobile) document.body.classList.add('perf-low');
+                if (onDone) onDone();
+            }
+            requestAnimationFrame(sample);
+        }
         
         const AUDIO_FX = {
             lobby: new Audio('assets/sounds/lobby_bgm.mp3'),
@@ -1015,7 +1038,9 @@
             
             runAudios.forEach((a, i) => { setTimeout(() => { a.play().catch(e=>{}); }, i * 150); });
 
-            isPlaying = true; requestAnimationFrame(renderLoop);
+            detectPerf(() => {
+                isPlaying = true; requestAnimationFrame(renderLoop);
+            });
         }
 
         function startCountdown() {
