@@ -31,8 +31,9 @@
         #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; position: relative; transform-origin: top center; }
         
         @media (max-width: 1020px) {
-            body { align-items: flex-start; overflow-x: hidden; }
-            #game-ui { transform-origin: top left; }
+            body { align-items: center; overflow-x: hidden; }
+            #game-ui { transform-origin: top center; }
+            #lobby-panel { width: 95vw; max-width: 95vw; box-sizing: border-box; }
         }
         
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; }
