@@ -18,6 +18,37 @@
         
         #lobby-panel { width: 90%; max-width: 650px; background-color: #2f3640; border-radius: 10px; padding: 20px; box-sizing: border-box; text-align: center; margin-top: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
         #lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; font-family: 'GyeonggiTitleL'; }
+        #bgm-picker { width: 100%; margin: 14px 0 4px; user-select: none; }
+        #bgm-picker .bgm-label { font-size: 13px; color: #a0a8b8; margin-bottom: 8px; }
+        #bgm-track-wrap { overflow: hidden; border-radius: 10px; position: relative; }
+        #bgm-track { display: flex; gap: 10px; cursor: grab; padding: 4px 2px 10px; transition: transform 0.0s; will-change: transform; }
+        #bgm-track:active { cursor: grabbing; }
+        .bgm-card {
+            flex: 0 0 140px; height: 82px; border-radius: 9px; border: 2px solid #4a5568;
+            background: #2d3748; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 6px; cursor: pointer; transition: border-color 0.18s, background 0.18s;
+            padding: 0 8px; box-sizing: border-box; position: relative;
+        }
+        .bgm-card.selected { border-color: #e84118; background: #3d1f1a; }
+        .bgm-card .bgm-name { font-size: 11.5px; color: #cbd5e0; text-align: center; line-height: 1.3; word-break: keep-all; }
+        .bgm-card.selected .bgm-name { color: #fff; }
+        .bgm-card .bgm-play-btn {
+            width: 28px; height: 28px; border-radius: 50%; background: #e84118;
+            border: none; color: white; font-size: 12px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: background 0.15s; z-index: 2;
+        }
+        .bgm-card .bgm-play-btn:hover { background: #ff6b35; }
+        .bgm-card .bgm-play-btn.playing { background: #718093; }
+        .bgm-card-none { background: #1e2533; border-color: #718093; }
+        .bgm-card-none.selected { border-color: #fbc531; background: #2d2a1a; }
+        .bgm-card-none .bgm-name { color: #a0a8b8; font-size: 13px; }
+        .bgm-card-random { background: #1a2535; border-color: #718093; }
+        .bgm-card-random.selected { border-color: #2ecc71; background: #1a2d1e; }
+        .bgm-card-random .bgm-name { color: #a0a8b8; }
+        #bgm-scroll-hint { font-size: 11px; color: #718093; text-align: right; margin-top: 3px; }
+        #bgm-track-wrap::-webkit-scrollbar { display: none; }
+
         button { font-family: 'GyeonggiTitleL'; padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #00a8ff; color: white; border: none; border-radius: 8px; transition: 0.2s; }
         button:hover { background-color: #0097e6; }
         
@@ -165,6 +196,13 @@
             </div>
             <div class="option-group">
                 <label><input type="checkbox" id="allowCustomChat">💬 관객석 커스텀(자유) 채팅 허용</label>
+            </div>
+            <div id="bgm-picker">
+                <div class="bgm-label">🎵 BGM 선택 &nbsp;<span style="color:#718093; font-size:11px;">← 드래그해서 둘러보기 · 버튼으로 미리 듣기</span></div>
+                <div id="bgm-track-wrap">
+                    <div id="bgm-track"></div>
+                </div>
+                <div id="bgm-scroll-hint">▶ 오른쪽으로 밀면 더 있어요</div>
             </div>
             <input type="text" id="datetimeInput" placeholder="시작 시간 예약 (클릭)">
             <br>
@@ -474,6 +512,7 @@
                     let d = new Date(); d.setMinutes(d.getMinutes() + 2); fpDatetime.setDate(d);
                     extractStatus.innerText = "추출 완료! 명단 필터링 및 설정을 진행하세요.";
                     document.getElementById('filter-box').style.display = 'block'; document.getElementById('setup-box').style.display = 'block';
+                    initBgmPicker();
                 } else extractStatus.innerText = "추출 실패: " + data.message;
             } catch(e) { extractStatus.innerText = "서버 통신 오류"; alert("오류: " + e.message); }
         }
@@ -519,6 +558,97 @@
             applyTimeFilter(); 
         }
 
+        // ── BGM 피커 ──────────────────────────────────────────
+        const BGM_LIST = [
+                "SKY HiGH Remix.mp3", "CIDER BANG! Remix.mp3", "우주미아 Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
+        ];
+        let selectedBgm = '__random__';
+        let previewAudio = null;
+        let previewingFile = null;
+
+        function stopPreview() {
+            if (previewAudio) { previewAudio.pause(); previewAudio.src = ''; previewAudio = null; }
+            document.querySelectorAll('.bgm-play-btn').forEach(b => { b.classList.remove('playing'); b.textContent = '▶'; });
+            previewingFile = null;
+        }
+
+        function togglePreview(file, btn) {
+            if (previewingFile === file) { stopPreview(); return; }
+            stopPreview();
+            previewingFile = file;
+            previewAudio = new Audio(`assets/bgm/${file}`);
+            previewAudio.volume = 0.4;
+            previewAudio.play().catch(() => {});
+            previewAudio.onended = () => { stopPreview(); };
+            btn.classList.add('playing'); btn.textContent = '■';
+        }
+
+        function selectBgmCard(value) {
+            selectedBgm = value;
+            document.querySelectorAll('.bgm-card').forEach(c => {
+                c.classList.toggle('selected', c.dataset.bgm === value);
+            });
+        }
+
+        function initBgmPicker() {
+            const track = document.getElementById('bgm-track');
+            track.innerHTML = '';
+
+            // 카드: BGM 없음
+            const noneCard = document.createElement('div');
+            noneCard.className = 'bgm-card bgm-card-none';
+            noneCard.dataset.bgm = 'none';
+            noneCard.innerHTML = `<div style="font-size:22px">🔇</div><div class="bgm-name">BGM 없음</div>`;
+            noneCard.onclick = () => { stopPreview(); selectBgmCard('none'); };
+            track.appendChild(noneCard);
+
+            // 카드: 랜덤 (기본 선택)
+            const randCard = document.createElement('div');
+            randCard.className = 'bgm-card bgm-card-random selected';
+            randCard.dataset.bgm = '__random__';
+            randCard.innerHTML = `<div style="font-size:22px">🎲</div><div class="bgm-name">랜덤 BGM</div>`;
+            randCard.onclick = () => { stopPreview(); selectBgmCard('__random__'); };
+            track.appendChild(randCard);
+
+            // 카드: 개별 BGM
+            BGM_LIST.forEach(file => {
+                const name = file.replace(/\.mp3$/i, '');
+                const card = document.createElement('div');
+                card.className = 'bgm-card';
+                card.dataset.bgm = file;
+                const playBtn = document.createElement('button');
+                playBtn.className = 'bgm-play-btn';
+                playBtn.textContent = '▶';
+                playBtn.title = '미리 듣기';
+                playBtn.onclick = (e) => { e.stopPropagation(); togglePreview(file, playBtn); };
+                const nameEl = document.createElement('div');
+                nameEl.className = 'bgm-name';
+                nameEl.textContent = name;
+                card.appendChild(playBtn);
+                card.appendChild(nameEl);
+                card.onclick = () => selectBgmCard(file);
+                track.appendChild(card);
+            });
+
+            // 드래그 스크롤
+            const wrap = document.getElementById('bgm-track-wrap');
+            let isDown = false, startX = 0, scrollLeft = 0, moved = false;
+            wrap.addEventListener('mousedown', e => { isDown = true; moved = false; startX = e.pageX - wrap.offsetLeft; scrollLeft = wrap.scrollLeft; wrap.style.cursor = 'grabbing'; });
+            wrap.addEventListener('mouseleave', () => { isDown = false; wrap.style.cursor = ''; });
+            wrap.addEventListener('mouseup', () => { isDown = false; wrap.style.cursor = ''; });
+            wrap.addEventListener('mousemove', e => { if (!isDown) return; e.preventDefault(); moved = true; wrap.scrollLeft = scrollLeft - (e.pageX - wrap.offsetLeft - startX); });
+            // 터치
+            wrap.addEventListener('touchstart', e => { startX = e.touches[0].pageX; scrollLeft = wrap.scrollLeft; moved = false; }, { passive: true });
+            wrap.addEventListener('touchmove', e => { moved = true; wrap.scrollLeft = scrollLeft - (e.touches[0].pageX - startX); }, { passive: true });
+
+            // overflow 설정
+            wrap.style.overflowX = 'auto';
+            wrap.style.overflowY = 'hidden';
+            wrap.style.scrollbarWidth = 'none';
+            wrap.style.webkitOverflowScrolling = 'touch';
+        }
+        // ──────────────────────────────────────────────────────
+
         async function createRoomFinal() {
             const timeInput = document.getElementById('datetimeInput').value;
             if(!timeInput) { alert("시간을 예약하세요."); return; }
@@ -527,7 +657,10 @@
             const bgmList = [
                 "SKY HiGH Remix.mp3", "CIDER BANG! Remix.mp3", "우주미아 Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
             ];
-            let chosenBgm = bgmList[Math.floor(Math.random() * bgmList.length)];
+            let chosenBgm = selectedBgm === '__random__'
+                ? bgmList[Math.floor(Math.random() * bgmList.length)]
+                : selectedBgm;
+            stopPreview();
             
             const lobbyStatus = document.getElementById('lobby-status');
             lobbyStatus.innerText = "방을 만드는 중...";
