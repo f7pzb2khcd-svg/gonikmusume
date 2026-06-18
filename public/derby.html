@@ -240,7 +240,7 @@
             <div id="skill-log-box"></div>
 
             <div id="ult-cutin">
-                <div id="ult-cutin-bg"><div style="font-size: 30px; font-weight: bold; color: white;">🔥 [라스트 스퍼트!] 🔥</div><div id="ult-user" class="cutin-name">닉네임</div></div>
+                <div id="ult-cutin-bg"><div id="ult-skill-name" style="font-size: 30px; font-weight: bold; color: white;">🔥 [라스트 스퍼트!] 🔥</div><div id="ult-user" class="cutin-name">닉네임</div></div>
             </div>
             <div id="ult-edge-effect" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; box-shadow: inset 0 0 60px rgba(255,50,50,0.7); z-index:15;"></div>
         </div>
@@ -441,6 +441,7 @@
             let rName = cache && cache.nameTag ? cache.nameTag.innerText : "선수";
             
             document.getElementById('ult-user').innerText = `${rName}`;
+			document.getElementById('ult-skill-name').innerText = `🔥 ${ultName} 🔥`;
             let cutin = document.getElementById('ult-cutin');
             cutin.style.display = 'flex';
             
