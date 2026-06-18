@@ -1269,6 +1269,7 @@
 
                 let runnerPositions = [];
 
+                // 1패스: 좌표 수집만 (DOM 건드리지 않음)
                 frameData.r.forEach(rData => {
                     let [idInt, dist, lane, speed, hp, states] = rData; 
                     let id = String(idInt); 
@@ -1283,9 +1284,28 @@
                     let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                     let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
-                    runnerPositions.push({ id: id, dist: dist, lane: lane, worldX: worldX, worldY: worldY });
-
                     if (dist > leaderDist) { leaderDist = dist; }
+                    runnerPositions.push({ id: id, dist: dist, lane: lane, worldX: worldX, worldY: worldY, speed: rData[3], hp: rData[4], states: rData[5] });
+                });
+
+                // stretch: 팩 중심 기준 편차 확대 (트랙/dist 무변경)
+                const PACK_STRETCH = 1.5;
+                if (runnerPositions.length > 1) {
+                    let cx = runnerPositions.reduce((s, r) => s + r.worldX, 0) / runnerPositions.length;
+                    let cy = runnerPositions.reduce((s, r) => s + r.worldY, 0) / runnerPositions.length;
+                    runnerPositions.forEach(r => {
+                        r.worldX = cx + (r.worldX - cx) * PACK_STRETCH;
+                        r.worldY = cy + (r.worldY - cy) * PACK_STRETCH;
+                    });
+                }
+
+                // 2패스: stretch된 좌표로 DOM 업데이트 + 스킬/이벤트 처리
+                frameData.r.forEach(rData => {
+                    let [idInt, dist, lane, speed, hp, states] = rData;
+                    let id = String(idInt);
+                    let rPos = runnerPositions.find(r => r.id === id);
+                    if (!rPos) return;
+                    let worldX = rPos.worldX, worldY = rPos.worldY;
 
                     // 카메라 중심에서 너무 멀리 떨어진 주자는 DOM 업데이트 스킵 (프러스텀 컬링)
                     // 레이스 초반 3초는 스타트 스킬 팝업 표시를 위해 컬링 비활성화
@@ -1391,18 +1411,6 @@
                         });
                     }
                 });
-
-                // 앞뒤 간격 시각적 확대: 팩 중심 world좌표 기준으로 각 주자의 편차를 stretch
-                // 트랙 좌표계/dist는 건드리지 않고 worldX/Y만 조정
-                if (runnerPositions.length > 1) {
-                    const PACK_STRETCH = 5;
-                    let cx = runnerPositions.reduce((s, r) => s + r.worldX, 0) / runnerPositions.length;
-                    let cy = runnerPositions.reduce((s, r) => s + r.worldY, 0) / runnerPositions.length;
-                    runnerPositions.forEach(r => {
-                        r.worldX = cx + (r.worldX - cx) * PACK_STRETCH;
-                        r.worldY = cy + (r.worldY - cy) * PACK_STRETCH;
-                    });
-                }
 
                 let sorted = [...runnerPositions].sort((a, b) => b.dist - a.dist);
                 if (sorted.length > 0) {
