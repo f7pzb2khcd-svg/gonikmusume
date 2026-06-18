@@ -17,7 +17,37 @@
         h1 { text-align: center; margin-bottom: 5px; color: #fbc531; font-size: 24px; }
         
         #lobby-panel { width: 90%; max-width: 650px; background-color: #2f3640; border-radius: 10px; padding: 20px; box-sizing: border-box; text-align: center; margin-top: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        #lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; font-family: 'GyeonggiTitleL'; }
+        #bgm-picker { width: 100%; margin: 14px 0 4px; user-select: none; }
+        #bgm-picker .bgm-label { font-size: 13px; color: #a0a8b8; margin-bottom: 8px; }
+        #bgm-track-wrap { overflow: hidden; border-radius: 10px; position: relative; }
+        #bgm-track { display: flex; gap: 10px; cursor: grab; padding: 4px 2px 10px; transition: transform 0.0s; will-change: transform; }
+        #bgm-track:active { cursor: grabbing; }
+        .bgm-card {
+            flex: 0 0 140px; height: 82px; border-radius: 9px; border: 2px solid #4a5568;
+            background: #2d3748; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 6px; cursor: pointer; transition: border-color 0.18s, background 0.18s;
+            padding: 0 8px; box-sizing: border-box; position: relative;
+        }
+        .bgm-card.selected { border-color: #e84118; background: #3d1f1a; }
+        .bgm-card .bgm-name { font-size: 11.5px; color: #cbd5e0; text-align: center; line-height: 1.3; word-break: keep-all; }
+        .bgm-card.selected .bgm-name { color: #fff; }
+        .bgm-card .bgm-play-btn {
+            width: 28px; height: 28px; min-width: 28px; aspect-ratio: 1 / 1; border-radius: 50%; background: #e84118;
+            border: none; color: white; font-size: 12px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: background 0.15s; z-index: 2;
+        }
+        .bgm-card .bgm-play-btn:hover { background: #ff6b35; }
+        .bgm-card .bgm-play-btn.playing { background: #718093; }
+        .bgm-card-none { background: #1e2533; border-color: #718093; }
+        .bgm-card-none.selected { border-color: #fbc531; background: #2d2a1a; }
+        .bgm-card-none .bgm-name { color: #a0a8b8; font-size: 13px; }
+        .bgm-card-random { background: #1a2535; border-color: #718093; }
+        .bgm-card-random.selected { border-color: #2ecc71; background: #1a2d1e; }
+        .bgm-card-random .bgm-name { color: #a0a8b8; }
+        #bgm-scroll-hint { font-size: 11px; color: #718093; text-align: right; margin-top: 3px; }
+        #bgm-track-wrap::-webkit-scrollbar { display: none; }
+
         button { font-family: 'GyeonggiTitleL'; padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #00a8ff; color: white; border: none; border-radius: 8px; transition: 0.2s; }
         button:hover { background-color: #0097e6; }
         
@@ -28,10 +58,20 @@
         .option-group label { display: inline-flex; align-items: center; cursor: pointer; font-weight: bold; color: #ffeb3b; }
         .option-group input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; accent-color: #e84118; cursor: pointer; }
         
-        #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; position: relative; }
+        #game-ui { width: 1000px; display: none; flex-direction: column; gap: 8px; margin-top: 10px; position: relative; transform-origin: top center; }
+        
+        @media (max-width: 1020px) {
+            body { align-items: center; overflow-x: hidden; }
+            #game-ui { transform-origin: top center; }
+            #lobby-panel { width: 95vw; max-width: 95vw; box-sizing: border-box; }
+        }
         
         #screen-container { width: 100%; height: 500px; background: #87CEEB; overflow: hidden; position: relative; border: 4px solid #485460; border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,0,0,0.4); perspective: 8000px; }
-        #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; }
+        #world { position: absolute; left: 50%; top: 66.6%; width: 0; height: 0; transform-style: preserve-3d; will-change: transform; }
+        
+        @media (max-width: 1020px) {
+            #screen-container { perspective: 4000px; }
+        }
         
         #timer-box { position: absolute; top: 15px; right: 20px; z-index: 90; background: rgba(0,0,0,0.7); padding: 6px 15px; border-radius: 8px; color: #fbc531; font-weight: bold; font-size: 20px; border: 2px solid #e1b12c; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
 
@@ -65,14 +105,22 @@
         @keyframes popUpFadeBody { 0% { transform: translate(-50%, 0px) scale(0.5); opacity: 0; } 15% { transform: translate(-50%, -20px) scale(1.1); opacity: 1; } 80% { transform: translate(-50%, -30px) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -40px) scale(0.8); opacity: 0; } }
 
         /* 💡 z-index를 박멸하고 오직 translateZ를 이용한 완벽한 3D 빌보딩 설계 (1.5배 크기인 120px 유지) */
-        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; }
-        .sprite-wrapper { position: absolute; bottom: 0; left: -60px; width: 120px; height: 120px; transform-origin: bottom center; transform-style: preserve-3d; transform: translateZ(0px); }
+        .runner-base { position: absolute; width: 0px; height: 0px; transform-style: preserve-3d; will-change: transform; contain: layout style; }
+        .sprite-wrapper { position: absolute; bottom: 0; left: -60px; width: 120px; height: 120px; transform-origin: bottom center; transform-style: preserve-3d; transform: rotateZ(var(--bb-rz, 0deg)) rotateX(var(--bb-rx, 0deg)); will-change: transform; }
         
-        /* 빛나는 테두리(Glow) 효과 - z-index 제거 */
-        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s, filter 0.3s ease; position: relative; transform-style: preserve-3d; } 
-        .flip-wrapper.has-buff { filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.8)); }
-        .flip-wrapper.has-debuff { filter: drop-shadow(0 0 10px rgba(116, 185, 255, 0.8)); }
-        .flip-wrapper.has-buff.has-debuff { filter: drop-shadow(0 0 10px rgba(162, 155, 254, 0.8)); }
+        /* 빛나는 테두리(Glow) 효과 - 성능 감지 후 JS로 .perf-low 클래스 부여 시 저비용 효과로 전환 */
+        .flip-wrapper { width: 100%; height: 100%; transition: transform 0.2s; position: relative; transform-style: preserve-3d; }
+
+        /* 고성능 모드: drop-shadow (body에 .perf-low 없을 때) */
+        body:not(.perf-low) .flip-wrapper { will-change: filter; transition: transform 0.2s, filter 0.3s ease; }
+        body:not(.perf-low) .flip-wrapper.has-buff  { filter: drop-shadow(0 0 8px rgba(255, 107, 107, 0.95)); }
+        body:not(.perf-low) .flip-wrapper.has-debuff { filter: drop-shadow(0 0 8px rgba(116, 185, 255, 0.95)); }
+        body:not(.perf-low) .flip-wrapper.has-buff.has-debuff { filter: drop-shadow(0 0 8px rgba(162, 155, 254, 0.95)); }
+
+        /* 저성능 모드: name-tag 색상만 변경 (GPU 레이어 0개) */
+        body.perf-low .flip-wrapper.has-buff  .name-tag { border-color: rgba(255, 107, 107, 0.9); color: #ff6b6b; }
+        body.perf-low .flip-wrapper.has-debuff .name-tag { border-color: rgba(116, 185, 255, 0.9); color: #74b9ff; }
+        body.perf-low .flip-wrapper.has-buff.has-debuff .name-tag { border-color: rgba(162, 155, 254, 0.9); color: #a29bfe; }
 
         .sprite-anim { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center bottom; transform-origin: bottom center; position: relative; transform-style: preserve-3d; image-rendering: auto; }
         
@@ -106,7 +154,7 @@
         .chat-macros { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
         .chat-macros button { font-family: 'GyeonggiTitleL'; padding: 6px 12px; font-size: 13px; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.5); border-radius: 15px; font-weight: bold; cursor: pointer; backdrop-filter: blur(5px); }
         .chat-macros button:hover { background: rgba(255,255,255,0.5); }
-        #custom-chat-box { display: flex; gap: 5px; justify-content: center; }
+        #custom-chat-box { display: none; gap: 5px; justify-content: center; }
         #custom-chat-box input { font-family: 'GyeonggiTitleL'; padding: 6px 10px; border-radius: 15px; border: none; outline: none; font-weight: bold; width: 250px; background: rgba(255,255,255,0.9); }
         #custom-chat-box button { font-family: 'GyeonggiTitleL'; background: #e84118; color: white; padding: 6px 15px; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; }
         
@@ -147,6 +195,13 @@
             </div>
             <div class="option-group">
                 <label><input type="checkbox" id="allowCustomChat">💬 관객석 커스텀(자유) 채팅 허용</label>
+            </div>
+            <div id="bgm-picker">
+                <div class="bgm-label">🎵 BGM 선택 &nbsp;<span style="color:#718093; font-size:11px;">← 드래그해서 둘러보기 · 버튼으로 미리 듣기</span></div>
+                <div id="bgm-track-wrap">
+                    <div id="bgm-track"></div>
+                </div>
+                <div id="bgm-scroll-hint">▶ 오른쪽으로 밀면 더 있어요</div>
             </div>
             <input type="text" id="datetimeInput" placeholder="시작 시간 예약 (클릭)">
             <br>
@@ -216,7 +271,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
-        const API_BASE = "https://gonik-musume-test.onrender.com/api"; 
+        const API_BASE = "https://gonik-musume-v2-0.onrender.com/api"; 
         const firebaseConfig = { databaseURL: "https://wak-derby-chat-default-rtdb.firebaseio.com/" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
@@ -235,6 +290,10 @@
         const CY = 6000;           
 
         let smoothCenterX = 0, smoothCenterY = 0;
+        let _finishStretchOffsetX = 0, _finishStretchOffsetY = 0;
+        let _cam8FinishX = null, _cam8FinishY = null; // 캠8 진입 시 결승선 위치 고정용
+        let _stretchTx = 0, _stretchTy = 0, _stretchAvgDist = 0;
+        const PACK_STRETCH = 5;
         let activeCamId = null; 
         let camStartTime = 0; 
         
@@ -245,7 +304,7 @@
         let preShowFocusId = null; let lastPreShowZoomTime = 0;
 
         let lastRenderTimestamp = 0;
-        let triggeredSkillsLog = new Map();
+        let triggeredSkillsLog = new Set();
         let lastRenderedTimeTarget = -1;
 
         let isUltPausing = false; 
@@ -257,6 +316,21 @@
         let baseCamStartTime = 0;
 
         const domCache = new Map();
+
+        // 성능 자동 감지: rAF 10프레임 평균으로 저성능 판정 시 body.perf-low 부여
+        function detectPerf(onDone) {
+            let samples = []; let last = performance.now();
+            function sample(ts) {
+                samples.push(ts - last); last = ts;
+                if (samples.length < 10) { requestAnimationFrame(sample); return; }
+                let avg = samples.reduce((a, b) => a + b) / samples.length;
+                // 평균 20ms 초과(50fps 미만) 또는 모바일이면 저성능 모드
+                let isMobile = /iPhone|Android|iPad/i.test(navigator.userAgent);
+                if (avg > 20 || isMobile) document.body.classList.add('perf-low');
+                if (onDone) onDone();
+            }
+            requestAnimationFrame(sample);
+        }
         
         const AUDIO_FX = {
             lobby: new Audio('assets/sounds/lobby_bgm.mp3'),
@@ -283,15 +357,15 @@
         };
 
         let CAM_SETTINGS = {
-            "1": { offsetX: -500, offsetY: -500, rotX: 45, rotZ: 62, zoom: 0.5 },
-            "1.5": { offsetX: -150, offsetY: 0, rotX: 80, rotZ: -90, zoom: 3.5 },
-            "2": { offsetX: 0, offsetY: 100, rotX: 85, rotZ: -105, zoom: 1.8, duration: 8.0, targetRotZ: -90 }, 
-            "3": { offsetX: 350, offsetY: 0, rotX: 89, rotZ: -50, zoom: 1.6, duration: 8.0, targetRotZ: -35, targetOffsetX: 100 }, 
-            "4": { offsetX: 100, offsetY: 0, rotX: 85, rotZ: 15, zoom: 2.5 }, 
-            "5": { offsetX: -150, offsetY: -100, rotX: 80, rotZ: 120, zoom: 1.5, duration: 12.0, targetRotZ: 180 }, 
-            "6": { offsetX: -200, offsetY: 0, rotX: 80, rotZ: 120, zoom: 1.5, duration: 10.0, targetRotZ: 135, targetOffsetX: 0, targetOffsetY: 100 }, 
-            "7": { offsetX: 0, offsetY: 100, rotX: 90, rotZ: 90, zoom: 2.5, duration: 8.0, targetRotZ: 120, targetRotX: 70, targetZoom: 1.2, targetOffsetX: 0, targetOffsetY: 150 }, 
-            "8": { offsetX: 50, offsetY: 0, rotX: 87, rotZ: 105, zoom: 2.0, duration: 2.0, targetRotZ: 180, targetOffsetX: -100 },
+            "1": { offsetX: -500, offsetY: -500, rotX: 45, rotZ: 62, zoom: 0.4 },
+            "1.5": { offsetX: -150, offsetY: 0, rotX: 80, rotZ: -90, zoom: 2.7 },
+            "2": { offsetX: 0, offsetY: 100, rotX: 85, rotZ: -105, zoom: 1.0, duration: 8.0, targetRotZ: -90 }, 
+            "3": { offsetX: 350, offsetY: 0, rotX: 89, rotZ: -50, zoom: 0.85, duration: 8.0, targetRotZ: -35, targetOffsetX: 100 }, 
+            "4": { offsetX: 100, offsetY: 0, rotX: 85, rotZ: 15, zoom: 1.35 }, 
+            "5": { offsetX: -150, offsetY: -100, rotX: 80, rotZ: 120, zoom: 0.85, duration: 12.0, targetRotZ: 180 }, 
+            "6": { offsetX: -200, offsetY: 0, rotX: 80, rotZ: 120, zoom: 0.85, duration: 10.0, targetRotZ: 135, targetOffsetX: 0, targetOffsetY: 100 }, 
+            "7": { offsetX: 0, offsetY: 100, rotX: 90, rotZ: 90, zoom: 1.35, duration: 8.0, targetRotZ: 120, targetRotX: 70, targetZoom: 0.7, targetOffsetX: 0, targetOffsetY: 150 }, 
+            "8": { offsetX: 50, offsetY: 0, rotX: 87, rotZ: 105, zoom: 1.15 },
             "ULT": { offsetX: 1800, offsetY: 0, rotX: 89, rotZ: 90, zoom: 4.5 }
         };
 
@@ -307,6 +381,7 @@
             });
         }
 
+        let lastPopupSoundTime = 0;
         function processPopupQueue(runnerIdStr) {
             let cache = domCache.get(runnerIdStr);
             if (!cache || cache.isPopupPlaying || cache.popupQueue.length === 0) return;
@@ -326,9 +401,14 @@
             icon.onerror = function() { this.style.display='none'; };
             cache.wrapper.appendChild(icon);
 
+            // 오디오: 100ms 이내 중복 재생 방지
+            let now = performance.now();
             let isBuff = nextPopup.type.includes("증가") || nextPopup.type.includes("회복");
-            if(isBuff && AUDIO_FX.buff) AUDIO_FX.buff.play().catch(e=>{});
-            else if(!isBuff && AUDIO_FX.debuff) AUDIO_FX.debuff.play().catch(e=>{});
+            if (now - lastPopupSoundTime > 100) {
+                if(isBuff && AUDIO_FX.buff) AUDIO_FX.buff.play().catch(e=>{});
+                else if(!isBuff && AUDIO_FX.debuff) AUDIO_FX.debuff.play().catch(e=>{});
+                lastPopupSoundTime = now;
+            }
 
             setTimeout(() => {
                 cache.isPopupPlaying = false;
@@ -435,6 +515,7 @@
                     let d = new Date(); d.setMinutes(d.getMinutes() + 2); fpDatetime.setDate(d);
                     extractStatus.innerText = "추출 완료! 명단 필터링 및 설정을 진행하세요.";
                     document.getElementById('filter-box').style.display = 'block'; document.getElementById('setup-box').style.display = 'block';
+                    initBgmPicker();
                 } else extractStatus.innerText = "추출 실패: " + data.message;
             } catch(e) { extractStatus.innerText = "서버 통신 오류"; alert("오류: " + e.message); }
         }
@@ -480,18 +561,167 @@
             applyTimeFilter(); 
         }
 
+        // ── BGM 피커 ──────────────────────────────────────────
+        const BGM_LIST = [
+            "SKY HiGH Remix.mp3", "우주미아 Remix.mp3", "CIDER BANG! Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
+        ];
+        let selectedBgm = '__random__';
+        let previewAudioCtx = null;
+        let previewSource = null;
+        let previewGain = null;
+        let previewAudio = null;
+        let previewingFile = null;
+
+        function getAudioCtx() {
+            if (!previewAudioCtx || previewAudioCtx.state === 'closed') {
+                previewAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return previewAudioCtx;
+        }
+
+        function stopPreview() {
+            if (previewSource) { try { previewSource.stop(); } catch(e) {} previewSource = null; }
+            if (previewAudio) { previewAudio.pause(); previewAudio.src = ''; previewAudio = null; }
+            document.querySelectorAll('.bgm-play-btn').forEach(b => { b.classList.remove('playing'); b.textContent = '▶'; });
+            previewingFile = null;
+        }
+
+        async function togglePreview(file, btn) {
+            if (previewingFile === file) { stopPreview(); return; }
+            stopPreview();
+            previewingFile = file;
+            btn.textContent = '…'; btn.classList.add('playing');
+
+            try {
+                const ctx = getAudioCtx();
+                if (ctx.state === 'suspended') await ctx.resume();
+
+                const res = await fetch(`assets/bgm/${file}`);
+                const arrayBuf = await res.arrayBuffer();
+                const audioBuf = await ctx.decodeAudioData(arrayBuf);
+
+                // RMS 측정 → 목표 RMS(-18 LUFS 상당)로 gain 계산
+                const data = audioBuf.getChannelData(0);
+                let sumSq = 0;
+                const step = Math.max(1, Math.floor(data.length / 20000)); // 샘플링
+                let count = 0;
+                for (let i = 0; i < data.length; i += step) { sumSq += data[i] * data[i]; count++; }
+                const rms = Math.sqrt(sumSq / count);
+                const targetRms = 0.08; // 목표 RMS
+                const gain = rms > 0 ? Math.min(targetRms / rms, 4.0) : 1.0; // 최대 4배 제한
+
+                // 그래프: source → gain → compressor → destination
+                const gainNode = ctx.createGain();
+                gainNode.gain.value = gain * 0.4; // 0.4 = 미리듣기 기본 볼륨
+
+                const compressor = ctx.createDynamicsCompressor();
+                compressor.threshold.value = -18;
+                compressor.knee.value = 6;
+                compressor.ratio.value = 3;
+                compressor.attack.value = 0.003;
+                compressor.release.value = 0.25;
+
+                const source = ctx.createBufferSource();
+                source.buffer = audioBuf;
+                source.connect(gainNode);
+                gainNode.connect(compressor);
+                compressor.connect(ctx.destination);
+                source.start(0);
+                source.onended = () => { if (previewingFile === file) stopPreview(); };
+
+                previewSource = source;
+                previewGain = gainNode;
+                btn.textContent = '■';
+            } catch(e) {
+                // Web Audio 실패 시 fallback
+                stopPreview();
+                previewingFile = file;
+                previewAudio = new Audio(`assets/bgm/${file}`);
+                previewAudio.volume = 0.4;
+                previewAudio.play().catch(() => {});
+                previewAudio.onended = () => { stopPreview(); };
+                btn.classList.add('playing'); btn.textContent = '■';
+            }
+        }
+
+        function selectBgmCard(value) {
+            selectedBgm = value;
+            document.querySelectorAll('.bgm-card').forEach(c => {
+                c.classList.toggle('selected', c.dataset.bgm === value);
+            });
+        }
+
+        function initBgmPicker() {
+            const track = document.getElementById('bgm-track');
+            track.innerHTML = '';
+
+            // 카드: BGM 없음
+            const noneCard = document.createElement('div');
+            noneCard.className = 'bgm-card bgm-card-none';
+            noneCard.dataset.bgm = 'none';
+            noneCard.innerHTML = `<div style="font-size:22px">🔇</div><div class="bgm-name">BGM 없음</div>`;
+            noneCard.onclick = () => { stopPreview(); selectBgmCard('none'); };
+            track.appendChild(noneCard);
+
+            // 카드: 랜덤 (기본 선택)
+            const randCard = document.createElement('div');
+            randCard.className = 'bgm-card bgm-card-random selected';
+            randCard.dataset.bgm = '__random__';
+            randCard.innerHTML = `<div style="font-size:22px">🎲</div><div class="bgm-name">랜덤 BGM</div>`;
+            randCard.onclick = () => { stopPreview(); selectBgmCard('__random__'); };
+            track.appendChild(randCard);
+
+            // 카드: 개별 BGM
+            BGM_LIST.forEach(file => {
+                const name = file.replace(/\.mp3$/i, '');
+                const card = document.createElement('div');
+                card.className = 'bgm-card';
+                card.dataset.bgm = file;
+                const playBtn = document.createElement('button');
+                playBtn.className = 'bgm-play-btn';
+                playBtn.textContent = '▶';
+                playBtn.title = '미리 듣기';
+                playBtn.onclick = (e) => { e.stopPropagation(); togglePreview(file, playBtn); };
+                const nameEl = document.createElement('div');
+                nameEl.className = 'bgm-name';
+                nameEl.textContent = name;
+                card.appendChild(playBtn);
+                card.appendChild(nameEl);
+                card.onclick = () => selectBgmCard(file);
+                track.appendChild(card);
+            });
+
+            // 드래그 스크롤
+            const wrap = document.getElementById('bgm-track-wrap');
+            let isDown = false, startX = 0, scrollLeft = 0, moved = false;
+            wrap.addEventListener('mousedown', e => { isDown = true; moved = false; startX = e.pageX - wrap.offsetLeft; scrollLeft = wrap.scrollLeft; wrap.style.cursor = 'grabbing'; });
+            wrap.addEventListener('mouseleave', () => { isDown = false; wrap.style.cursor = ''; });
+            wrap.addEventListener('mouseup', () => { isDown = false; wrap.style.cursor = ''; });
+            wrap.addEventListener('mousemove', e => { if (!isDown) return; e.preventDefault(); moved = true; wrap.scrollLeft = scrollLeft - (e.pageX - wrap.offsetLeft - startX); });
+            // 터치
+            wrap.addEventListener('touchstart', e => { startX = e.touches[0].pageX; scrollLeft = wrap.scrollLeft; moved = false; }, { passive: true });
+            wrap.addEventListener('touchmove', e => { moved = true; wrap.scrollLeft = scrollLeft - (e.touches[0].pageX - startX); }, { passive: true });
+
+            // overflow 설정
+            wrap.style.overflowX = 'auto';
+            wrap.style.overflowY = 'hidden';
+            wrap.style.scrollbarWidth = 'none';
+            wrap.style.webkitOverflowScrolling = 'touch';
+        }
+        // ──────────────────────────────────────────────────────
+
         async function createRoomFinal() {
             const timeInput = document.getElementById('datetimeInput').value;
             if(!timeInput) { alert("시간을 예약하세요."); return; }
             const scheduled = Math.floor(new Date(timeInput.replace(' ', 'T')).getTime() / 1000);
             
             const bgmList = [
-                "SKY HiGH Remix.mp3", "CIDER BANG! Remix.mp3", "우주미아 Remix.mp3", "Ballin Remix.mp3",
-                "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", 
-                "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3",
-                "융터르.mp3", "꾀꼬리.mp3", "멋쟁이 신사 쿤미옌.mp3", "아니아니아닌데.mp3", "종천지모 Megamix.mp3"
+                "SKY HiGH Remix.mp3", "우주미아 Remix.mp3", "CIDER BANG! Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
             ];
-            let chosenBgm = bgmList[Math.floor(Math.random() * bgmList.length)];
+            let chosenBgm = selectedBgm === '__random__'
+                ? bgmList[Math.floor(Math.random() * bgmList.length)]
+                : selectedBgm;
+            stopPreview();
             
             const lobbyStatus = document.getElementById('lobby-status');
             lobbyStatus.innerText = "방을 만드는 중...";
@@ -514,13 +744,32 @@
             } catch(e) { lobbyStatus.innerText = "서버 연결 실패 또는 에러 발생"; console.error(e); }
         }
 
+        function scaleGameUI() {
+            const gameUi = document.getElementById('game-ui');
+            if (!gameUi || gameUi.style.display === 'none') return;
+            const vw = window.innerWidth;
+            const GAME_WIDTH = 1000;
+            if (vw < GAME_WIDTH) {
+                const scale = vw / GAME_WIDTH;
+                gameUi.style.transform = `scale(${scale})`;
+                // 축소된 만큼 생기는 빈 공간(아래쪽)을 당겨올림
+                const shrinkPx = GAME_WIDTH * (1 - scale);
+                gameUi.style.marginBottom = `-${shrinkPx}px`;
+            } else {
+                gameUi.style.transform = '';
+                gameUi.style.marginBottom = '';
+            }
+        }
+        window.addEventListener('resize', scaleGameUI);
+
         window.onload = async function() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomId = urlParams.get('room');
             if (!roomId) return; 
 
             document.getElementById('lobby-panel').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'flex'; 
+            document.getElementById('game-ui').style.display = 'flex';
+            scaleGameUI();
 
             try {
                 const res = await fetch(`${API_BASE}/room/${roomId}`);
@@ -570,13 +819,22 @@
             ctx.stroke();
 
             let trackPathCoords = [];
-            for(let i=0; i<=2050; i+=10) {
+            for(let i=0; i<=2000; i+=10) {
                 let p = getTrackCoordinates(i);
                 let cx = p.x * VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
                 let cy = p.y * VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
                 trackPathCoords.push({cx, cy});
             }
-            
+
+            // 결승선 이후 연장 구간 (stretch용, 페이드아웃으로 자연스럽게 처리)
+            let extPathCoords = [];
+            for(let i=2000; i<=2800; i+=10) {
+                let p = getTrackCoordinates(i);
+                let cx = p.x * VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                let cy = p.y * VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                extPathCoords.push({cx, cy, alpha: 1 - (i - 2000) / 800});
+            }
+
             ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
             ctx.lineWidth = LANE_SCALE * 1.8; ctx.strokeStyle = '#f1c40f'; ctx.beginPath();
             trackPathCoords.forEach((pt, idx) => idx === 0 ? ctx.moveTo(pt.cx, pt.cy) : ctx.lineTo(pt.cx, pt.cy));
@@ -585,23 +843,57 @@
             ctx.lineWidth = LANE_SCALE * 1.7; ctx.strokeStyle = '#30343A'; ctx.beginPath();
             trackPathCoords.forEach((pt, idx) => idx === 0 ? ctx.moveTo(pt.cx, pt.cy) : ctx.lineTo(pt.cx, pt.cy));
             ctx.stroke();
-            
+
             ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.setLineDash([60, 60]); ctx.beginPath();
             trackPathCoords.forEach((pt, idx) => idx === 0 ? ctx.moveTo(pt.cx, pt.cy) : ctx.lineTo(pt.cx, pt.cy));
             ctx.stroke(); ctx.setLineDash([]);
 
-            let finishP = getTrackCoordinates(2000);
-            let fInX = (finishP.x*VISUAL_SCALE + CX) + Math.cos(finishP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
-            let fInY = (finishP.y*VISUAL_SCALE + CY) + Math.sin(finishP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
-            let fOutX = (finishP.x*VISUAL_SCALE + CX) + Math.cos(finishP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
-            let fOutY = (finishP.y*VISUAL_SCALE + CY) + Math.sin(finishP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
-            
-            ctx.beginPath(); ctx.moveTo(fInX, fInY); ctx.lineTo(fOutX, fOutY); 
-            ctx.lineWidth = 40; ctx.strokeStyle = '#e74c3c'; ctx.stroke();
+            // 결승선 이후 연장 구간: 세그먼트별 페이드아웃
+            extPathCoords.forEach((pt, idx) => {
+                if (idx === 0) return;
+                let prev = extPathCoords[idx - 1];
+                ctx.lineWidth = LANE_SCALE * 1.8;
+                ctx.strokeStyle = `rgba(241, 196, 15, ${pt.alpha * 0.6})`;
+                ctx.beginPath(); ctx.moveTo(prev.cx, prev.cy); ctx.lineTo(pt.cx, pt.cy); ctx.stroke();
+                ctx.lineWidth = LANE_SCALE * 1.7;
+                ctx.strokeStyle = `rgba(48, 52, 58, ${pt.alpha})`;
+                ctx.beginPath(); ctx.moveTo(prev.cx, prev.cy); ctx.lineTo(pt.cx, pt.cy); ctx.stroke();
+            });
 
-            ctx.beginPath(); ctx.moveTo(fInX, fInY); ctx.lineTo(fOutX, fOutY); 
-            ctx.lineWidth = 40; ctx.strokeStyle = 'white'; ctx.setLineDash([40, 40]);
-            ctx.stroke(); ctx.setLineDash([]);
+            let finishP = getTrackCoordinates(2000);
+            let fBaseX = finishP.x * VISUAL_SCALE + CX;
+            let fBaseY = finishP.y * VISUAL_SCALE + CY;
+            let fAngleDeg = (finishP.angle + Math.PI/2) * 180 / Math.PI;
+            let totalLaneWidth = 2.0 * LANE_SCALE;
+
+            let finishDom = document.createElement('div');
+            finishDom.id = 'finish-line-dom';
+            finishDom.style.cssText = `position:absolute; width:0; height:0; pointer-events:none;`;
+
+            // 빨간 줄
+            let finishRed = document.createElement('div');
+            finishRed.style.cssText = `
+                position:absolute;
+                width:${totalLaneWidth}px; height:40px;
+                left:${-0.25*LANE_SCALE}px; top:-20px;
+                background:#e74c3c;
+                transform:rotate(${fAngleDeg}deg);
+                transform-origin:left center;
+            `;
+            // 흰/빨 체크 오버레이
+            let finishCheck = document.createElement('div');
+            finishCheck.style.cssText = `
+                position:absolute;
+                width:${totalLaneWidth}px; height:40px;
+                left:${-0.25*LANE_SCALE}px; top:-20px;
+                background:repeating-linear-gradient(90deg, transparent 0px, transparent 40px, white 40px, white 80px);
+                transform:rotate(${fAngleDeg}deg);
+                transform-origin:left center;
+            `;
+            finishDom.appendChild(finishRed);
+            finishDom.appendChild(finishCheck);
+            finishDom.style.transform = `translate3d(${fBaseX}px, ${fBaseY}px, 0)`;
+            document.getElementById('world').appendChild(finishDom);
 
             let startP = getTrackCoordinates(0);
             let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
@@ -734,6 +1026,8 @@
                 }
                 
                 document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
+                document.documentElement.style.setProperty('--bb-rz', `${-currentCam.rotZ}deg`);
+                document.documentElement.style.setProperty('--bb-rx', `${-currentCam.rotX}deg`);
                 return;
             }
 
@@ -750,7 +1044,7 @@
                 if (timeLeft <= 10 && timeLeft > 0) {
                     t = Math.min(1.0, Math.max(0, (10 - timeLeft) / 0.5));
                     e = easeOut(t);
-                    targetCam.zoom = conf.zoom + (0.8 - conf.zoom) * e;
+                    targetCam.zoom = conf.zoom + (0.6 - conf.zoom) * e;
                     calcOffsetY = conf.offsetY + (0 - conf.offsetY) * e;
                 } else {
                     targetCam.zoom = conf.zoom;
@@ -821,13 +1115,26 @@
 	
 						focusX = startX * (1 - backE) + avgX * backE;
 						focusY = startY * (1 - backE) + avgY * backE;
-						targetZoom = conf.zoom - (1.3 * backE);
+						targetZoom = conf.zoom - (1.0 * backE);
 					}
 				}
     
 				targetCam.rotX = conf.rotX; targetCam.zoom = targetZoom; targetCam.rotZ = conf.rotZ + (60 - conf.rotZ) * e;
 				targetCam.x = -focusX + conf.offsetX; targetCam.y = -focusY + conf.offsetY;
 			} 
+            else if (camId === "8") {
+                // 결승선 카메라: 캠8 진입 시점의 결승선 위치를 고정
+                if (_cam8FinishX === null) {
+                    let goalP = getTrackCoordinates(2000);
+                    _cam8FinishX = goalP.x * VISUAL_SCALE + CX + _finishStretchOffsetX;
+                    _cam8FinishY = goalP.y * VISUAL_SCALE + CY + _finishStretchOffsetY;
+                }
+                targetCam.rotX = conf.rotX;
+                targetCam.rotZ = conf.rotZ;
+                targetCam.zoom = conf.zoom;
+                targetCam.x = -_cam8FinishX + conf.offsetX;
+                targetCam.y = -_cam8FinishY + conf.offsetY;
+            }
             else {
                 let duration = conf.duration || 10;
                 t = Math.min(1.0, elapsed / duration); e = easeIn(t);
@@ -838,15 +1145,7 @@
                 
                 let oX = conf.offsetX + ((conf.targetOffsetX !== undefined ? conf.targetOffsetX : conf.offsetX) - conf.offsetX) * e;
                 let oY = conf.offsetY + ((conf.targetOffsetY !== undefined ? conf.targetOffsetY : conf.offsetY) - conf.offsetY) * e;
-
-                if (camId === "8") {
-                    let goalP = getTrackCoordinates(2000);
-                    let finishWorldX = goalP.x * VISUAL_SCALE + CX;
-                    let finishWorldY = goalP.y * VISUAL_SCALE + CY;
-                    targetCam.x = -finishWorldX + oX; targetCam.y = -finishWorldY + oY;
-                } else {
-                    targetCam.x = -smoothCenterX + oX; targetCam.y = -smoothCenterY + oY;
-                }
+                targetCam.x = -smoothCenterX + oX; targetCam.y = -smoothCenterY + oY;
             }
 
             if (isCut) {
@@ -859,6 +1158,8 @@
             }
             
             document.getElementById('world').style.transform = `scale(${currentCam.zoom}) rotateX(${currentCam.rotX}deg) rotateZ(${currentCam.rotZ}deg) translateX(${currentCam.x}px) translateY(${currentCam.y}px)`;
+            document.documentElement.style.setProperty('--bb-rz', `${-currentCam.rotZ}deg`);
+            document.documentElement.style.setProperty('--bb-rx', `${-currentCam.rotX}deg`);
         }
 
         function preShowLoop(timestamp) {
@@ -913,12 +1214,8 @@
                         if(r.behavior === 'chat' && !r.panicked) cache.flipWrap.style.transform = (r.currX < r.chatZone.x) ? 'scaleX(1)' : 'scaleX(-1)';
                     }
                     
-                    if(timeLeft <= 10) cache.nameTag.style.opacity = '0'; 
-
                     cache.base.style.transform = `translate3d(${r.currX}px, ${r.currY}px, 0)`;
-                    
-                    // 💡 [완벽한 빌보딩] 역방향 회전만으로 어떤 앵글에서도 주자가 항상 정면을 보도록 처리
-                    cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
+                    // billboarding은 CSS 변수(--bb-rz, --bb-rx)로 일괄 처리됨
                 });
 
                 let newCamId = "1";
@@ -957,7 +1254,6 @@
                     cache.base.classList.remove('startled'); 
                     cache.base.style.transform = `translate3d(${r.finalX}px, ${r.finalY}px, 0)`; 
                     cache.flipWrap.style.transform = 'scaleX(-1)'; 
-                    cache.nameTag.style.display = 'none';
                 }
             });
 
@@ -981,7 +1277,9 @@
             
             runAudios.forEach((a, i) => { setTimeout(() => { a.play().catch(e=>{}); }, i * 150); });
 
-            isPlaying = true; requestAnimationFrame(renderLoop);
+            detectPerf(() => {
+                isPlaying = true; requestAnimationFrame(renderLoop);
+            });
         }
 
         function startCountdown() {
@@ -1022,6 +1320,7 @@
 
                 let runnerPositions = [];
 
+                // 1패스: 좌표 수집만 (DOM 건드리지 않음)
                 frameData.r.forEach(rData => {
                     let [idInt, dist, lane, speed, hp, states] = rData; 
                     let id = String(idInt); 
@@ -1036,43 +1335,112 @@
                     let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                     let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
-                    runnerPositions.push({ id: id, dist: dist, lane: lane, worldX: worldX, worldY: worldY });
-
                     if (dist > leaderDist) { leaderDist = dist; }
+                    runnerPositions.push({ id: id, dist: dist, lane: lane, worldX: worldX, worldY: worldY, speed: rData[3], hp: rData[4], states: rData[5] });
+                });
+
+                // stretch: 트랙 진행 방향(앞뒤)으로만 편차 확대, 레인(좌우)은 유지
+                // 2000 이후는 트랙 직선이 자연스럽게 연장되므로 클램프 없이 사용
+                if (runnerPositions.length > 1 && PACK_STRETCH !== 1.0) {
+                    let avgDist = runnerPositions.reduce((s, r) => s + r.dist, 0) / runnerPositions.length;
+                    _stretchAvgDist = avgDist;
+                    let centerPos = getTrackCoordinates(avgDist);
+                    _stretchTx = Math.cos(centerPos.angle);
+                    _stretchTy = Math.sin(centerPos.angle);
+
+                    // 코너 구간에서는 stretch 감소 (직선=1.0, 코너=0.3)
+                    let isCorner = (avgDist > 200 && avgDist <= 400) || (avgDist > 950 && avgDist <= 1225) || (avgDist > 1225 && avgDist <= 1475);
+                    let cornerFactor = isCorner ? 0.3 : 1.0;
+                    let effectiveStretch = 1.0 + (PACK_STRETCH - 1.0) * cornerFactor;
+
+                    runnerPositions.forEach(r => {
+                        let delta = r.dist - avgDist;
+                        let extraDelta = (delta * effectiveStretch - delta) * VISUAL_SCALE;
+                        r.worldX += _stretchTx * extraDelta;
+                        r.worldY += _stretchTy * extraDelta;
+                    });
+
+                    // 결승선도 같은 stretch로 이동
+                    let finishDelta = 2000 - avgDist;
+                    let finishExtra = (finishDelta * PACK_STRETCH - finishDelta) * VISUAL_SCALE;
+                    _finishStretchOffsetX = _stretchTx * finishExtra;
+                    _finishStretchOffsetY = _stretchTy * finishExtra;
+
+                    let finishDom = document.getElementById('finish-line-dom');
+                    if (finishDom && !window.hasAnnouncedFinish) {
+                        let fp = getTrackCoordinates(2000);
+                        finishDom.style.transform = `translate3d(${fp.x * VISUAL_SCALE + CX + _finishStretchOffsetX}px, ${fp.y * VISUAL_SCALE + CY + _finishStretchOffsetY}px, 0)`;
+                    }
+                }
+
+                // 2패스: DOM 업데이트 + 스킬/이벤트 처리
+                frameData.r.forEach(rData => {
+                    let [idInt, dist, lane, speed, hp, states] = rData;
+                    let id = String(idInt);
+                    let rPos = runnerPositions.find(r => r.id === id);
+                    if (!rPos) return;
+                    let worldX = rPos.worldX, worldY = rPos.worldY;
+
+                    // 카메라 중심에서 너무 멀리 떨어진 주자는 DOM 업데이트 스킵 (프러스텀 컬링)
+                    // 레이스 초반 3초는 스타트 스킬 팝업 표시를 위해 컬링 비활성화
+                    let dxCam = worldX - smoothCenterX;
+                    let dyCam = worldY - smoothCenterY;
+                    let camDistSq = dxCam * dxCam + dyCam * dyCam;
+                    const CULL_DIST_SQ = 4000 * 4000;
+                    const doCull = currentPlaybackTime > 3.0 && smoothCenterX !== 0;
 
                     let cache = domCache.get(id);
                     if (cache) {
+                        if (doCull && camDistSq > CULL_DIST_SQ) {
+                            // 화면 밖 주자: visibility만 숨기고 나머지 스킵
+                            if (cache._visible !== false) { cache.base.style.visibility = 'hidden'; cache._visible = false; }
+                            return;
+                        }
+                        if (cache._visible !== true) { cache.base.style.visibility = ''; cache._visible = true; }
+                        // position - 항상 업데이트 (매 프레임 변경됨)
                         cache.base.style.transform = `translate3d(${worldX}px, ${worldY}px, 0)`; 
                         
-                        if (activeCamId === "5" || activeCamId === "ULT") {
-                            cache.flipWrap.style.transform = 'scaleX(1)';
-                        } else {
-                            cache.flipWrap.style.transform = 'scaleX(-1)';
-                        }
+                        // flipWrap - dirty check
+                        let newFlip = (activeCamId === "5" || activeCamId === "ULT") ? 'scaleX(1)' : 'scaleX(-1)';
+                        if (cache._flip !== newFlip) { cache.flipWrap.style.transform = newFlip; cache._flip = newFlip; }
 
-                        // 💡 [완벽한 빌보딩] 3D 스케일 제거 + 카메라 정면 고정
-                        cache.wrapper.style.transform = `rotateZ(${-currentCam.rotZ}deg) rotateX(${-currentCam.rotX}deg)`;
-                        
+                        // billboarding - CSS 변수로 일괄 처리 (루프 밖에서 한 번만 적용)
+                        // (아래 루프 밖에서 처리)
+
+                        // sprite animation - dirty check
+                        let newClass, newDur;
                         if(speed > 1.0) {
-                            cache.sprite.className = 'sprite-anim running';
-                            if (states.includes("Spurt")) cache.sprite.style.animationDuration = '0.35s';
-                            else if (states.includes("Exhaust")) cache.sprite.style.animationDuration = '1.5s';
-                            else cache.sprite.style.animationDuration = '0.6s';
+                            newClass = 'sprite-anim running';
+                            if (states.includes("Spurt")) newDur = '0.35s';
+                            else if (states.includes("Exhaust")) newDur = '1.5s';
+                            else newDur = '0.6s';
                         } else {
-                            cache.sprite.className = 'sprite-anim';
+                            newClass = 'sprite-anim'; newDur = '0s';
+                        }
+                        if (cache._spriteClass !== newClass) { cache.sprite.className = newClass; cache._spriteClass = newClass; }
+                        if (cache._spriteDur !== newDur) { cache.sprite.style.animationDuration = newDur; cache._spriteDur = newDur; }
+
+                        // sweat - dirty check
+                        let newSweat = states.includes("Exhaust");
+                        if (cache._sweat !== newSweat) {
+                            if (newSweat) cache.sweat.classList.add('show-sweat');
+                            else cache.sweat.classList.remove('show-sweat');
+                            cache._sweat = newSweat;
                         }
 
-                        if (states.includes("Exhaust")) cache.sweat.classList.add('show-sweat');
-                        else cache.sweat.classList.remove('show-sweat');
-
+                        // buff/debuff aura - dirty check
                         let hasBuff = states.some(st => ["Spurt", "PaceUp", "PaceUpEx", "Overtake", "AuraBuff"].includes(st));
                         let hasDebuff = states.some(st => ["PaceDown", "Exhaust", "AuraDebuff"].includes(st));
-
-                        if (hasBuff) cache.flipWrap.classList.add('has-buff');
-                        else cache.flipWrap.classList.remove('has-buff');
-
-                        if (hasDebuff) cache.flipWrap.classList.add('has-debuff');
-                        else cache.flipWrap.classList.remove('has-debuff');
+                        if (cache._hasBuff !== hasBuff) {
+                            if (hasBuff) cache.flipWrap.classList.add('has-buff');
+                            else cache.flipWrap.classList.remove('has-buff');
+                            cache._hasBuff = hasBuff;
+                        }
+                        if (cache._hasDebuff !== hasDebuff) {
+                            if (hasDebuff) cache.flipWrap.classList.add('has-debuff');
+                            else cache.flipWrap.classList.remove('has-debuff');
+                            cache._hasDebuff = hasDebuff;
+                        }
                     }
                     
                     if (states && states.length > 0) {
@@ -1083,7 +1451,8 @@
                                 let uniqueKey = `POPUP-${id}-${pType}-${pSeq}-${frameIdx}`;
                                 
                                 if (!triggeredSkillsLog.has(uniqueKey)) {
-                                    triggeredSkillsLog.set(uniqueKey, true);
+                                    triggeredSkillsLog.add(uniqueKey);
+                                    if (triggeredSkillsLog.size > 5000) { let first = triggeredSkillsLog.values().next().value; triggeredSkillsLog.delete(first); }
                                     if (cache) {
                                         cache.popupQueue.push({ type: pType, seq: pSeq });
                                         processPopupQueue(id);
@@ -1096,7 +1465,7 @@
                                 let uniqueKey = `${id}-${sName}`;
                                 
                                 if (!triggeredSkillsLog.has(uniqueKey)) {
-                                    triggeredSkillsLog.set(uniqueKey, true); 
+                                    triggeredSkillsLog.add(uniqueKey); 
                                     let cName = roomData.participants.find(pt => String(pt.id) === id)?.name || "선수";
                                     spawnSkillLog(cName, sName, sIcon);
                                 }
@@ -1107,7 +1476,7 @@
                                 let uniqueKey = `ULT-${id}-${ultName}`;
                                 
                                 if (!triggeredSkillsLog.has(uniqueKey)) {
-                                    triggeredSkillsLog.set(uniqueKey, true);
+                                    triggeredSkillsLog.add(uniqueKey);
                                     let cName = roomData.participants.find(pt => String(pt.id) === id)?.name || "선수";
                                     spawnSkillLog(cName, ultName, '고유.png');
                                     triggerUltimate(id, ultName, voiceFile);
@@ -1137,8 +1506,10 @@
                         if (cache) {
                             let relativePct = ((rPos.dist - packCenter) / viewSpread) * 100 + 50;
                             relativePct = Math.max(0, Math.min(100, relativePct));
-                            cache.dot.style.left = `${relativePct}%`;
-                            cache.dot.style.top = `${(rPos.lane / 1.5) * 100}%`;
+                            let newLeft = `${relativePct.toFixed(1)}%`;
+                            let newTop = `${((rPos.lane / 1.5) * 100).toFixed(1)}%`;
+                            if (cache._dotLeft !== newLeft) { cache.dot.style.left = newLeft; cache._dotLeft = newLeft; }
+                            if (cache._dotTop !== newTop) { cache.dot.style.top = newTop; cache._dotTop = newTop; }
                         }
                     });
                 }
@@ -1163,13 +1534,15 @@
                     postCommentary(`🏁 선두 결승선 통과!`, true);
                 }
 
-                let centerPos = getTrackCoordinates(leaderDist);
-                let leaderWorldX = centerPos.x * VISUAL_SCALE + CX + Math.cos(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                let leaderWorldY = centerPos.y * VISUAL_SCALE + CY + Math.sin(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                // 카메라는 선두 주자 위치가 아닌 선두 dist의 트랙 중앙을 추적
+                let leaderTrackPos = getTrackCoordinates(leaderDist);
+                // stretch offset도 레인 없이 순수 트랙 중앙에 적용
+                let leaderCenterX = leaderTrackPos.x * VISUAL_SCALE + CX + _stretchTx * (leaderDist - _stretchAvgDist) * (PACK_STRETCH - 1) * VISUAL_SCALE;
+                let leaderCenterY = leaderTrackPos.y * VISUAL_SCALE + CY + _stretchTy * (leaderDist - _stretchAvgDist) * (PACK_STRETCH - 1) * VISUAL_SCALE;
 
-                if (smoothCenterX === 0) { smoothCenterX = leaderWorldX; smoothCenterY = leaderWorldY; }
-                smoothCenterX += (leaderWorldX - smoothCenterX) * 0.05; 
-                smoothCenterY += (leaderWorldY - smoothCenterY) * 0.05;
+                if (smoothCenterX === 0) { smoothCenterX = leaderCenterX; smoothCenterY = leaderCenterY; }
+                smoothCenterX += (leaderCenterX - smoothCenterX) * 0.05; 
+                smoothCenterY += (leaderCenterY - smoothCenterY) * 0.05;
                 
                 let d = leaderDist; 
                 let bCamId = "2";
@@ -1198,7 +1571,8 @@
 
                 let isCut = false;
                 if (activeCamId !== newCamId) {
-                    isCut = true; activeCamId = newCamId; 
+                    isCut = true; activeCamId = newCamId;
+                    if (newCamId !== "8") _cam8FinishX = null; // 캠8 아니면 스냅샷 리셋
                     if (newCamId === "ULT" || activeCamId === "ULT") camStartTime = timeTarget; 
                 }
 
