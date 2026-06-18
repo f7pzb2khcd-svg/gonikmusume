@@ -17,6 +17,7 @@
         h1 { text-align: center; margin-bottom: 5px; color: #fbc531; font-size: 24px; }
         
         #lobby-panel { width: 90%; max-width: 650px; background-color: #2f3640; border-radius: 10px; padding: 20px; box-sizing: border-box; text-align: center; margin-top: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+		#lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; font-family: 'GyeonggiTitleL'; }
         #bgm-picker { width: 100%; margin: 14px 0 4px; user-select: none; }
         #bgm-picker .bgm-label { font-size: 13px; color: #a0a8b8; margin-bottom: 8px; }
         #bgm-track-wrap { overflow: hidden; border-radius: 10px; position: relative; }
@@ -287,13 +288,16 @@
         const VISUAL_SCALE = 12;   
         const LANE_SCALE = 500; 
         const CX = 14000;          
-        const CY = 6000;           
+        const CY = 6000;
+        const TRACK_LEN = 2180;    // 2000m + stretch 2.5 최대 밀림(180m) 여유
+        const PACK_STRETCH = 5;  // 주자 간 앞뒤 간격 시각적 확대 배율
 
         let smoothCenterX = 0, smoothCenterY = 0;
-        let _finishStretchOffsetX = 0, _finishStretchOffsetY = 0;
-        let _cam8FinishX = null, _cam8FinishY = null; // 캠8 진입 시 결승선 위치 고정용
         let _stretchTx = 0, _stretchTy = 0, _stretchAvgDist = 0;
-        const PACK_STRETCH = 5;
+        let _finishLocked = false; // 선두 결승선 통과 시 결승선 위치 고정
+        let _finishWorldX = 0, _finishWorldY = 0; // 고정된 결승선 world 좌표
+        let _cam8StartTime = null; // 캠8 진입 시각 (rotZ 애니메이션용)
+        let _cam8FinishX = null, _cam8FinishY = null;
         let activeCamId = null; 
         let camStartTime = 0; 
         
@@ -716,7 +720,7 @@
             const scheduled = Math.floor(new Date(timeInput.replace(' ', 'T')).getTime() / 1000);
             
             const bgmList = [
-                "SKY HiGH Remix.mp3", "우주미아 Remix.mp3", "CIDER BANG! Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
+            "SKY HiGH Remix.mp3", "우주미아 Remix.mp3", "CIDER BANG! Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
             ];
             let chosenBgm = selectedBgm === '__random__'
                 ? bgmList[Math.floor(Math.random() * bgmList.length)]
@@ -819,81 +823,38 @@
             ctx.stroke();
 
             let trackPathCoords = [];
-            for(let i=0; i<=2000; i+=10) {
+            for(let i=0; i<=TRACK_LEN; i+=10) {
                 let p = getTrackCoordinates(i);
                 let cx = p.x * VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
                 let cy = p.y * VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
                 trackPathCoords.push({cx, cy});
             }
 
-            // 결승선 이후 연장 구간 (stretch용, 페이드아웃으로 자연스럽게 처리)
-            let extPathCoords = [];
-            for(let i=2000; i<=2800; i+=10) {
-                let p = getTrackCoordinates(i);
-                let cx = p.x * VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                let cy = p.y * VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                extPathCoords.push({cx, cy, alpha: 1 - (i - 2000) / 800});
-            }
-
             ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
             ctx.lineWidth = LANE_SCALE * 1.8; ctx.strokeStyle = '#f1c40f'; ctx.beginPath();
             trackPathCoords.forEach((pt, idx) => idx === 0 ? ctx.moveTo(pt.cx, pt.cy) : ctx.lineTo(pt.cx, pt.cy));
             ctx.stroke();
-
             ctx.lineWidth = LANE_SCALE * 1.7; ctx.strokeStyle = '#30343A'; ctx.beginPath();
             trackPathCoords.forEach((pt, idx) => idx === 0 ? ctx.moveTo(pt.cx, pt.cy) : ctx.lineTo(pt.cx, pt.cy));
             ctx.stroke();
-
-            ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.setLineDash([60, 60]); ctx.beginPath();
+            ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.setLineDash([60,60]); ctx.beginPath();
             trackPathCoords.forEach((pt, idx) => idx === 0 ? ctx.moveTo(pt.cx, pt.cy) : ctx.lineTo(pt.cx, pt.cy));
             ctx.stroke(); ctx.setLineDash([]);
 
-            // 결승선 이후 연장 구간: 세그먼트별 페이드아웃
-            extPathCoords.forEach((pt, idx) => {
-                if (idx === 0) return;
-                let prev = extPathCoords[idx - 1];
-                ctx.lineWidth = LANE_SCALE * 1.8;
-                ctx.strokeStyle = `rgba(241, 196, 15, ${pt.alpha * 0.6})`;
-                ctx.beginPath(); ctx.moveTo(prev.cx, prev.cy); ctx.lineTo(pt.cx, pt.cy); ctx.stroke();
-                ctx.lineWidth = LANE_SCALE * 1.7;
-                ctx.strokeStyle = `rgba(48, 52, 58, ${pt.alpha})`;
-                ctx.beginPath(); ctx.moveTo(prev.cx, prev.cy); ctx.lineTo(pt.cx, pt.cy); ctx.stroke();
-            });
-
+            // 결승선 (canvas에 고정으로 그림 - 2000m 위치)
             let finishP = getTrackCoordinates(2000);
-            let fBaseX = finishP.x * VISUAL_SCALE + CX;
-            let fBaseY = finishP.y * VISUAL_SCALE + CY;
-            let fAngleDeg = (finishP.angle + Math.PI/2) * 180 / Math.PI;
-            let totalLaneWidth = 2.0 * LANE_SCALE;
+            let fInX = (finishP.x*VISUAL_SCALE+CX) + Math.cos(finishP.angle+Math.PI/2)*(-0.25*LANE_SCALE);
+            let fInY = (finishP.y*VISUAL_SCALE+CY) + Math.sin(finishP.angle+Math.PI/2)*(-0.25*LANE_SCALE);
+            let fOutX = (finishP.x*VISUAL_SCALE+CX) + Math.cos(finishP.angle+Math.PI/2)*(1.75*LANE_SCALE);
+            let fOutY = (finishP.y*VISUAL_SCALE+CY) + Math.sin(finishP.angle+Math.PI/2)*(1.75*LANE_SCALE);
+            ctx.lineWidth = 40; ctx.strokeStyle = '#e74c3c'; ctx.beginPath();
+            ctx.moveTo(fInX,fInY); ctx.lineTo(fOutX,fOutY); ctx.stroke();
+            ctx.lineWidth = 40; ctx.strokeStyle = 'white'; ctx.setLineDash([40,40]); ctx.beginPath();
+            ctx.moveTo(fInX,fInY); ctx.lineTo(fOutX,fOutY); ctx.stroke(); ctx.setLineDash([]);
 
-            let finishDom = document.createElement('div');
-            finishDom.id = 'finish-line-dom';
-            finishDom.style.cssText = `position:absolute; width:0; height:0; pointer-events:none;`;
-
-            // 빨간 줄
-            let finishRed = document.createElement('div');
-            finishRed.style.cssText = `
-                position:absolute;
-                width:${totalLaneWidth}px; height:40px;
-                left:${-0.25*LANE_SCALE}px; top:-20px;
-                background:#e74c3c;
-                transform:rotate(${fAngleDeg}deg);
-                transform-origin:left center;
-            `;
-            // 흰/빨 체크 오버레이
-            let finishCheck = document.createElement('div');
-            finishCheck.style.cssText = `
-                position:absolute;
-                width:${totalLaneWidth}px; height:40px;
-                left:${-0.25*LANE_SCALE}px; top:-20px;
-                background:repeating-linear-gradient(90deg, transparent 0px, transparent 40px, white 40px, white 80px);
-                transform:rotate(${fAngleDeg}deg);
-                transform-origin:left center;
-            `;
-            finishDom.appendChild(finishRed);
-            finishDom.appendChild(finishCheck);
-            finishDom.style.transform = `translate3d(${fBaseX}px, ${fBaseY}px, 0)`;
-            document.getElementById('world').appendChild(finishDom);
+            // 결승선 world 좌표 저장 (캠8 포커스용)
+            _finishWorldX = finishP.x * VISUAL_SCALE + CX;
+            _finishWorldY = finishP.y * VISUAL_SCALE + CY;
 
             let startP = getTrackCoordinates(0);
             let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
@@ -1123,14 +1084,19 @@
 				targetCam.x = -focusX + conf.offsetX; targetCam.y = -focusY + conf.offsetY;
 			} 
             else if (camId === "8") {
-                // 결승선 카메라: 캠8 진입 시점의 결승선 위치를 고정
+                // 캠8: 결승선 고정 포커스 + 2초 동안 rotZ → 180 전환 후 고정
                 if (_cam8FinishX === null) {
-                    let goalP = getTrackCoordinates(2000);
-                    _cam8FinishX = goalP.x * VISUAL_SCALE + CX + _finishStretchOffsetX;
-                    _cam8FinishY = goalP.y * VISUAL_SCALE + CY + _finishStretchOffsetY;
+                    _cam8FinishX = _finishWorldX;
+                    _cam8FinishY = _finishWorldY;
+                    _cam8StartTime = timeTarget;
                 }
+                let elapsed8 = (timeTarget - _cam8StartTime);
+                let t8 = Math.min(1.0, elapsed8 / 2.0);
+                let e8 = t8 * (2 - t8); // easeOut
+                let rotZ8 = conf.rotZ + (180 - conf.rotZ) * e8;
+
                 targetCam.rotX = conf.rotX;
-                targetCam.rotZ = conf.rotZ;
+                targetCam.rotZ = rotZ8;
                 targetCam.zoom = conf.zoom;
                 targetCam.x = -_cam8FinishX + conf.offsetX;
                 targetCam.y = -_cam8FinishY + conf.offsetY;
@@ -1339,8 +1305,8 @@
                     runnerPositions.push({ id: id, dist: dist, lane: lane, worldX: worldX, worldY: worldY, speed: rData[3], hp: rData[4], states: rData[5] });
                 });
 
-                // stretch: 트랙 진행 방향(앞뒤)으로만 편차 확대, 레인(좌우)은 유지
-                // 2000 이후는 트랙 직선이 자연스럽게 연장되므로 클램프 없이 사용
+                // stretch: 트랙 진행 방향(앞뒤)으로만 편차 확대
+                // 결승선(2000m)은 canvas에 고정 → stretch가 TRACK_LEN 범위 내에서만 작동
                 if (runnerPositions.length > 1 && PACK_STRETCH !== 1.0) {
                     let avgDist = runnerPositions.reduce((s, r) => s + r.dist, 0) / runnerPositions.length;
                     _stretchAvgDist = avgDist;
@@ -1348,29 +1314,19 @@
                     _stretchTx = Math.cos(centerPos.angle);
                     _stretchTy = Math.sin(centerPos.angle);
 
-                    // 코너 구간에서는 stretch 감소 (직선=1.0, 코너=0.3)
+                    // 코너 구간은 stretch 감소 (직선=full, 코너=0.3)
                     let isCorner = (avgDist > 200 && avgDist <= 400) || (avgDist > 950 && avgDist <= 1225) || (avgDist > 1225 && avgDist <= 1475);
-                    let cornerFactor = isCorner ? 0.3 : 1.0;
-                    let effectiveStretch = 1.0 + (PACK_STRETCH - 1.0) * cornerFactor;
+                    let effectiveStretch = isCorner ? 1.0 + (PACK_STRETCH - 1.0) * 0.3 : PACK_STRETCH;
 
                     runnerPositions.forEach(r => {
                         let delta = r.dist - avgDist;
-                        let extraDelta = (delta * effectiveStretch - delta) * VISUAL_SCALE;
+                        let stretchedDist = avgDist + delta * effectiveStretch;
+                        // TRACK_LEN 내로 클램프
+                        stretchedDist = Math.max(0, Math.min(TRACK_LEN, stretchedDist));
+                        let extraDelta = (stretchedDist - r.dist) * VISUAL_SCALE;
                         r.worldX += _stretchTx * extraDelta;
                         r.worldY += _stretchTy * extraDelta;
                     });
-
-                    // 결승선도 같은 stretch로 이동
-                    let finishDelta = 2000 - avgDist;
-                    let finishExtra = (finishDelta * PACK_STRETCH - finishDelta) * VISUAL_SCALE;
-                    _finishStretchOffsetX = _stretchTx * finishExtra;
-                    _finishStretchOffsetY = _stretchTy * finishExtra;
-
-                    let finishDom = document.getElementById('finish-line-dom');
-                    if (finishDom && !window.hasAnnouncedFinish) {
-                        let fp = getTrackCoordinates(2000);
-                        finishDom.style.transform = `translate3d(${fp.x * VISUAL_SCALE + CX + _finishStretchOffsetX}px, ${fp.y * VISUAL_SCALE + CY + _finishStretchOffsetY}px, 0)`;
-                    }
                 }
 
                 // 2패스: DOM 업데이트 + 스킬/이벤트 처리
@@ -1531,14 +1487,18 @@
 
                 if (leaderDist >= 2000 && !window.hasAnnouncedFinish) {
                     window.hasAnnouncedFinish = true;
+                    _finishLocked = true;
                     postCommentary(`🏁 선두 결승선 통과!`, true);
                 }
 
-                // 카메라는 선두 주자 위치가 아닌 선두 dist의 트랙 중앙을 추적
-                let leaderTrackPos = getTrackCoordinates(leaderDist);
-                // stretch offset도 레인 없이 순수 트랙 중앙에 적용
-                let leaderCenterX = leaderTrackPos.x * VISUAL_SCALE + CX + _stretchTx * (leaderDist - _stretchAvgDist) * (PACK_STRETCH - 1) * VISUAL_SCALE;
-                let leaderCenterY = leaderTrackPos.y * VISUAL_SCALE + CY + _stretchTy * (leaderDist - _stretchAvgDist) * (PACK_STRETCH - 1) * VISUAL_SCALE;
+                // 카메라: 선두 dist의 stretch된 트랙 중앙(레인 없이) 추적
+                let leaderDelta = leaderDist - _stretchAvgDist;
+                let isCornerCam = (_stretchAvgDist > 200 && _stretchAvgDist <= 400) || (_stretchAvgDist > 950 && _stretchAvgDist <= 1225) || (_stretchAvgDist > 1225 && _stretchAvgDist <= 1475);
+                let camEffStretch = isCornerCam ? 1.0 + (PACK_STRETCH-1.0)*0.3 : PACK_STRETCH;
+                let stretchedLeaderDist = Math.min(TRACK_LEN, _stretchAvgDist + leaderDelta * camEffStretch);
+                let stretchedLeaderPos = getTrackCoordinates(stretchedLeaderDist);
+                let leaderCenterX = stretchedLeaderPos.x * VISUAL_SCALE + CX;
+                let leaderCenterY = stretchedLeaderPos.y * VISUAL_SCALE + CY;
 
                 if (smoothCenterX === 0) { smoothCenterX = leaderCenterX; smoothCenterY = leaderCenterY; }
                 smoothCenterX += (leaderCenterX - smoothCenterX) * 0.05; 
@@ -1572,7 +1532,7 @@
                 let isCut = false;
                 if (activeCamId !== newCamId) {
                     isCut = true; activeCamId = newCamId;
-                    if (newCamId !== "8") _cam8FinishX = null; // 캠8 아니면 스냅샷 리셋
+                    if (newCamId !== "8") { _cam8FinishX = null; _cam8StartTime = null; }
                     if (newCamId === "ULT" || activeCamId === "ULT") camStartTime = timeTarget; 
                 }
 
