@@ -837,17 +837,29 @@
             ctx.stroke(); ctx.setLineDash([]);
 
             let finishP = getTrackCoordinates(2000);
-            let fInX = (finishP.x*VISUAL_SCALE + CX) + Math.cos(finishP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
-            let fInY = (finishP.y*VISUAL_SCALE + CY) + Math.sin(finishP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
-            let fOutX = (finishP.x*VISUAL_SCALE + CX) + Math.cos(finishP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
-            let fOutY = (finishP.y*VISUAL_SCALE + CY) + Math.sin(finishP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
-            
-            ctx.beginPath(); ctx.moveTo(fInX, fInY); ctx.lineTo(fOutX, fOutY); 
-            ctx.lineWidth = 40; ctx.strokeStyle = '#e74c3c'; ctx.stroke();
+            let fBaseX = finishP.x * VISUAL_SCALE + CX;
+            let fBaseY = finishP.y * VISUAL_SCALE + CY;
+            let fAngle = finishP.angle;
 
-            ctx.beginPath(); ctx.moveTo(fInX, fInY); ctx.lineTo(fOutX, fOutY); 
-            ctx.lineWidth = 40; ctx.strokeStyle = 'white'; ctx.setLineDash([40, 40]);
-            ctx.stroke(); ctx.setLineDash([]);
+            // 결승선 DOM 요소 (매 프레임 stretch로 이동됨)
+            let finishLineDom = document.createElement('div');
+            finishLineDom.id = 'finish-line-dom';
+            finishLineDom.style.cssText = `position:absolute; width:0; height:0; transform-style:preserve-3d;`;
+            // 실제 선은 pseudo-element 대신 inner div로
+            let finishInner = document.createElement('div');
+            let laneWidth = 1.75 * LANE_SCALE;
+            finishInner.style.cssText = `
+                position:absolute;
+                width: ${laneWidth * 2}px; height: 40px;
+                left: ${-0.25 * LANE_SCALE}px; top: -20px;
+                background: repeating-linear-gradient(90deg, #e74c3c 0px, #e74c3c 40px, white 40px, white 80px);
+                transform: rotate(${fAngle + Math.PI/2}rad) scaleX(0.5);
+                transform-origin: left center;
+                pointer-events: none;
+            `;
+            finishLineDom.appendChild(finishInner);
+            finishLineDom.style.transform = `translate3d(${fBaseX}px, ${fBaseY}px, 0)`;
+            document.getElementById('world').appendChild(finishLineDom);
 
             let startP = getTrackCoordinates(0);
             let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
@@ -1290,23 +1302,32 @@
 
                 // stretch: 트랙 진행 방향(앞뒤)으로만 편차 확대, 레인(좌우)은 유지
                 const PACK_STRETCH = 5;
+                let stretchTx = 0, stretchTy = 0, stretchAvgDist = 0;
                 if (runnerPositions.length > 1 && PACK_STRETCH !== 1.0) {
-                    // 팩 중심 dist 기준으로 트랙 접선 벡터 계산
                     let avgDist = runnerPositions.reduce((s, r) => s + r.dist, 0) / runnerPositions.length;
+                    stretchAvgDist = avgDist;
                     let centerPos = getTrackCoordinates(avgDist);
-                    // 트랙 진행 방향 단위벡터 (angle은 트랙 접선 방향)
-                    let tx = Math.cos(centerPos.angle);
-                    let ty = Math.sin(centerPos.angle);
+                    stretchTx = Math.cos(centerPos.angle);
+                    stretchTy = Math.sin(centerPos.angle);
 
-                    // 각 주자를 dist 기준으로만 stretch (레인 성분 제외)
                     let avgDistVal = avgDist;
                     runnerPositions.forEach(r => {
-                        let delta = r.dist - avgDistVal; // 앞뒤 거리 차이(m)
-                        let stretchedDelta = delta * PACK_STRETCH;
-                        let extraDelta = (stretchedDelta - delta) * VISUAL_SCALE;
-                        r.worldX += tx * extraDelta;
-                        r.worldY += ty * extraDelta;
+                        let delta = r.dist - avgDistVal;
+                        let extraDelta = (delta * PACK_STRETCH - delta) * VISUAL_SCALE;
+                        r.worldX += stretchTx * extraDelta;
+                        r.worldY += stretchTy * extraDelta;
                     });
+
+                    // 결승선도 같은 stretch 적용
+                    let finishDelta = 2000 - avgDistVal;
+                    let finishExtra = (finishDelta * PACK_STRETCH - finishDelta) * VISUAL_SCALE;
+                    let finishLine = document.getElementById('finish-line-dom');
+                    if (finishLine) {
+                        let fp = getTrackCoordinates(2000);
+                        let baseX = fp.x * VISUAL_SCALE + CX + stretchTx * finishExtra;
+                        let baseY = fp.y * VISUAL_SCALE + CY + stretchTy * finishExtra;
+                        finishLine.style.transform = `translate3d(${baseX}px, ${baseY}px, 0)`;
+                    }
                 }
 
                 // 2패스: stretch된 좌표로 DOM 업데이트 + 스킬/이벤트 처리
