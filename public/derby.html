@@ -1470,9 +1470,11 @@
                     postCommentary(`🏁 선두 결승선 통과!`, true);
                 }
 
-                let centerPos = getTrackCoordinates(leaderDist);
-                let leaderWorldX = centerPos.x * VISUAL_SCALE + CX + Math.cos(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
-                let leaderWorldY = centerPos.y * VISUAL_SCALE + CY + Math.sin(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                // stretch된 선두 위치로 카메라 추적 (runnerPositions에서 직접 가져옴)
+                let leaderRPos = runnerPositions.find(r => r.dist === leaderDist) 
+                    || [...runnerPositions].sort((a,b) => b.dist - a.dist)[0];
+                let leaderWorldX = leaderRPos ? leaderRPos.worldX : (getTrackCoordinates(leaderDist).x * VISUAL_SCALE + CX);
+                let leaderWorldY = leaderRPos ? leaderRPos.worldY : (getTrackCoordinates(leaderDist).y * VISUAL_SCALE + CY);
 
                 if (smoothCenterX === 0) { smoothCenterX = leaderWorldX; smoothCenterY = leaderWorldY; }
                 smoothCenterX += (leaderWorldX - smoothCenterX) * 0.05; 
