@@ -1395,7 +1395,7 @@
                 // 앞뒤 간격 시각적 확대: 팩 중심 world좌표 기준으로 각 주자의 편차를 stretch
                 // 트랙 좌표계/dist는 건드리지 않고 worldX/Y만 조정
                 if (runnerPositions.length > 1) {
-                    const PACK_STRETCH = 1.5;
+                    const PACK_STRETCH = 5;
                     let cx = runnerPositions.reduce((s, r) => s + r.worldX, 0) / runnerPositions.length;
                     let cy = runnerPositions.reduce((s, r) => s + r.worldY, 0) / runnerPositions.length;
                     runnerPositions.forEach(r => {
