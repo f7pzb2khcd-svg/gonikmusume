@@ -1288,14 +1288,24 @@
                     runnerPositions.push({ id: id, dist: dist, lane: lane, worldX: worldX, worldY: worldY, speed: rData[3], hp: rData[4], states: rData[5] });
                 });
 
-                // stretch: 팩 중심 기준 편차 확대 (트랙/dist 무변경)
+                // stretch: 트랙 진행 방향(앞뒤)으로만 편차 확대, 레인(좌우)은 유지
                 const PACK_STRETCH = 5;
-                if (runnerPositions.length > 1) {
-                    let cx = runnerPositions.reduce((s, r) => s + r.worldX, 0) / runnerPositions.length;
-                    let cy = runnerPositions.reduce((s, r) => s + r.worldY, 0) / runnerPositions.length;
+                if (runnerPositions.length > 1 && PACK_STRETCH !== 1.0) {
+                    // 팩 중심 dist 기준으로 트랙 접선 벡터 계산
+                    let avgDist = runnerPositions.reduce((s, r) => s + r.dist, 0) / runnerPositions.length;
+                    let centerPos = getTrackCoordinates(avgDist);
+                    // 트랙 진행 방향 단위벡터 (angle은 트랙 접선 방향)
+                    let tx = Math.cos(centerPos.angle);
+                    let ty = Math.sin(centerPos.angle);
+
+                    // 각 주자를 dist 기준으로만 stretch (레인 성분 제외)
+                    let avgDistVal = avgDist;
                     runnerPositions.forEach(r => {
-                        r.worldX = cx + (r.worldX - cx) * PACK_STRETCH;
-                        r.worldY = cy + (r.worldY - cy) * PACK_STRETCH;
+                        let delta = r.dist - avgDistVal; // 앞뒤 거리 차이(m)
+                        let stretchedDelta = delta * PACK_STRETCH;
+                        let extraDelta = (stretchedDelta - delta) * VISUAL_SCALE;
+                        r.worldX += tx * extraDelta;
+                        r.worldY += ty * extraDelta;
                     });
                 }
 
