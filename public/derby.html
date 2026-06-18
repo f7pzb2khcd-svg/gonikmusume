@@ -289,6 +289,7 @@
         const LANE_SCALE = 500; 
         const CX = 14000;          
         const CY = 6000;           
+        const DIST_STRETCH = 1.35;  // 앞뒤 간격 시각적 확대 (실제 데이터 무변경)
 
         let smoothCenterX = 0, smoothCenterY = 0;
         let activeCamId = null; 
@@ -1279,7 +1280,7 @@
                         lane = lane + (nextR[2] - lane) * ratio;
                     }
 
-                    let pos = getTrackCoordinates(dist); let laneOffset = lane * LANE_SCALE; 
+                    let pos = getTrackCoordinates(dist * DIST_STRETCH); let laneOffset = lane * LANE_SCALE; 
                     let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                     let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
@@ -1440,7 +1441,7 @@
                     postCommentary(`🏁 선두 결승선 통과!`, true);
                 }
 
-                let centerPos = getTrackCoordinates(leaderDist);
+                let centerPos = getTrackCoordinates(leaderDist * DIST_STRETCH);
                 let leaderWorldX = centerPos.x * VISUAL_SCALE + CX + Math.cos(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
                 let leaderWorldY = centerPos.y * VISUAL_SCALE + CY + Math.sin(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
 
