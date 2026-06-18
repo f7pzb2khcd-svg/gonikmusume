@@ -17,7 +17,7 @@
         h1 { text-align: center; margin-bottom: 5px; color: #fbc531; font-size: 24px; }
         
         #lobby-panel { width: 90%; max-width: 650px; background-color: #2f3640; border-radius: 10px; padding: 20px; box-sizing: border-box; text-align: center; margin-top: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-		#lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; font-family: 'GyeonggiTitleL'; }																																																										   
+        #lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; font-family: 'GyeonggiTitleL'; }
         #bgm-picker { width: 100%; margin: 14px 0 4px; user-select: none; }
         #bgm-picker .bgm-label { font-size: 13px; color: #a0a8b8; margin-bottom: 8px; }
         #bgm-track-wrap { overflow: hidden; border-radius: 10px; position: relative; }
@@ -33,7 +33,7 @@
         .bgm-card .bgm-name { font-size: 11.5px; color: #cbd5e0; text-align: center; line-height: 1.3; word-break: keep-all; }
         .bgm-card.selected .bgm-name { color: #fff; }
         .bgm-card .bgm-play-btn {
-            width: 28px; height: 28px; min-width: 28px; aspect-ratio: 1 / 1; border-radius: 50%; background: #e84118;
+            width: 28px; height: 28px; border-radius: 50%; background: #e84118;
             border: none; color: white; font-size: 12px; cursor: pointer;
             display: flex; align-items: center; justify-content: center; flex-shrink: 0;
             transition: background 0.15s; z-index: 2;
@@ -563,85 +563,27 @@
 
         // ── BGM 피커 ──────────────────────────────────────────
         const BGM_LIST = [
-            "SKY HiGH Remix.mp3", "우주미아 Remix.mp3", "CIDER BANG! Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
+                "SKY HiGH Remix.mp3", "CIDER BANG! Remix.mp3", "우주미아 Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
         ];
         let selectedBgm = '__random__';
-        let previewAudioCtx = null;
-        let previewSource = null;
-        let previewGain = null;
         let previewAudio = null;
         let previewingFile = null;
 
-        function getAudioCtx() {
-            if (!previewAudioCtx || previewAudioCtx.state === 'closed') {
-                previewAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            return previewAudioCtx;
-        }
-
         function stopPreview() {
-            if (previewSource) { try { previewSource.stop(); } catch(e) {} previewSource = null; }
             if (previewAudio) { previewAudio.pause(); previewAudio.src = ''; previewAudio = null; }
             document.querySelectorAll('.bgm-play-btn').forEach(b => { b.classList.remove('playing'); b.textContent = '▶'; });
             previewingFile = null;
         }
 
-        async function togglePreview(file, btn) {
+        function togglePreview(file, btn) {
             if (previewingFile === file) { stopPreview(); return; }
             stopPreview();
             previewingFile = file;
-            btn.textContent = '…'; btn.classList.add('playing');
-
-            try {
-                const ctx = getAudioCtx();
-                if (ctx.state === 'suspended') await ctx.resume();
-
-                const res = await fetch(`assets/bgm/${file}`);
-                const arrayBuf = await res.arrayBuffer();
-                const audioBuf = await ctx.decodeAudioData(arrayBuf);
-
-                // RMS 측정 → 목표 RMS(-18 LUFS 상당)로 gain 계산
-                const data = audioBuf.getChannelData(0);
-                let sumSq = 0;
-                const step = Math.max(1, Math.floor(data.length / 20000)); // 샘플링
-                let count = 0;
-                for (let i = 0; i < data.length; i += step) { sumSq += data[i] * data[i]; count++; }
-                const rms = Math.sqrt(sumSq / count);
-                const targetRms = 0.08; // 목표 RMS
-                const gain = rms > 0 ? Math.min(targetRms / rms, 4.0) : 1.0; // 최대 4배 제한
-
-                // 그래프: source → gain → compressor → destination
-                const gainNode = ctx.createGain();
-                gainNode.gain.value = gain * 0.4; // 0.4 = 미리듣기 기본 볼륨
-
-                const compressor = ctx.createDynamicsCompressor();
-                compressor.threshold.value = -18;
-                compressor.knee.value = 6;
-                compressor.ratio.value = 3;
-                compressor.attack.value = 0.003;
-                compressor.release.value = 0.25;
-
-                const source = ctx.createBufferSource();
-                source.buffer = audioBuf;
-                source.connect(gainNode);
-                gainNode.connect(compressor);
-                compressor.connect(ctx.destination);
-                source.start(0);
-                source.onended = () => { if (previewingFile === file) stopPreview(); };
-
-                previewSource = source;
-                previewGain = gainNode;
-                btn.textContent = '■';
-            } catch(e) {
-                // Web Audio 실패 시 fallback
-                stopPreview();
-                previewingFile = file;
-                previewAudio = new Audio(`assets/bgm/${file}`);
-                previewAudio.volume = 0.4;
-                previewAudio.play().catch(() => {});
-                previewAudio.onended = () => { stopPreview(); };
-                btn.classList.add('playing'); btn.textContent = '■';
-            }
+            previewAudio = new Audio(`assets/bgm/${file}`);
+            previewAudio.volume = 0.4;
+            previewAudio.play().catch(() => {});
+            previewAudio.onended = () => { stopPreview(); };
+            btn.classList.add('playing'); btn.textContent = '■';
         }
 
         function selectBgmCard(value) {
@@ -716,7 +658,7 @@
             const scheduled = Math.floor(new Date(timeInput.replace(' ', 'T')).getTime() / 1000);
             
             const bgmList = [
-                "SKY HiGH Remix.mp3", "우주미아 Remix.mp3", "CIDER BANG! Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
+                "SKY HiGH Remix.mp3", "CIDER BANG! Remix.mp3", "우주미아 Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
             ];
             let chosenBgm = selectedBgm === '__random__'
                 ? bgmList[Math.floor(Math.random() * bgmList.length)]
