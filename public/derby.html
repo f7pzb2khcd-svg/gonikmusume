@@ -289,7 +289,6 @@
         const LANE_SCALE = 500; 
         const CX = 14000;          
         const CY = 6000;           
-        const DIST_STRETCH = 1.35;  // 앞뒤 간격 시각적 확대 (실제 데이터 무변경)
 
         let smoothCenterX = 0, smoothCenterY = 0;
         let activeCamId = null; 
@@ -1280,7 +1279,7 @@
                         lane = lane + (nextR[2] - lane) * ratio;
                     }
 
-                    let pos = getTrackCoordinates(dist * DIST_STRETCH); let laneOffset = lane * LANE_SCALE; 
+                    let pos = getTrackCoordinates(dist); let laneOffset = lane * LANE_SCALE; 
                     let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                     let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
@@ -1393,6 +1392,18 @@
                     }
                 });
 
+                // 앞뒤 간격 시각적 확대: 팩 중심 world좌표 기준으로 각 주자의 편차를 stretch
+                // 트랙 좌표계/dist는 건드리지 않고 worldX/Y만 조정
+                if (runnerPositions.length > 1) {
+                    const PACK_STRETCH = 1.5;
+                    let cx = runnerPositions.reduce((s, r) => s + r.worldX, 0) / runnerPositions.length;
+                    let cy = runnerPositions.reduce((s, r) => s + r.worldY, 0) / runnerPositions.length;
+                    runnerPositions.forEach(r => {
+                        r.worldX = cx + (r.worldX - cx) * PACK_STRETCH;
+                        r.worldY = cy + (r.worldY - cy) * PACK_STRETCH;
+                    });
+                }
+
                 let sorted = [...runnerPositions].sort((a, b) => b.dist - a.dist);
                 if (sorted.length > 0) {
                     let leaderPct = Math.min(100, Math.max(0, (sorted[0].dist / 2000) * 100));
@@ -1441,7 +1452,7 @@
                     postCommentary(`🏁 선두 결승선 통과!`, true);
                 }
 
-                let centerPos = getTrackCoordinates(leaderDist * DIST_STRETCH);
+                let centerPos = getTrackCoordinates(leaderDist);
                 let leaderWorldX = centerPos.x * VISUAL_SCALE + CX + Math.cos(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
                 let leaderWorldY = centerPos.y * VISUAL_SCALE + CY + Math.sin(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
 
