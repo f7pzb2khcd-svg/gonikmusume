@@ -1289,7 +1289,7 @@
                 });
 
                 // stretch: 팩 중심 기준 편차 확대 (트랙/dist 무변경)
-                const PACK_STRETCH = 1.5;
+                const PACK_STRETCH = 5;
                 if (runnerPositions.length > 1) {
                     let cx = runnerPositions.reduce((s, r) => s + r.worldX, 0) / runnerPositions.length;
                     let cy = runnerPositions.reduce((s, r) => s + r.worldY, 0) / runnerPositions.length;
