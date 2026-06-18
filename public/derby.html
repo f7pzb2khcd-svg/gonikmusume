@@ -17,7 +17,38 @@
         h1 { text-align: center; margin-bottom: 5px; color: #fbc531; font-size: 24px; }
         
         #lobby-panel { width: 90%; max-width: 650px; background-color: #2f3640; border-radius: 10px; padding: 20px; box-sizing: border-box; text-align: center; margin-top: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        #lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; font-family: 'GyeonggiTitleL'; }
+		#lobby-panel input[type="text"], select { width: 80%; padding: 10px; font-size: 15px; margin: 8px 0; border: 2px solid #718093; border-radius: 5px; text-align: center; background: #353b48; color: white; font-family: 'GyeonggiTitleL'; }																																																										   
+        #bgm-picker { width: 100%; margin: 14px 0 4px; user-select: none; }
+        #bgm-picker .bgm-label { font-size: 13px; color: #a0a8b8; margin-bottom: 8px; }
+        #bgm-track-wrap { overflow: hidden; border-radius: 10px; position: relative; }
+        #bgm-track { display: flex; gap: 10px; cursor: grab; padding: 4px 2px 10px; transition: transform 0.0s; will-change: transform; }
+        #bgm-track:active { cursor: grabbing; }
+        .bgm-card {
+            flex: 0 0 140px; height: 82px; border-radius: 9px; border: 2px solid #4a5568;
+            background: #2d3748; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 6px; cursor: pointer; transition: border-color 0.18s, background 0.18s;
+            padding: 0 8px; box-sizing: border-box; position: relative;
+        }
+        .bgm-card.selected { border-color: #e84118; background: #3d1f1a; }
+        .bgm-card .bgm-name { font-size: 11.5px; color: #cbd5e0; text-align: center; line-height: 1.3; word-break: keep-all; }
+        .bgm-card.selected .bgm-name { color: #fff; }
+        .bgm-card .bgm-play-btn {
+            width: 28px; height: 28px; min-width: 28px; aspect-ratio: 1 / 1; border-radius: 50%; background: #e84118;
+            border: none; color: white; font-size: 12px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: background 0.15s; z-index: 2;
+        }
+        .bgm-card .bgm-play-btn:hover { background: #ff6b35; }
+        .bgm-card .bgm-play-btn.playing { background: #718093; }
+        .bgm-card-none { background: #1e2533; border-color: #718093; }
+        .bgm-card-none.selected { border-color: #fbc531; background: #2d2a1a; }
+        .bgm-card-none .bgm-name { color: #a0a8b8; font-size: 13px; }
+        .bgm-card-random { background: #1a2535; border-color: #718093; }
+        .bgm-card-random.selected { border-color: #2ecc71; background: #1a2d1e; }
+        .bgm-card-random .bgm-name { color: #a0a8b8; }
+        #bgm-scroll-hint { font-size: 11px; color: #718093; text-align: right; margin-top: 3px; }
+        #bgm-track-wrap::-webkit-scrollbar { display: none; }
+
         button { font-family: 'GyeonggiTitleL'; padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #00a8ff; color: white; border: none; border-radius: 8px; transition: 0.2s; }
         button:hover { background-color: #0097e6; }
         
@@ -166,6 +197,13 @@
             <div class="option-group">
                 <label><input type="checkbox" id="allowCustomChat">💬 관객석 커스텀(자유) 채팅 허용</label>
             </div>
+            <div id="bgm-picker">
+                <div class="bgm-label">🎵 BGM 선택 &nbsp;<span style="color:#718093; font-size:11px;">← 드래그해서 둘러보기 · 버튼으로 미리 듣기</span></div>
+                <div id="bgm-track-wrap">
+                    <div id="bgm-track"></div>
+                </div>
+                <div id="bgm-scroll-hint">▶ 오른쪽으로 밀면 더 있어요</div>
+            </div>
             <input type="text" id="datetimeInput" placeholder="시작 시간 예약 (클릭)">
             <br>
             <button onclick="createRoomFinal()" style="background:#e84118; margin-top: 10px;">방 만들기</button>
@@ -253,9 +291,6 @@
         const CY = 6000;           
 
         let smoothCenterX = 0, smoothCenterY = 0;
-        let _finishStretchOffsetX = 0, _finishStretchOffsetY = 0;
-        let _stretchTx = 0, _stretchTy = 0, _stretchAvgDist = 0;
-        const PACK_STRETCH = 5;
         let activeCamId = null; 
         let camStartTime = 0; 
         
@@ -477,6 +512,7 @@
                     let d = new Date(); d.setMinutes(d.getMinutes() + 2); fpDatetime.setDate(d);
                     extractStatus.innerText = "추출 완료! 명단 필터링 및 설정을 진행하세요.";
                     document.getElementById('filter-box').style.display = 'block'; document.getElementById('setup-box').style.display = 'block';
+                    initBgmPicker();
                 } else extractStatus.innerText = "추출 실패: " + data.message;
             } catch(e) { extractStatus.innerText = "서버 통신 오류"; alert("오류: " + e.message); }
         }
@@ -522,15 +558,167 @@
             applyTimeFilter(); 
         }
 
+        // ── BGM 피커 ──────────────────────────────────────────
+        const BGM_LIST = [
+            "SKY HiGH Remix.mp3", "우주미아 Remix.mp3", "CIDER BANG! Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
+        ];
+        let selectedBgm = '__random__';
+        let previewAudioCtx = null;
+        let previewSource = null;
+        let previewGain = null;
+        let previewAudio = null;
+        let previewingFile = null;
+
+        function getAudioCtx() {
+            if (!previewAudioCtx || previewAudioCtx.state === 'closed') {
+                previewAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return previewAudioCtx;
+        }
+
+        function stopPreview() {
+            if (previewSource) { try { previewSource.stop(); } catch(e) {} previewSource = null; }
+            if (previewAudio) { previewAudio.pause(); previewAudio.src = ''; previewAudio = null; }
+            document.querySelectorAll('.bgm-play-btn').forEach(b => { b.classList.remove('playing'); b.textContent = '▶'; });
+            previewingFile = null;
+        }
+
+        async function togglePreview(file, btn) {
+            if (previewingFile === file) { stopPreview(); return; }
+            stopPreview();
+            previewingFile = file;
+            btn.textContent = '…'; btn.classList.add('playing');
+
+            try {
+                const ctx = getAudioCtx();
+                if (ctx.state === 'suspended') await ctx.resume();
+
+                const res = await fetch(`assets/bgm/${file}`);
+                const arrayBuf = await res.arrayBuffer();
+                const audioBuf = await ctx.decodeAudioData(arrayBuf);
+
+                // RMS 측정 → 목표 RMS(-18 LUFS 상당)로 gain 계산
+                const data = audioBuf.getChannelData(0);
+                let sumSq = 0;
+                const step = Math.max(1, Math.floor(data.length / 20000)); // 샘플링
+                let count = 0;
+                for (let i = 0; i < data.length; i += step) { sumSq += data[i] * data[i]; count++; }
+                const rms = Math.sqrt(sumSq / count);
+                const targetRms = 0.08; // 목표 RMS
+                const gain = rms > 0 ? Math.min(targetRms / rms, 4.0) : 1.0; // 최대 4배 제한
+
+                // 그래프: source → gain → compressor → destination
+                const gainNode = ctx.createGain();
+                gainNode.gain.value = gain * 0.4; // 0.4 = 미리듣기 기본 볼륨
+
+                const compressor = ctx.createDynamicsCompressor();
+                compressor.threshold.value = -18;
+                compressor.knee.value = 6;
+                compressor.ratio.value = 3;
+                compressor.attack.value = 0.003;
+                compressor.release.value = 0.25;
+
+                const source = ctx.createBufferSource();
+                source.buffer = audioBuf;
+                source.connect(gainNode);
+                gainNode.connect(compressor);
+                compressor.connect(ctx.destination);
+                source.start(0);
+                source.onended = () => { if (previewingFile === file) stopPreview(); };
+
+                previewSource = source;
+                previewGain = gainNode;
+                btn.textContent = '■';
+            } catch(e) {
+                // Web Audio 실패 시 fallback
+                stopPreview();
+                previewingFile = file;
+                previewAudio = new Audio(`assets/bgm/${file}`);
+                previewAudio.volume = 0.4;
+                previewAudio.play().catch(() => {});
+                previewAudio.onended = () => { stopPreview(); };
+                btn.classList.add('playing'); btn.textContent = '■';
+            }
+        }
+
+        function selectBgmCard(value) {
+            selectedBgm = value;
+            document.querySelectorAll('.bgm-card').forEach(c => {
+                c.classList.toggle('selected', c.dataset.bgm === value);
+            });
+        }
+
+        function initBgmPicker() {
+            const track = document.getElementById('bgm-track');
+            track.innerHTML = '';
+
+            // 카드: BGM 없음
+            const noneCard = document.createElement('div');
+            noneCard.className = 'bgm-card bgm-card-none';
+            noneCard.dataset.bgm = 'none';
+            noneCard.innerHTML = `<div style="font-size:22px">🔇</div><div class="bgm-name">BGM 없음</div>`;
+            noneCard.onclick = () => { stopPreview(); selectBgmCard('none'); };
+            track.appendChild(noneCard);
+
+            // 카드: 랜덤 (기본 선택)
+            const randCard = document.createElement('div');
+            randCard.className = 'bgm-card bgm-card-random selected';
+            randCard.dataset.bgm = '__random__';
+            randCard.innerHTML = `<div style="font-size:22px">🎲</div><div class="bgm-name">랜덤 BGM</div>`;
+            randCard.onclick = () => { stopPreview(); selectBgmCard('__random__'); };
+            track.appendChild(randCard);
+
+            // 카드: 개별 BGM
+            BGM_LIST.forEach(file => {
+                const name = file.replace(/\.mp3$/i, '');
+                const card = document.createElement('div');
+                card.className = 'bgm-card';
+                card.dataset.bgm = file;
+                const playBtn = document.createElement('button');
+                playBtn.className = 'bgm-play-btn';
+                playBtn.textContent = '▶';
+                playBtn.title = '미리 듣기';
+                playBtn.onclick = (e) => { e.stopPropagation(); togglePreview(file, playBtn); };
+                const nameEl = document.createElement('div');
+                nameEl.className = 'bgm-name';
+                nameEl.textContent = name;
+                card.appendChild(playBtn);
+                card.appendChild(nameEl);
+                card.onclick = () => selectBgmCard(file);
+                track.appendChild(card);
+            });
+
+            // 드래그 스크롤
+            const wrap = document.getElementById('bgm-track-wrap');
+            let isDown = false, startX = 0, scrollLeft = 0, moved = false;
+            wrap.addEventListener('mousedown', e => { isDown = true; moved = false; startX = e.pageX - wrap.offsetLeft; scrollLeft = wrap.scrollLeft; wrap.style.cursor = 'grabbing'; });
+            wrap.addEventListener('mouseleave', () => { isDown = false; wrap.style.cursor = ''; });
+            wrap.addEventListener('mouseup', () => { isDown = false; wrap.style.cursor = ''; });
+            wrap.addEventListener('mousemove', e => { if (!isDown) return; e.preventDefault(); moved = true; wrap.scrollLeft = scrollLeft - (e.pageX - wrap.offsetLeft - startX); });
+            // 터치
+            wrap.addEventListener('touchstart', e => { startX = e.touches[0].pageX; scrollLeft = wrap.scrollLeft; moved = false; }, { passive: true });
+            wrap.addEventListener('touchmove', e => { moved = true; wrap.scrollLeft = scrollLeft - (e.touches[0].pageX - startX); }, { passive: true });
+
+            // overflow 설정
+            wrap.style.overflowX = 'auto';
+            wrap.style.overflowY = 'hidden';
+            wrap.style.scrollbarWidth = 'none';
+            wrap.style.webkitOverflowScrolling = 'touch';
+        }
+        // ──────────────────────────────────────────────────────
+
         async function createRoomFinal() {
             const timeInput = document.getElementById('datetimeInput').value;
             if(!timeInput) { alert("시간을 예약하세요."); return; }
             const scheduled = Math.floor(new Date(timeInput.replace(' ', 'T')).getTime() / 1000);
             
             const bgmList = [
-                "SKY HiGH Remix.mp3", "CIDER BANG! Remix.mp3", "우주미아 Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
+                "SKY HiGH Remix.mp3", "우주미아 Remix.mp3", "CIDER BANG! Remix.mp3", "Ballin Remix.mp3", "TRUE LOVER Remix.mp3", "FRAME.mp3", "HEADLINE.mp3", "We Ride.mp3", "WAKTA!.mp3", "스키!.mp3", "FINISH LINE.mp3", "Boosting Higher.mp3", "데자부.mp3", "왁스라다 리믹스.mp3", "지구용사 우왁굳.mp3", "융터르.mp3", "멋쟁이 신사 쿤미옌.mp3"
             ];
-            let chosenBgm = bgmList[Math.floor(Math.random() * bgmList.length)];
+            let chosenBgm = selectedBgm === '__random__'
+                ? bgmList[Math.floor(Math.random() * bgmList.length)]
+                : selectedBgm;
+            stopPreview();
             
             const lobbyStatus = document.getElementById('lobby-status');
             lobbyStatus.innerText = "방을 만드는 중...";
@@ -628,7 +816,7 @@
             ctx.stroke();
 
             let trackPathCoords = [];
-            for(let i=0; i<=2600; i+=10) {
+            for(let i=0; i<=2050; i+=10) {
                 let p = getTrackCoordinates(i);
                 let cx = p.x * VISUAL_SCALE + CX + Math.cos(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
                 let cy = p.y * VISUAL_SCALE + CY + Math.sin(p.angle + Math.PI/2) * (LANE_SCALE * 0.75);
@@ -649,39 +837,17 @@
             ctx.stroke(); ctx.setLineDash([]);
 
             let finishP = getTrackCoordinates(2000);
-            let fBaseX = finishP.x * VISUAL_SCALE + CX;
-            let fBaseY = finishP.y * VISUAL_SCALE + CY;
-            let fAngleDeg = (finishP.angle + Math.PI/2) * 180 / Math.PI;
-            let totalLaneWidth = 2.0 * LANE_SCALE;
+            let fInX = (finishP.x*VISUAL_SCALE + CX) + Math.cos(finishP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
+            let fInY = (finishP.y*VISUAL_SCALE + CY) + Math.sin(finishP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
+            let fOutX = (finishP.x*VISUAL_SCALE + CX) + Math.cos(finishP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
+            let fOutY = (finishP.y*VISUAL_SCALE + CY) + Math.sin(finishP.angle + Math.PI/2) * (1.75 * LANE_SCALE);
+            
+            ctx.beginPath(); ctx.moveTo(fInX, fInY); ctx.lineTo(fOutX, fOutY); 
+            ctx.lineWidth = 40; ctx.strokeStyle = '#e74c3c'; ctx.stroke();
 
-            let finishDom = document.createElement('div');
-            finishDom.id = 'finish-line-dom';
-            finishDom.style.cssText = `position:absolute; width:0; height:0; pointer-events:none;`;
-
-            // 빨간 줄
-            let finishRed = document.createElement('div');
-            finishRed.style.cssText = `
-                position:absolute;
-                width:${totalLaneWidth}px; height:40px;
-                left:${-0.25*LANE_SCALE}px; top:-20px;
-                background:#e74c3c;
-                transform:rotate(${fAngleDeg}deg);
-                transform-origin:left center;
-            `;
-            // 흰/빨 체크 오버레이
-            let finishCheck = document.createElement('div');
-            finishCheck.style.cssText = `
-                position:absolute;
-                width:${totalLaneWidth}px; height:40px;
-                left:${-0.25*LANE_SCALE}px; top:-20px;
-                background:repeating-linear-gradient(90deg, transparent 0px, transparent 40px, white 40px, white 80px);
-                transform:rotate(${fAngleDeg}deg);
-                transform-origin:left center;
-            `;
-            finishDom.appendChild(finishRed);
-            finishDom.appendChild(finishCheck);
-            finishDom.style.transform = `translate3d(${fBaseX}px, ${fBaseY}px, 0)`;
-            document.getElementById('world').appendChild(finishDom);
+            ctx.beginPath(); ctx.moveTo(fInX, fInY); ctx.lineTo(fOutX, fOutY); 
+            ctx.lineWidth = 40; ctx.strokeStyle = 'white'; ctx.setLineDash([40, 40]);
+            ctx.stroke(); ctx.setLineDash([]);
 
             let startP = getTrackCoordinates(0);
             let sInX = (startP.x*VISUAL_SCALE + CX) + Math.cos(startP.angle + Math.PI/2) * (-0.25 * LANE_SCALE);
@@ -832,7 +998,7 @@
                 if (timeLeft <= 10 && timeLeft > 0) {
                     t = Math.min(1.0, Math.max(0, (10 - timeLeft) / 0.5));
                     e = easeOut(t);
-                    targetCam.zoom = conf.zoom + (0.6 - conf.zoom) * e;
+                    targetCam.zoom = conf.zoom + (0.8 - conf.zoom) * e;
                     calcOffsetY = conf.offsetY + (0 - conf.offsetY) * e;
                 } else {
                     targetCam.zoom = conf.zoom;
@@ -923,8 +1089,8 @@
 
                 if (camId === "8") {
                     let goalP = getTrackCoordinates(2000);
-                    let finishWorldX = goalP.x * VISUAL_SCALE + CX + _finishStretchOffsetX;
-                    let finishWorldY = goalP.y * VISUAL_SCALE + CY + _finishStretchOffsetY;
+                    let finishWorldX = goalP.x * VISUAL_SCALE + CX;
+                    let finishWorldY = goalP.y * VISUAL_SCALE + CY;
                     targetCam.x = -finishWorldX + oX; targetCam.y = -finishWorldY + oY;
                 } else {
                     targetCam.x = -smoothCenterX + oX; targetCam.y = -smoothCenterY + oY;
@@ -1103,7 +1269,6 @@
 
                 let runnerPositions = [];
 
-                // 1패스: 좌표 수집만 (DOM 건드리지 않음)
                 frameData.r.forEach(rData => {
                     let [idInt, dist, lane, speed, hp, states] = rData; 
                     let id = String(idInt); 
@@ -1118,46 +1283,9 @@
                     let worldX = pos.x * VISUAL_SCALE + CX + Math.cos(pos.angle + Math.PI/2) * laneOffset;
                     let worldY = pos.y * VISUAL_SCALE + CY + Math.sin(pos.angle + Math.PI/2) * laneOffset;
 
+                    runnerPositions.push({ id: id, dist: dist, lane: lane, worldX: worldX, worldY: worldY });
+
                     if (dist > leaderDist) { leaderDist = dist; }
-                    runnerPositions.push({ id: id, dist: dist, lane: lane, worldX: worldX, worldY: worldY, speed: rData[3], hp: rData[4], states: rData[5] });
-                });
-
-                // stretch: 트랙 진행 방향(앞뒤)으로만 편차 확대, 레인(좌우)은 유지
-                // 2000 이후는 트랙 직선이 자연스럽게 연장되므로 클램프 없이 사용
-                if (runnerPositions.length > 1 && PACK_STRETCH !== 1.0) {
-                    let avgDist = runnerPositions.reduce((s, r) => s + r.dist, 0) / runnerPositions.length;
-                    _stretchAvgDist = avgDist;
-                    let centerPos = getTrackCoordinates(avgDist);
-                    _stretchTx = Math.cos(centerPos.angle);
-                    _stretchTy = Math.sin(centerPos.angle);
-
-                    runnerPositions.forEach(r => {
-                        let delta = r.dist - avgDist;
-                        let extraDelta = (delta * PACK_STRETCH - delta) * VISUAL_SCALE;
-                        r.worldX += _stretchTx * extraDelta;
-                        r.worldY += _stretchTy * extraDelta;
-                    });
-
-                    // 결승선도 같은 stretch로 이동
-                    let finishDelta = 2000 - avgDist;
-                    let finishExtra = (finishDelta * PACK_STRETCH - finishDelta) * VISUAL_SCALE;
-                    _finishStretchOffsetX = _stretchTx * finishExtra;
-                    _finishStretchOffsetY = _stretchTy * finishExtra;
-
-                    let finishDom = document.getElementById('finish-line-dom');
-                    if (finishDom && !window.hasAnnouncedFinish) {
-                        let fp = getTrackCoordinates(2000);
-                        finishDom.style.transform = `translate3d(${fp.x * VISUAL_SCALE + CX + _finishStretchOffsetX}px, ${fp.y * VISUAL_SCALE + CY + _finishStretchOffsetY}px, 0)`;
-                    }
-                }
-
-                // 2패스: DOM 업데이트 + 스킬/이벤트 처리
-                frameData.r.forEach(rData => {
-                    let [idInt, dist, lane, speed, hp, states] = rData;
-                    let id = String(idInt);
-                    let rPos = runnerPositions.find(r => r.id === id);
-                    if (!rPos) return;
-                    let worldX = rPos.worldX, worldY = rPos.worldY;
 
                     // 카메라 중심에서 너무 멀리 떨어진 주자는 DOM 업데이트 스킵 (프러스텀 컬링)
                     // 레이스 초반 3초는 스타트 스킬 팝업 표시를 위해 컬링 비활성화
@@ -1312,15 +1440,13 @@
                     postCommentary(`🏁 선두 결승선 통과!`, true);
                 }
 
-                // 카메라는 선두 주자 위치가 아닌 선두 dist의 트랙 중앙을 추적
-                let leaderTrackPos = getTrackCoordinates(leaderDist);
-                // stretch offset도 레인 없이 순수 트랙 중앙에 적용
-                let leaderCenterX = leaderTrackPos.x * VISUAL_SCALE + CX + _stretchTx * (leaderDist - _stretchAvgDist) * (PACK_STRETCH - 1) * VISUAL_SCALE;
-                let leaderCenterY = leaderTrackPos.y * VISUAL_SCALE + CY + _stretchTy * (leaderDist - _stretchAvgDist) * (PACK_STRETCH - 1) * VISUAL_SCALE;
+                let centerPos = getTrackCoordinates(leaderDist);
+                let leaderWorldX = centerPos.x * VISUAL_SCALE + CX + Math.cos(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
+                let leaderWorldY = centerPos.y * VISUAL_SCALE + CY + Math.sin(centerPos.angle + Math.PI/2) * (LANE_SCALE * 0.75);
 
-                if (smoothCenterX === 0) { smoothCenterX = leaderCenterX; smoothCenterY = leaderCenterY; }
-                smoothCenterX += (leaderCenterX - smoothCenterX) * 0.05; 
-                smoothCenterY += (leaderCenterY - smoothCenterY) * 0.05;
+                if (smoothCenterX === 0) { smoothCenterX = leaderWorldX; smoothCenterY = leaderWorldY; }
+                smoothCenterX += (leaderWorldX - smoothCenterX) * 0.05; 
+                smoothCenterY += (leaderWorldY - smoothCenterY) * 0.05;
                 
                 let d = leaderDist; 
                 let bCamId = "2";
